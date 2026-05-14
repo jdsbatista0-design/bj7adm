@@ -9,6 +9,11 @@ import {
 } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import type {
+  PapelRow,
+  UsuarioRow,
+  UsuarioEmpresaRow,
+} from "@/integrations/supabase/database";
 import type { CurrentUser } from "@/lib/permissions";
 
 type AuthState =
@@ -37,8 +42,7 @@ async function loadCurrentUser(session: Session): Promise<AuthState> {
     .eq("auth_uid", authUid)
     .maybeSingle();
 
-  type UsuarioRow = NonNullable<typeof byUid.data>;
-  let usuarioRow: UsuarioRow | null = byUid.data ?? null;
+  let usuarioRow: UsuarioRow | null = (byUid.data as UsuarioRow | null) ?? null;
 
   // 2. Se não achou e tem email, tenta pelo email e vincula auth_uid
   if (!usuarioRow && email) {
@@ -49,45 +53,40 @@ async function loadCurrentUser(session: Session): Promise<AuthState> {
       .is("auth_uid", null)
       .maybeSingle();
 
-    if (byEmail.data) {
+    const byEmailRow = byEmail.data as UsuarioRow | null;
+    if (byEmailRow) {
       const linked = await supabase
         .from("usuarios")
         .update({ auth_uid: authUid })
-        .eq("id", byEmail.data.id)
+        .eq("id", byEmailRow.id)
         .select("*")
         .single();
-      usuarioRow = linked.data ?? byEmail.data;
+      usuarioRow = (linked.data as UsuarioRow | null) ?? byEmailRow;
     }
   }
 
-  if (!usuarioRow) {
-    return { status: "no-record", email };
-  }
-
-  if (usuarioRow.ativo === false) {
-    return { status: "no-record", email };
-  }
+  if (!usuarioRow) return { status: "no-record", email };
+  if (usuarioRow.ativo === false) return { status: "no-record", email };
 
   // 3. Carrega papel
-  const { data: papel } = await supabase
+  const papelResp = await supabase
     .from("papeis")
     .select("*")
     .eq("id", usuarioRow.papel_id ?? -1)
     .maybeSingle();
+  const papel = papelResp.data as PapelRow | null;
+  if (!papel) return { status: "no-record", email };
 
-  if (!papel) {
-    return { status: "no-record", email };
-  }
-
-  // 4. Carrega empresas vinculadas (se ve_todas_empresas=false)
+  // 4. Empresas vinculadas
   const veTodas = !!usuarioRow.ve_todas_empresas;
   let empresasIds: number[] = [];
   if (!veTodas) {
-    const { data: ues } = await supabase
+    const ues = await supabase
       .from("usuario_empresas")
       .select("empresa_id")
       .eq("usuario_id", usuarioRow.id);
-    empresasIds = (ues ?? []).map((r) => r.empresa_id);
+    const rows = (ues.data ?? []) as Pick<UsuarioEmpresaRow, "empresa_id">[];
+    empresasIds = rows.map((r) => r.empresa_id);
   }
 
   const user: CurrentUser = {
@@ -114,13 +113,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({ status: "anon" });
       return;
     }
-    const next = await loadCurrentUser(data.session);
-    setState(next);
+    setState(await loadCurrentUser(data.session));
   }, []);
 
   useEffect(() => {
     let mounted = true;
-
     void (async () => {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
@@ -137,7 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ status: "anon" });
         return;
       }
-      // Use setTimeout to avoid deadlocks in supabase listener
       setTimeout(async () => {
         const next = await loadCurrentUser(session);
         if (mounted) setState(next);
@@ -176,7 +172,6 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-/** Helper para componentes que SÓ rodam autenticados — lança se não estiver. */
 export function useCurrentUser(): CurrentUser {
   const { state } = useAuth();
   if (state.status !== "ok") {
