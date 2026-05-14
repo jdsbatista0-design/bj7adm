@@ -31,29 +31,32 @@ async function loadCurrentUser(session: Session): Promise<AuthState> {
   const authUid = session.user.id;
 
   // 1. Tenta achar usuario por auth_uid
-  let { data: usuarioRow } = await supabase
+  const byUid = await supabase
     .from("usuarios")
     .select("*")
     .eq("auth_uid", authUid)
     .maybeSingle();
 
+  type UsuarioRow = NonNullable<typeof byUid.data>;
+  let usuarioRow: UsuarioRow | null = byUid.data ?? null;
+
   // 2. Se não achou e tem email, tenta pelo email e vincula auth_uid
   if (!usuarioRow && email) {
-    const { data: byEmail } = await supabase
+    const byEmail = await supabase
       .from("usuarios")
       .select("*")
       .eq("email", email)
       .is("auth_uid", null)
       .maybeSingle();
 
-    if (byEmail) {
-      const { data: linked } = await supabase
+    if (byEmail.data) {
+      const linked = await supabase
         .from("usuarios")
         .update({ auth_uid: authUid })
-        .eq("id", byEmail.id)
+        .eq("id", byEmail.data.id)
         .select("*")
         .single();
-      usuarioRow = linked ?? byEmail;
+      usuarioRow = linked.data ?? byEmail.data;
     }
   }
 
