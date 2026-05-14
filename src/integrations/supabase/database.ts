@@ -123,6 +123,7 @@ type Tbl<Row, Insert = Partial<Row> & { id?: number }, Update = Partial<Row>> = 
   Row: Row;
   Insert: Insert;
   Update: Update;
+  Relationships: [];
 };
 
 export interface Database {
