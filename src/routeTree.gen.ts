@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedRazaoRouteImport } from './routes/_authenticated/razao'
 import { Route as AuthenticatedLancarRouteImport } from './routes/_authenticated/lancar'
+import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -39,15 +40,22 @@ const AuthenticatedLancarRoute = AuthenticatedLancarRouteImport.update({
   path: '/lancar',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedARevisarRoute = AuthenticatedARevisarRouteImport.update({
+  id: '/a-revisar',
+  path: '/a-revisar',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/a-revisar': typeof AuthenticatedARevisarRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/a-revisar': typeof AuthenticatedARevisarRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
   '/': typeof AuthenticatedIndexRoute
@@ -56,19 +64,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
   '/_authenticated/lancar': typeof AuthenticatedLancarRoute
   '/_authenticated/razao': typeof AuthenticatedRazaoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/lancar' | '/razao'
+  fullPaths: '/' | '/login' | '/a-revisar' | '/lancar' | '/razao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/lancar' | '/razao' | '/'
+  to: '/login' | '/a-revisar' | '/lancar' | '/razao' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/a-revisar'
     | '/_authenticated/lancar'
     | '/_authenticated/razao'
     | '/_authenticated/'
@@ -116,16 +126,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLancarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/a-revisar': {
+      id: '/_authenticated/a-revisar'
+      path: '/a-revisar'
+      fullPath: '/a-revisar'
+      preLoaderRoute: typeof AuthenticatedARevisarRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
   AuthenticatedLancarRoute: typeof AuthenticatedLancarRoute
   AuthenticatedRazaoRoute: typeof AuthenticatedRazaoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedARevisarRoute: AuthenticatedARevisarRoute,
   AuthenticatedLancarRoute: AuthenticatedLancarRoute,
   AuthenticatedRazaoRoute: AuthenticatedRazaoRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
