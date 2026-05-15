@@ -121,7 +121,7 @@ function RazaoPage() {
   });
 
   function update(patch: Partial<typeof params>) {
-    void navigate({ search: (prev) => ({ ...prev, ...patch, page: 1 }) });
+    void navigate({ search: (prev: typeof params) => ({ ...prev, ...patch, page: 1 }) });
   }
 
   return (
