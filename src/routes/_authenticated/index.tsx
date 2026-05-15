@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
+import { CategoriaPeriodoBreakdown } from "@/components/dashboard/CategoriaPeriodoBreakdown";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Cockpit,
