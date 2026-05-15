@@ -277,11 +277,11 @@ function RazaoPage() {
         <span className="text-muted-foreground">{total} lançamentos · página {params.page} de {totalPages}</span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled={params.page <= 1}
-            onClick={() => update({ page: Math.max(1, params.page - 1) } as Partial<typeof params>)}>
+            onClick={() => void navigate({ search: (p: typeof params) => ({ ...p, page: Math.max(1, p.page - 1) }) })}>
             Anterior
           </Button>
           <Button variant="outline" size="sm" disabled={params.page >= totalPages}
-            onClick={() => update({ page: Math.min(totalPages, params.page + 1) } as Partial<typeof params>)}>
+            onClick={() => void navigate({ search: (p: typeof params) => ({ ...p, page: Math.min(totalPages, p.page + 1) }) })}>
             Próxima
           </Button>
         </div>
