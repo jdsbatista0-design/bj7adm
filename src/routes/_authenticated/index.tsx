@@ -1,367 +1,476 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, useCallback } from "react";
-import { useCurrentUser } from "@/contexts/auth-context";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type {
-  AlertaRow,
-  TarefaRow,
-  Severidade,
-} from "@/integrations/supabase/database";
-import { Card, CardContent } from "@/components/ui/card";
+import { from, asRows } from "@/integrations/supabase/db";
+import { useCurrentUser } from "@/contexts/auth-context";
+import { useEmpresas } from "@/hooks/use-refs";
+import { useItemDrawer } from "@/components/bj7/ItemDrawer";
+import type { AlertaRow, TarefaRow, LancamentoRow } from "@/integrations/supabase/database";
+import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
+import { KpiCard } from "@/components/bj7/KpiCard";
+import { ItemCard, type UnifiedItem } from "@/components/bj7/ItemCard";
+import { EmptyState } from "@/components/bj7/EmptyState";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { formatBRL } from "@/lib/format";
 import {
   AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Inbox,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
   Sparkles,
-  Pause,
-  Play,
-  RefreshCw,
   Loader2,
+  ArrowRight,
+  Building2,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "@tanstack/react-router";
-import { CategoriaPeriodoBreakdown } from "@/components/dashboard/CategoriaPeriodoBreakdown";
 
 export const Route = createFileRoute("/_authenticated/")({
-  component: Cockpit,
+  component: Central,
 });
 
-type TabKey = "hoje" | "aguardando" | "travado" | "oportunidades" | "followup";
-
-function severityColor(s: Severidade) {
-  if (s === "critical") return "bg-destructive text-destructive-foreground";
-  if (s === "warn") return "bg-amber-500 text-white";
-  return "bg-muted text-foreground";
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function startOfPrevMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth() - 1, 1);
 }
 
-function severityDot(s: Severidade) {
-  if (s === "critical") return "bg-destructive";
-  if (s === "warn") return "bg-amber-500";
-  return "bg-muted-foreground";
-}
-
-function Cockpit() {
+function Central() {
   const user = useCurrentUser();
-  const [alertas, setAlertas] = useState<AlertaRow[]>([]);
-  const [tarefas, setTarefas] = useState<TarefaRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [tab, setTab] = useState<TabKey>("hoje");
+  const empresas = useEmpresas();
+  const drawer = useItemDrawer();
+  const qc = useQueryClient();
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [a, t] = await Promise.all([
-      supabase
+  // ---------- Dados ----------
+  const periodo = useMemo(() => {
+    const now = new Date();
+    const inicioMes = startOfMonth(now);
+    const inicioMesAnt = startOfPrevMonth(now);
+    return {
+      inicioMes: inicioMes.toISOString().slice(0, 10),
+      inicioMesAnt: inicioMesAnt.toISOString().slice(0, 10),
+      fimMesAnt: inicioMes.toISOString().slice(0, 10),
+      // fim aberto = futuro
+    };
+  }, []);
+
+  const lanc = useQuery({
+    queryKey: ["central", "lancamentos", periodo.inicioMesAnt, user.id],
+    queryFn: async () => {
+      let q = from("lancamentos")
+        .select("id,data,empresa_id,tipo,valor,contar_no_total,status,revisado,categoria_id")
+        .gte("data", periodo.inicioMesAnt)
+        .eq("contar_no_total", true)
+        .in("tipo", ["Receita", "Despesa"]);
+      if (!user.ve_todas_empresas) {
+        if (user.empresas_ids.length === 0) return [];
+        q = q.in("empresa_id", user.empresas_ids);
+      }
+      const r = await q.limit(50000);
+      if (r.error) throw r.error;
+      return asRows("lancamentos", r.data);
+    },
+  });
+
+  const alertasQ = useQuery({
+    queryKey: ["central", "alertas"],
+    queryFn: async () => {
+      const r = await supabase
         .from("alertas")
         .select("*")
-        .in("status", ["aberto", "ack", "snoozed"])
+        .in("status", ["aberto", "ack"])
         .order("severidade", { ascending: false })
         .order("criado_em", { ascending: false })
-        .limit(200),
-      supabase
+        .limit(100);
+      if (r.error) throw r.error;
+      return (r.data ?? []) as AlertaRow[];
+    },
+  });
+
+  const tarefasQ = useQuery({
+    queryKey: ["central", "tarefas"],
+    queryFn: async () => {
+      const r = await supabase
         .from("tarefas")
         .select("*")
         .in("status", ["aberta", "em_andamento", "aguardando"])
+        .order("prioridade", { ascending: false })
         .order("prazo", { ascending: true, nullsFirst: false })
-        .limit(200),
-    ]);
-    setAlertas((a.data ?? []) as AlertaRow[]);
-    setTarefas((t.data ?? []) as TarefaRow[]);
-    setLoading(false);
-  }, []);
+        .limit(200);
+      if (r.error) throw r.error;
+      return (r.data ?? []) as TarefaRow[];
+    },
+  });
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // ---------- Agregações ----------
+  const agg = useMemo(() => {
+    const rows = lanc.data ?? [];
+    const inicioMes = periodo.inicioMes;
+    const isMesAtual = (d: string) => d >= inicioMes;
+    const isMesAnt = (d: string) => d >= periodo.inicioMesAnt && d < periodo.fimMesAnt;
 
-  const executarMotor = async () => {
-    setRunning(true);
-    const { error } = await supabase.rpc("executar_regras");
-    setRunning(false);
-    if (error) {
-      toast.error("Falha ao rodar motor: " + error.message);
-      return;
-    }
-    toast.success("Motor de regras executado.");
-    await load();
-  };
+    const sum = (rs: LancamentoRow[]) =>
+      rs.reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
 
-  const counts = useMemo(() => {
-    const criticos = alertas.filter((a) => a.severidade === "critical" && a.status === "aberto").length;
-    const warns = alertas.filter((a) => a.severidade === "warn" && a.status === "aberto").length;
-    const hojeAlertas = alertas.filter((a) => a.status === "aberto");
-    const aguardando = alertas.filter((a) => a.status === "ack" || a.status === "snoozed");
-    const tarefasAtrasadas = tarefas.filter(
-      (t) => t.prazo && new Date(t.prazo) < new Date(),
+    const recMes = sum(rows.filter((r) => r.tipo === "Receita" && isMesAtual(r.data)));
+    const despMes = sum(rows.filter((r) => r.tipo === "Despesa" && isMesAtual(r.data)));
+    const recAnt = sum(rows.filter((r) => r.tipo === "Receita" && isMesAnt(r.data)));
+    const despAnt = sum(rows.filter((r) => r.tipo === "Despesa" && isMesAnt(r.data)));
+
+    const margem = recMes > 0 ? ((recMes - despMes) / recMes) * 100 : 0;
+    const margemAnt = recAnt > 0 ? ((recAnt - despAnt) / recAnt) * 100 : 0;
+
+    const trendReceita = recAnt > 0 ? (recMes - recAnt) / recAnt : null;
+    const trendDespesa = despAnt > 0 ? (despMes - despAnt) / despAnt : null;
+    const trendMargem = margemAnt !== 0 ? (margem - margemAnt) / Math.abs(margemAnt) : null;
+
+    // Dinheiro parado: receitas com status aberto/pendente + receitas não revisadas
+    const dinheiroParado = sum(
+      rows.filter(
+        (r) =>
+          r.tipo === "Receita" &&
+          (!r.revisado ||
+            (r.status &&
+              ["aberto", "pendente", "em aberto", "atrasado"].some((s) =>
+                (r.status ?? "").toLowerCase().includes(s),
+              ))),
+      ),
     );
-    const followup = tarefas.filter((t) => t.responsavel_id === user.id);
-    return { criticos, warns, hojeAlertas, aguardando, tarefasAtrasadas, followup };
-  }, [alertas, tarefas, user.id]);
 
-  const ackAlerta = async (id: number) => {
-    setAlertas((prev) => prev.map((a) => (a.id === id ? { ...a, status: "ack" } : a)));
-    const { error } = await supabase.rpc("ack_alerta", { _id: id });
-    if (error) {
-      toast.error(error.message);
-      void load();
+    // Resultado por empresa (mês atual)
+    const porEmpresa = new Map<number, { rec: number; desp: number }>();
+    for (const r of rows.filter((r) => isMesAtual(r.data))) {
+      const e = porEmpresa.get(r.empresa_id) ?? { rec: 0, desp: 0 };
+      const v = Math.abs(Number(r.valor) || 0);
+      if (r.tipo === "Receita") e.rec += v;
+      else e.desp += v;
+      porEmpresa.set(r.empresa_id, e);
     }
-  };
 
-  const resolverAlerta = async (id: number) => {
-    setAlertas((prev) => prev.filter((a) => a.id !== id));
-    const { error } = await supabase.rpc("resolver_alerta", { _id: id });
-    if (error) {
-      toast.error(error.message);
-      void load();
-    }
-  };
+    return {
+      recMes,
+      despMes,
+      margem,
+      dinheiroParado,
+      trendReceita,
+      trendDespesa,
+      trendMargem,
+      porEmpresa,
+    };
+  }, [lanc.data, periodo]);
 
-  const snoozeAlerta = async (id: number, horas: number) => {
-    setAlertas((prev) => prev.map((a) => (a.id === id ? { ...a, status: "snoozed" } : a)));
-    const { error } = await supabase.rpc("snooze_alerta", { _id: id, _horas: horas });
-    if (error) {
-      toast.error(error.message);
-      void load();
-    }
-  };
+  const criticos = (alertasQ.data ?? []).filter(
+    (a) => a.severidade === "critical" && a.status === "aberto",
+  );
+  const exigeAtencao: UnifiedItem[] = useMemo(() => {
+    const al = (alertasQ.data ?? [])
+      .filter((a) => a.severidade !== "info" && a.status !== "snoozed")
+      .slice(0, 5)
+      .map((a) => ({ kind: "alerta" as const, data: a }));
+    const tr = (tarefasQ.data ?? [])
+      .filter(
+        (t) =>
+          t.prioridade === "urgente" ||
+          t.prioridade === "alta" ||
+          (t.prazo && new Date(t.prazo).getTime() < Date.now()),
+      )
+      .slice(0, 5)
+      .map((t) => ({ kind: "tarefa" as const, data: t }));
+    return [...al, ...tr].slice(0, 7);
+  }, [alertasQ.data, tarefasQ.data]);
 
-  const concluirTarefa = async (id: number) => {
-    setTarefas((prev) => prev.filter((t) => t.id !== id));
-    const { error } = await supabase.rpc("concluir_tarefa", { _id: id });
-    if (error) {
-      toast.error(error.message);
-      void load();
-    }
-  };
+  // ---------- Mutations ----------
+  const ack = useMutation({
+    mutationFn: async ({ id, action }: { id: number; action: "resolver" | "snooze" }) => {
+      const fn = action === "resolver" ? "resolver_alerta" : "snooze_alerta";
+      const params = action === "snooze" ? { _id: id, _horas: 24 } : { _id: id };
+      const r = await supabase.rpc(fn, params);
+      if (r.error) throw r.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["central"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const concluir = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await supabase.rpc("concluir_tarefa", { _id: id });
+      if (r.error) throw r.error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["central"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const motor = useMutation({
+    mutationFn: async () => {
+      const r = await supabase.rpc("executar_regras");
+      if (r.error) throw r.error;
+    },
+    onSuccess: () => {
+      toast.success("Motor de regras executado");
+      qc.invalidateQueries({ queryKey: ["central"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // ---------- Render ----------
+  const loading = lanc.isLoading || alertasQ.isLoading || tarefasQ.isLoading;
 
   return (
-    <div className="mx-auto max-w-5xl p-3 sm:p-6 space-y-4">
-      <header className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-            Olá, {user.nome ?? user.email?.split("@")[0]}
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
-          </p>
+    <PageShell
+      title={`Olá, ${user.nome?.split(" ")[0] ?? user.email?.split("@")[0]}`}
+      description={new Date().toLocaleDateString("pt-BR", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+      })}
+      actions={
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => motor.mutate()}
+          disabled={motor.isPending}
+        >
+          {motor.isPending ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-2" />
+          )}
+          Rodar motor
+        </Button>
+      }
+    >
+      {/* ===== Saúde do Grupo ===== */}
+      <section>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <KpiCard
+            label="Receita do mês"
+            value={formatBRL(agg.recMes)}
+            trend={agg.trendReceita}
+            status={agg.recMes > 0 ? "ok" : "neutral"}
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
+          <KpiCard
+            label="Despesas do mês"
+            value={formatBRL(agg.despMes)}
+            trend={agg.trendDespesa != null ? -agg.trendDespesa : null}
+            status={agg.despMes > agg.recMes ? "atencao" : "neutral"}
+            icon={<TrendingDown className="h-4 w-4" />}
+          />
+          <KpiCard
+            label="Margem"
+            value={`${agg.margem.toFixed(1)}%`}
+            trend={agg.trendMargem}
+            status={agg.margem >= 20 ? "ok" : agg.margem >= 0 ? "atencao" : "critico"}
+          />
+          <KpiCard
+            label="Dinheiro parado"
+            value={formatBRL(agg.dinheiroParado)}
+            hint="Receitas abertas / não revisadas"
+            status={agg.dinheiroParado > 0 ? "atencao" : "ok"}
+            icon={<Wallet className="h-4 w-4" />}
+          />
+          <KpiCard
+            label="Items críticos"
+            value={criticos.length}
+            hint={`${tarefasQ.data?.filter((t) => t.prazo && new Date(t.prazo) < new Date()).length ?? 0} tarefas atrasadas`}
+            status={criticos.length > 0 ? "critico" : "ok"}
+            icon={<AlertTriangle className="h-4 w-4" />}
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => void load()}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          </Button>
-          <Button size="sm" onClick={() => void executarMotor()} disabled={running}>
-            {running ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            Rodar motor
-          </Button>
-        </div>
-      </header>
+      </section>
 
-      {/* Resumo numérico */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <SummaryCard label="Críticos" value={counts.criticos} color="bg-destructive/10 text-destructive" icon={<AlertTriangle className="h-4 w-4" />} />
-        <SummaryCard label="Atenção" value={counts.warns} color="bg-amber-500/10 text-amber-700 dark:text-amber-400" icon={<AlertTriangle className="h-4 w-4" />} />
-        <SummaryCard label="Tarefas atrasadas" value={counts.tarefasAtrasadas.length} color="bg-orange-500/10 text-orange-600" icon={<Clock className="h-4 w-4" />} />
-        <SummaryCard label="Minhas tarefas" value={counts.followup.length} color="bg-primary/10 text-primary" icon={<Inbox className="h-4 w-4" />} />
+      {/* ===== Exige minha atenção + Hoje ===== */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        <section className="lg:col-span-2">
+          <SectionHeader
+            title="Exige minha atenção"
+            description="Alertas críticos e tarefas urgentes do dia"
+            action={
+              <Link to="/hoje" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+                Ver tudo <ArrowRight className="h-3 w-3" />
+              </Link>
+            }
+          />
+          {loading && exigeAtencao.length === 0 ? (
+            <SkeletonItems />
+          ) : exigeAtencao.length === 0 ? (
+            <EmptyState
+              title="Tudo sob controle"
+              description="Nenhum alerta crítico ou tarefa urgente no momento."
+              action={
+                <Button size="sm" variant="outline" onClick={() => drawer.open()}>
+                  <Plus className="h-4 w-4 mr-1" /> Criar Item
+                </Button>
+              }
+            />
+          ) : (
+            <div className="space-y-2">
+              {exigeAtencao.map((it) => (
+                <ItemCard
+                  key={`${it.kind}-${it.data.id}`}
+                  item={it}
+                  onResolver={(id) => ack.mutate({ id, action: "resolver" })}
+                  onSnooze={(id) => ack.mutate({ id, action: "snooze" })}
+                  onConcluir={(id) => concluir.mutate(id)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Dinheiro parado breakdown */}
+        <section>
+          <SectionHeader
+            title="Dinheiro parado"
+            description="Receitas em aberto + não revisadas"
+          />
+          <div
+            className="rounded-2xl bg-card p-5 ring-1 ring-white/5"
+            style={{ boxShadow: "var(--shadow-elegant)" }}
+          >
+            <div className="text-3xl font-semibold tabular tracking-tight">
+              {formatBRL(agg.dinheiroParado)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Some o que ainda não virou caixa: receitas em aberto, lançamentos pendentes de revisão.
+            </p>
+            <div className="mt-4 grid gap-2 text-xs">
+              <Link
+                to="/a-revisar"
+                className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 hover:bg-muted/60 transition"
+              >
+                <span>Lançamentos a revisar</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                to="/razao"
+                className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 hover:bg-muted/60 transition"
+              >
+                <span>Ver razão completo</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <CategoriaPeriodoBreakdown />
-
-      <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
-        <TabsList className="w-full grid grid-cols-5 h-auto">
-          <TabsTrigger value="hoje" className="text-xs sm:text-sm">Hoje</TabsTrigger>
-          <TabsTrigger value="aguardando" className="text-xs sm:text-sm">Aguardando</TabsTrigger>
-          <TabsTrigger value="travado" className="text-xs sm:text-sm">Travado</TabsTrigger>
-          <TabsTrigger value="oportunidades" className="text-xs sm:text-sm">Oport.</TabsTrigger>
-          <TabsTrigger value="followup" className="text-xs sm:text-sm">Follow-up</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="hoje" className="space-y-3 mt-4">
-          <SectionTitle title="Precisa da sua atenção agora" subtitle={`${counts.hojeAlertas.length} alertas abertos`} />
-          {counts.hojeAlertas.length === 0 && !loading && <EmptyState text="Tudo tranquilo. Nenhum alerta aberto." />}
-          {counts.hojeAlertas.map((a) => (
-            <AlertaCard
-              key={a.id}
-              a={a}
-              onAck={() => ackAlerta(a.id)}
-              onResolver={() => resolverAlerta(a.id)}
-              onSnooze={() => snoozeAlerta(a.id, 24)}
-            />
-          ))}
-
-          <SectionTitle title="Tarefas vencendo / atrasadas" subtitle={`${counts.tarefasAtrasadas.length}`} />
-          {counts.tarefasAtrasadas.length === 0 && !loading && <EmptyState text="Sem tarefas em atraso." />}
-          {counts.tarefasAtrasadas.map((t) => (
-            <TarefaCard key={t.id} t={t} onConcluir={() => concluirTarefa(t.id)} />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="aguardando" className="space-y-3 mt-4">
-          <SectionTitle title="Reconhecidos / em snooze" subtitle={`${counts.aguardando.length}`} />
-          {counts.aguardando.length === 0 && !loading && <EmptyState text="Nada aguardando." />}
-          {counts.aguardando.map((a) => (
-            <AlertaCard
-              key={a.id}
-              a={a}
-              onAck={() => ackAlerta(a.id)}
-              onResolver={() => resolverAlerta(a.id)}
-              onSnooze={() => snoozeAlerta(a.id, 24)}
-            />
-          ))}
-        </TabsContent>
-
-        <TabsContent value="travado" className="space-y-3 mt-4">
-          <SectionTitle title="Possíveis gargalos" subtitle="Tarefas em 'aguardando' há tempo" />
-          {tarefas.filter((t) => t.status === "aguardando").length === 0 && (
-            <EmptyState text="Sem tarefas travadas." />
-          )}
-          {tarefas
-            .filter((t) => t.status === "aguardando")
-            .map((t) => (
-              <TarefaCard key={t.id} t={t} onConcluir={() => concluirTarefa(t.id)} />
-            ))}
-        </TabsContent>
-
-        <TabsContent value="oportunidades" className="space-y-3 mt-4">
-          <SectionTitle title="Oportunidades detectadas" subtitle="Em construção" />
-          <EmptyState text="Detector de oportunidades chega na próxima fase (cross-empresa)." />
-        </TabsContent>
-
-        <TabsContent value="followup" className="space-y-3 mt-4">
-          <SectionTitle title="Suas tarefas" subtitle={`${counts.followup.length}`} />
-          {counts.followup.length === 0 && !loading && <EmptyState text="Sem tarefas atribuídas a você." />}
-          {counts.followup.map((t) => (
-            <TarefaCard key={t.id} t={t} onConcluir={() => concluirTarefa(t.id)} />
-          ))}
-        </TabsContent>
-      </Tabs>
-
-      <footer className="text-xs text-muted-foreground pt-2">
-        <Link to="/razao" className="underline">Ir para o Razão</Link>
-      </footer>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: React.ReactNode }) {
-  return (
-    <Card>
-      <CardContent className="p-3">
-        <div className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ${color}`}>
-          {icon}
-          {label}
+      {/* ===== Empresas ===== */}
+      <section>
+        <SectionHeader
+          title="Empresas do grupo"
+          description="Receita / margem / items abertos por empresa neste mês"
+          action={
+            <Link to="/empresas" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+              Ver todas <ArrowRight className="h-3 w-3" />
+            </Link>
+          }
+        />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {(empresas.data ?? []).map((e) => {
+            const a = agg.porEmpresa.get(e.id) ?? { rec: 0, desp: 0 };
+            const margem = a.rec > 0 ? ((a.rec - a.desp) / a.rec) * 100 : 0;
+            const itensEmpresa =
+              (alertasQ.data ?? []).filter((al) => al.empresa_id === e.id && al.status === "aberto").length +
+              (tarefasQ.data ?? []).filter((t) => t.empresa_id === e.id).length;
+            const score = computeScore({ margem, hasReceita: a.rec > 0, items: itensEmpresa });
+            return (
+              <Link
+                key={e.id}
+                to="/empresas/$id"
+                params={{ id: String(e.id) }}
+                className="rounded-2xl bg-card p-4 ring-1 ring-white/5 hover:ring-primary/30 transition"
+                style={{ boxShadow: "var(--shadow-elegant)" }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">{e.nome}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {itensEmpresa} item{itensEmpresa === 1 ? "" : "s"} aberto{itensEmpresa === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                  </div>
+                  <ScoreBadge score={score} />
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                  <Stat label="Receita" value={formatBRL(a.rec)} tone="success" />
+                  <Stat label="Despesa" value={formatBRL(a.desp)} tone="muted" />
+                  <Stat
+                    label="Margem"
+                    value={a.rec > 0 ? `${margem.toFixed(0)}%` : "—"}
+                    tone={margem >= 20 ? "success" : margem >= 0 ? "warning" : "danger"}
+                  />
+                </div>
+              </Link>
+            );
+          })}
         </div>
-        <div className="mt-2 text-2xl font-semibold">{value}</div>
-      </CardContent>
-    </Card>
+      </section>
+    </PageShell>
   );
 }
 
-function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="flex items-baseline justify-between pt-2">
-      <h2 className="text-sm font-medium">{title}</h2>
-      {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-      {text}
-    </div>
-  );
-}
-
-function AlertaCard({
-  a,
-  onAck,
-  onResolver,
-  onSnooze,
+function computeScore({
+  margem,
+  hasReceita,
+  items,
 }: {
-  a: AlertaRow;
-  onAck: () => void;
-  onResolver: () => void;
-  onSnooze: () => void;
-}) {
+  margem: number;
+  hasReceita: boolean;
+  items: number;
+}): number {
+  if (!hasReceita) return 50;
+  let s = 50;
+  s += Math.min(35, Math.max(-35, margem)); // margem ± 35
+  s -= Math.min(20, items * 2); // 2 pts por item aberto, máx -20
+  return Math.max(0, Math.min(100, Math.round(s)));
+}
+
+function ScoreBadge({ score }: { score: number }) {
+  const tone =
+    score >= 70 ? "text-success" : score >= 40 ? "text-warning" : "text-destructive";
   return (
-    <Card>
-      <CardContent className="p-3 space-y-2">
-        <div className="flex items-start gap-2">
-          <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${severityDot(a.severidade)}`} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-medium leading-tight">{a.titulo}</h3>
-              <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 ${severityColor(a.severidade)}`}>
-                {a.severidade}
-              </Badge>
-              {a.status !== "aberto" && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {a.status}
-                </Badge>
-              )}
-            </div>
-            {a.descricao && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{a.descricao}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 pt-1">
-          {a.status === "aberto" && (
-            <Button size="sm" variant="ghost" onClick={onAck}>
-              <Play className="h-3.5 w-3.5 mr-1" /> Ver
-            </Button>
-          )}
-          <Button size="sm" variant="ghost" onClick={onSnooze}>
-            <Pause className="h-3.5 w-3.5 mr-1" /> 24h
-          </Button>
-          <Button size="sm" variant="default" onClick={onResolver}>
-            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Resolver
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="text-right">
+      <div className={`text-xl font-bold tabular ${tone}`}>{score}</div>
+      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">score</div>
+    </div>
   );
 }
 
-function TarefaCard({ t, onConcluir }: { t: TarefaRow; onConcluir: () => void }) {
-  const overdue = t.prazo && new Date(t.prazo) < new Date();
+function Stat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "success" | "warning" | "danger" | "muted";
+}) {
+  const cls = {
+    success: "text-success",
+    warning: "text-warning",
+    danger: "text-destructive",
+    muted: "text-foreground",
+  }[tone];
   return (
-    <Card>
-      <CardContent className="p-3 space-y-2">
-        <div className="flex items-start gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-sm font-medium leading-tight">{t.titulo}</h3>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t.prioridade}</Badge>
-              {overdue && <Badge className="text-[10px] px-1.5 py-0 bg-destructive">atrasada</Badge>}
-            </div>
-            {t.descricao && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{t.descricao}</p>
-            )}
-            {t.prazo && (
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Prazo: {new Date(t.prazo).toLocaleDateString("pt-BR")}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Button size="sm" onClick={onConcluir}>
-            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Concluir
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-lg bg-muted/40 px-2 py-1.5">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className={`text-xs font-semibold tabular truncate ${cls}`}>{value}</div>
+    </div>
+  );
+}
+
+function SkeletonItems() {
+  return (
+    <div className="space-y-2">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="rounded-xl bg-card p-3 ring-1 ring-white/5 animate-pulse h-16" />
+      ))}
+    </div>
   );
 }

@@ -17,6 +17,7 @@ import { Route as AuthenticatedStoneRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRazaoRouteImport } from './routes/_authenticated/razao'
 import { Route as AuthenticatedLancarRouteImport } from './routes/_authenticated/lancar'
 import { Route as AuthenticatedImportacoesRouteImport } from './routes/_authenticated/importacoes'
+import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 
 const LoginRoute = LoginRouteImport.update({
@@ -59,6 +60,11 @@ const AuthenticatedImportacoesRoute =
     path: '/importacoes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedHojeRoute = AuthenticatedHojeRouteImport.update({
+  id: '/hoje',
+  path: '/hoje',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedARevisarRoute = AuthenticatedARevisarRouteImport.update({
   id: '/a-revisar',
   path: '/a-revisar',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
+  '/hoje': typeof AuthenticatedHojeRoute
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
+  '/hoje': typeof AuthenticatedHojeRoute
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
+  '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/importacoes': typeof AuthenticatedImportacoesRoute
   '/_authenticated/lancar': typeof AuthenticatedLancarRoute
   '/_authenticated/razao': typeof AuthenticatedRazaoRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/a-revisar'
+    | '/hoje'
     | '/importacoes'
     | '/lancar'
     | '/razao'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/a-revisar'
+    | '/hoje'
     | '/importacoes'
     | '/lancar'
     | '/razao'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/a-revisar'
+    | '/_authenticated/hoje'
     | '/_authenticated/importacoes'
     | '/_authenticated/lancar'
     | '/_authenticated/razao'
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImportacoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/hoje': {
+      id: '/_authenticated/hoje'
+      path: '/hoje'
+      fullPath: '/hoje'
+      preLoaderRoute: typeof AuthenticatedHojeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/a-revisar': {
       id: '/_authenticated/a-revisar'
       path: '/a-revisar'
@@ -206,6 +225,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
+  AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedImportacoesRoute: typeof AuthenticatedImportacoesRoute
   AuthenticatedLancarRoute: typeof AuthenticatedLancarRoute
   AuthenticatedRazaoRoute: typeof AuthenticatedRazaoRoute
@@ -216,6 +236,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedARevisarRoute: AuthenticatedARevisarRoute,
+  AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedImportacoesRoute: AuthenticatedImportacoesRoute,
   AuthenticatedLancarRoute: AuthenticatedLancarRoute,
   AuthenticatedRazaoRoute: AuthenticatedRazaoRoute,
@@ -235,3 +256,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
