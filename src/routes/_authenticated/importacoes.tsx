@@ -47,11 +47,8 @@ function ImportacoesPage() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [summary, setSummary] = useState<{ inseridos: number; ignorados: number } | null>(null);
 
-  useEffect(() => {
-    if (!podeImportar(user)) void navigate({ to: "/" });
-  }, [user, navigate]);
-  if (!podeImportar(user)) return null;
-
+  // Todos os hooks (useQuery/useMutation) precisam ser chamados ANTES de
+  // qualquer return condicional — o guard de permissão fica mais abaixo.
   const historico = useQuery({
     queryKey: ["importacoes"],
     queryFn: async () => {
@@ -60,6 +57,10 @@ function ImportacoesPage() {
       return asRows("importacoes", r.data);
     },
   });
+
+  useEffect(() => {
+    if (!podeImportar(user)) void navigate({ to: "/" });
+  }, [user, navigate]);
 
   function handleParse(f: File) {
     setFile(f);
@@ -83,7 +84,10 @@ function ImportacoesPage() {
             }
             const arquivo_origem = (row["arquivo_origem"] ?? f.name).trim() || f.name;
             const aba_origem = (row["aba_origem"] ?? "").trim() || null;
-            const linha_origem = Number(row["linha_origem"] ?? linhaCsv);
+            // `??` não captura string vazia: se a coluna existe mas vem "",
+            // precisa cair no número da linha do CSV em vez de virar 0.
+            const linhaOrigemRaw = String(row["linha_origem"] ?? "").trim();
+            const linha_origem = linhaOrigemRaw ? Number(linhaOrigemRaw) : linhaCsv;
             const descricao = (row["descricao"] ?? "").trim() || null;
             const csvRow: CsvRow = {
               data,
@@ -187,6 +191,9 @@ function ImportacoesPage() {
     },
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro na importação"),
   });
+
+  // Guard de permissão: depois de TODOS os hooks (rules of hooks).
+  if (!podeImportar(user)) return null;
 
   return (
     <div className="p-6 space-y-4">

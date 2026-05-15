@@ -146,6 +146,12 @@ create policy lancamentos_update on public.lancamentos
       (revisado = false and exists (select 1 from public.current_user_perms() p where p.pode_editar_normal))
       or
       (revisado = true  and exists (select 1 from public.current_user_perms() p where p.pode_editar_revisado))
+      or
+      -- Quem pode marcar revisado consegue alternar o flag (marcar/desmarcar)
+      -- mesmo sem pode_editar_normal/revisado. O app só expõe o toggle do
+      -- campo `revisado` para esse papel; se precisar de garantia a nível de
+      -- coluna no banco, troque por uma função SECURITY DEFINER dedicada.
+      exists (select 1 from public.current_user_perms() p where p.pode_marcar_revisado)
     )
   )
   with check (
