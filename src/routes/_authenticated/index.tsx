@@ -173,6 +173,8 @@ function Cockpit() {
         <SummaryCard label="Minhas tarefas" value={counts.followup.length} color="bg-primary/10 text-primary" icon={<Inbox className="h-4 w-4" />} />
       </div>
 
+      <CategoriaPeriodoBreakdown />
+
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
         <TabsList className="w-full grid grid-cols-5 h-auto">
           <TabsTrigger value="hoje" className="text-xs sm:text-sm">Hoje</TabsTrigger>
