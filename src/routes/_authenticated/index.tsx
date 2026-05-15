@@ -1,67 +1,140 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { from, asRows } from "@/integrations/supabase/db";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { useEmpresas } from "@/hooks/use-refs";
-import { useItemDrawer } from "@/components/bj7/ItemDrawer";
-import type { AlertaRow, TarefaRow, LancamentoRow } from "@/integrations/supabase/database";
+import type { LancamentoRow } from "@/integrations/supabase/database";
 import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
-import { ItemCard, type UnifiedItem } from "@/components/bj7/ItemCard";
-import { EmptyState } from "@/components/bj7/EmptyState";
 import { Button } from "@/components/ui/button";
-import { formatBRL } from "@/lib/format";
 import {
-  AlertTriangle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import { formatBRL, MESES_PT } from "@/lib/format";
+import {
+  ArrowRight,
   TrendingUp,
   TrendingDown,
   Wallet,
-  Sparkles,
-  Loader2,
-  ArrowRight,
+  PiggyBank,
+  Percent,
   Building2,
-  Plus,
 } from "lucide-react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/")({
-  component: Central,
+  component: Dashboard,
 });
 
-function startOfMonth(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-function startOfPrevMonth(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth() - 1, 1);
+type PeriodoKey =
+  | "mes_atual"
+  | "mes_anterior"
+  | "ult_3m"
+  | "ult_6m"
+  | "ult_12m"
+  | "ano_atual";
+
+const PERIODOS: { key: PeriodoKey; label: string }[] = [
+  { key: "mes_atual", label: "Mês atual" },
+  { key: "mes_anterior", label: "Mês anterior" },
+  { key: "ult_3m", label: "Últimos 3 meses" },
+  { key: "ult_6m", label: "Últimos 6 meses" },
+  { key: "ult_12m", label: "Últimos 12 meses" },
+  { key: "ano_atual", label: "Ano atual" },
+];
+
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
 }
 
-function Central() {
+function rangesFor(p: PeriodoKey): {
+  start: string;
+  end: string;
+  startPrev: string;
+  endPrev: string;
+} {
+  const hoje = new Date();
+  const y = hoje.getFullYear();
+  const m = hoje.getMonth();
+
+  let start: Date;
+  let end: Date;
+
+  if (p === "mes_atual") {
+    start = new Date(y, m, 1);
+    end = new Date(y, m + 1, 1);
+  } else if (p === "mes_anterior") {
+    start = new Date(y, m - 1, 1);
+    end = new Date(y, m, 1);
+  } else if (p === "ult_3m") {
+    start = new Date(y, m - 2, 1);
+    end = new Date(y, m + 1, 1);
+  } else if (p === "ult_6m") {
+    start = new Date(y, m - 5, 1);
+    end = new Date(y, m + 1, 1);
+  } else if (p === "ult_12m") {
+    start = new Date(y, m - 11, 1);
+    end = new Date(y, m + 1, 1);
+  } else {
+    start = new Date(y, 0, 1);
+    end = new Date(y + 1, 0, 1);
+  }
+
+  const ms = end.getTime() - start.getTime();
+  const endPrev = new Date(start.getTime());
+  const startPrev = new Date(start.getTime() - ms);
+
+  return {
+    start: isoDate(start),
+    end: isoDate(end),
+    startPrev: isoDate(startPrev),
+    endPrev: isoDate(endPrev),
+  };
+}
+
+type EmpresaAgg = {
+  rec: number;
+  desp: number;
+  recAnt: number;
+  despAnt: number;
+};
+
+function Dashboard() {
   const user = useCurrentUser();
   const empresas = useEmpresas();
-  const drawer = useItemDrawer();
-  const qc = useQueryClient();
+  const [periodoKey, setPeriodoKey] = useState<PeriodoKey>("mes_atual");
 
-  // ---------- Dados ----------
-  const periodo = useMemo(() => {
-    const now = new Date();
-    const inicioMes = startOfMonth(now);
-    const inicioMesAnt = startOfPrevMonth(now);
-    return {
-      inicioMes: inicioMes.toISOString().slice(0, 10),
-      inicioMesAnt: inicioMesAnt.toISOString().slice(0, 10),
-      fimMesAnt: inicioMes.toISOString().slice(0, 10),
-      // fim aberto = futuro
-    };
-  }, []);
+  const periodo = useMemo(() => rangesFor(periodoKey), [periodoKey]);
 
-  const lanc = useQuery({
-    queryKey: ["central", "lancamentos", periodo.inicioMesAnt, user.id],
+  const lancAtualQ = useQuery({
+    queryKey: ["dash", "atual", periodoKey, user.id],
     queryFn: async () => {
       let q = from("lancamentos")
-        .select("id,data,empresa_id,tipo,valor,contar_no_total,status,revisado,categoria_id")
-        .gte("data", periodo.inicioMesAnt)
+        .select("id,data,empresa_id,tipo,valor,contar_no_total")
+        .gte("data", periodo.start)
+        .lt("data", periodo.end)
         .eq("contar_no_total", true)
         .in("tipo", ["Receita", "Despesa"]);
       if (!user.ve_todas_empresas) {
@@ -74,403 +147,448 @@ function Central() {
     },
   });
 
-  const alertasQ = useQuery({
-    queryKey: ["central", "alertas"],
+  const lancAntQ = useQuery({
+    queryKey: ["dash", "ant", periodoKey, user.id],
     queryFn: async () => {
-      const r = await supabase
-        .from("alertas")
-        .select("*")
-        .in("status", ["aberto", "ack"])
-        .order("severidade", { ascending: false })
-        .order("criado_em", { ascending: false })
-        .limit(100);
+      let q = from("lancamentos")
+        .select("id,data,empresa_id,tipo,valor,contar_no_total")
+        .gte("data", periodo.startPrev)
+        .lt("data", periodo.endPrev)
+        .eq("contar_no_total", true)
+        .in("tipo", ["Receita", "Despesa"]);
+      if (!user.ve_todas_empresas) {
+        if (user.empresas_ids.length === 0) return [];
+        q = q.in("empresa_id", user.empresas_ids);
+      }
+      const r = await q.limit(50000);
       if (r.error) throw r.error;
-      return (r.data ?? []) as AlertaRow[];
+      return asRows("lancamentos", r.data);
     },
   });
 
-  const tarefasQ = useQuery({
-    queryKey: ["central", "tarefas"],
+  const lanc12mQ = useQuery({
+    queryKey: ["dash", "evolucao12m", user.id],
     queryFn: async () => {
-      const r = await supabase
-        .from("tarefas")
-        .select("*")
-        .in("status", ["aberta", "em_andamento", "aguardando"])
-        .order("prioridade", { ascending: false })
-        .order("prazo", { ascending: true, nullsFirst: false })
-        .limit(200);
+      const hoje = new Date();
+      const start = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
+      let q = from("lancamentos")
+        .select("data,empresa_id,tipo,valor,contar_no_total")
+        .gte("data", isoDate(start))
+        .eq("contar_no_total", true)
+        .in("tipo", ["Receita", "Despesa"]);
+      if (!user.ve_todas_empresas) {
+        if (user.empresas_ids.length === 0) return [];
+        q = q.in("empresa_id", user.empresas_ids);
+      }
+      const r = await q.limit(100000);
       if (r.error) throw r.error;
-      return (r.data ?? []) as TarefaRow[];
+      return asRows("lancamentos", r.data);
     },
   });
 
-  // ---------- Agregações ----------
-  const agg = useMemo(() => {
-    const rows = lanc.data ?? [];
-    const inicioMes = periodo.inicioMes;
-    const isMesAtual = (d: string) => d >= inicioMes;
-    const isMesAnt = (d: string) => d >= periodo.inicioMesAnt && d < periodo.fimMesAnt;
+  const consolidado = useMemo(() => {
+    const rows = (lancAtualQ.data ?? []) as LancamentoRow[];
+    const rowsAnt = (lancAntQ.data ?? []) as LancamentoRow[];
+    const sum = (rs: LancamentoRow[], tipo: string) =>
+      rs
+        .filter((r) => r.tipo === tipo)
+        .reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
 
-    const sum = (rs: LancamentoRow[]) =>
-      rs.reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
+    const rec = sum(rows, "Receita");
+    const desp = sum(rows, "Despesa");
+    const lucro = rec - desp;
+    const margem = rec > 0 ? (lucro / rec) * 100 : 0;
 
-    const recMes = sum(rows.filter((r) => r.tipo === "Receita" && isMesAtual(r.data)));
-    const despMes = sum(rows.filter((r) => r.tipo === "Despesa" && isMesAtual(r.data)));
-    const recAnt = sum(rows.filter((r) => r.tipo === "Receita" && isMesAnt(r.data)));
-    const despAnt = sum(rows.filter((r) => r.tipo === "Despesa" && isMesAnt(r.data)));
+    const recAnt = sum(rowsAnt, "Receita");
+    const despAnt = sum(rowsAnt, "Despesa");
+    const lucroAnt = recAnt - despAnt;
+    const margemAnt = recAnt > 0 ? (lucroAnt / recAnt) * 100 : 0;
 
-    const margem = recMes > 0 ? ((recMes - despMes) / recMes) * 100 : 0;
-    const margemAnt = recAnt > 0 ? ((recAnt - despAnt) / recAnt) * 100 : 0;
-
-    const trendReceita = recAnt > 0 ? (recMes - recAnt) / recAnt : null;
-    const trendDespesa = despAnt > 0 ? (despMes - despAnt) / despAnt : null;
-    const trendMargem = margemAnt !== 0 ? (margem - margemAnt) / Math.abs(margemAnt) : null;
-
-    // Dinheiro parado: receitas com status aberto/pendente + receitas não revisadas
-    const dinheiroParado = sum(
-      rows.filter(
-        (r) =>
-          r.tipo === "Receita" &&
-          (!r.revisado ||
-            (r.status &&
-              ["aberto", "pendente", "em aberto", "atrasado"].some((s) =>
-                (r.status ?? "").toLowerCase().includes(s),
-              ))),
-      ),
-    );
-
-    // Resultado por empresa (mês atual)
-    const porEmpresa = new Map<number, { rec: number; desp: number }>();
-    for (const r of rows.filter((r) => isMesAtual(r.data))) {
-      const e = porEmpresa.get(r.empresa_id) ?? { rec: 0, desp: 0 };
-      const v = Math.abs(Number(r.valor) || 0);
-      if (r.tipo === "Receita") e.rec += v;
-      else e.desp += v;
-      porEmpresa.set(r.empresa_id, e);
-    }
+    const tr = (cur: number, ant: number) =>
+      ant > 0 ? (cur - ant) / ant : null;
 
     return {
-      recMes,
-      despMes,
+      rec,
+      desp,
+      lucro,
       margem,
-      dinheiroParado,
-      trendReceita,
-      trendDespesa,
-      trendMargem,
-      porEmpresa,
+      recAnt,
+      despAnt,
+      lucroAnt,
+      margemAnt,
+      trendRec: tr(rec, recAnt),
+      trendDesp: tr(desp, despAnt),
+      trendLucro: tr(lucro, lucroAnt),
+      trendMargemPp: margem - margemAnt,
     };
-  }, [lanc.data, periodo]);
+  }, [lancAtualQ.data, lancAntQ.data]);
 
-  const criticos = (alertasQ.data ?? []).filter(
-    (a) => a.severidade === "critical" && a.status === "aberto",
-  );
-  const exigeAtencao: UnifiedItem[] = useMemo(() => {
-    const al = (alertasQ.data ?? [])
-      .filter((a) => a.severidade !== "info" && a.status !== "snoozed")
-      .slice(0, 5)
-      .map((a) => ({ kind: "alerta" as const, data: a }));
-    const tr = (tarefasQ.data ?? [])
-      .filter(
-        (t) =>
-          t.prioridade === "urgente" ||
-          t.prioridade === "alta" ||
-          (t.prazo && new Date(t.prazo).getTime() < Date.now()),
-      )
-      .slice(0, 5)
-      .map((t) => ({ kind: "tarefa" as const, data: t }));
-    return [...al, ...tr].slice(0, 7);
-  }, [alertasQ.data, tarefasQ.data]);
+  const porEmpresa = useMemo(() => {
+    const map = new Map<string | number, EmpresaAgg>();
+    const rows = (lancAtualQ.data ?? []) as LancamentoRow[];
+    const rowsAnt = (lancAntQ.data ?? []) as LancamentoRow[];
+    for (const r of rows) {
+      const key = r.empresa_id as string | number;
+      const cur = map.get(key) ?? { rec: 0, desp: 0, recAnt: 0, despAnt: 0 };
+      const v = Math.abs(Number(r.valor) || 0);
+      if (r.tipo === "Receita") cur.rec += v;
+      else cur.desp += v;
+      map.set(key, cur);
+    }
+    for (const r of rowsAnt) {
+      const key = r.empresa_id as string | number;
+      const cur = map.get(key) ?? { rec: 0, desp: 0, recAnt: 0, despAnt: 0 };
+      const v = Math.abs(Number(r.valor) || 0);
+      if (r.tipo === "Receita") cur.recAnt += v;
+      else cur.despAnt += v;
+      map.set(key, cur);
+    }
 
-  // ---------- Mutations ----------
-  const ack = useMutation({
-    mutationFn: async ({ id, action }: { id: number; action: "resolver" | "snooze" }) => {
-      const fn = action === "resolver" ? "resolver_alerta" : "snooze_alerta";
-      const params = action === "snooze" ? { _id: id, _horas: 24 } : { _id: id };
-      const r = await supabase.rpc(fn, params);
-      if (r.error) throw r.error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["central"] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+    const lista = Array.from(map.entries()).map(([empresa_id, v]) => {
+      const lucro = v.rec - v.desp;
+      const margem = v.rec > 0 ? (lucro / v.rec) * 100 : 0;
+      const lucroAnt = v.recAnt - v.despAnt;
+      const margemAnt = v.recAnt > 0 ? (lucroAnt / v.recAnt) * 100 : 0;
+      const nome =
+        empresas.data?.find((e) => e.id === empresa_id)?.nome ??
+        `#${empresa_id}`;
+      return {
+        empresa_id,
+        nome,
+        rec: v.rec,
+        desp: v.desp,
+        lucro,
+        margem,
+        margemAnt,
+        deltaMargemPp: margem - margemAnt,
+      };
+    });
+    lista.sort((a, b) => b.lucro - a.lucro);
+    return lista;
+  }, [lancAtualQ.data, lancAntQ.data, empresas.data]);
 
-  const concluir = useMutation({
-    mutationFn: async (id: number) => {
-      const r = await supabase.rpc("concluir_tarefa", { _id: id });
-      if (r.error) throw r.error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["central"] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const evolucao = useMemo(() => {
+    const rows = (lanc12mQ.data ?? []) as LancamentoRow[];
+    const buckets = new Map<string, { receita: number; despesa: number }>();
+    const hoje = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      buckets.set(key, { receita: 0, despesa: 0 });
+    }
+    for (const r of rows) {
+      const key = (r.data ?? "").slice(0, 7);
+      const b = buckets.get(key);
+      if (!b) continue;
+      const v = Math.abs(Number(r.valor) || 0);
+      if (r.tipo === "Receita") b.receita += v;
+      else b.despesa += v;
+    }
+    return Array.from(buckets.entries()).map(([key, v]) => {
+      const [y, m] = key.split("-").map(Number);
+      return {
+        mes: `${MESES_PT[m - 1]}/${String(y).slice(2)}`,
+        receita: Math.round(v.receita),
+        despesa: Math.round(v.despesa),
+        lucro: Math.round(v.receita - v.despesa),
+      };
+    });
+  }, [lanc12mQ.data]);
 
-  const motor = useMutation({
-    mutationFn: async () => {
-      const r = await supabase.rpc("executar_regras");
-      if (r.error) throw r.error;
-    },
-    onSuccess: () => {
-      toast.success("Motor de regras executado");
-      qc.invalidateQueries({ queryKey: ["central"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  // ---------- Render ----------
-  const loading = lanc.isLoading || alertasQ.isLoading || tarefasQ.isLoading;
+  const loading = lancAtualQ.isLoading || lancAntQ.isLoading;
+  const labelPeriodo =
+    PERIODOS.find((p) => p.key === periodoKey)?.label ?? "";
 
   return (
     <PageShell
-      title={`Olá, ${user.nome?.split(" ")[0] ?? user.email?.split("@")[0]}`}
-      description={new Date().toLocaleDateString("pt-BR", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-      })}
+      title="Dashboard"
+      description="Consolidado financeiro do Grupo BJ7"
       actions={
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => motor.mutate()}
-          disabled={motor.isPending}
+        <Select
+          value={periodoKey}
+          onValueChange={(v) => setPeriodoKey(v as PeriodoKey)}
         >
-          {motor.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
-          )}
-          Rodar motor
-        </Button>
+          <SelectTrigger className="w-[200px] h-9">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PERIODOS.map((p) => (
+              <SelectItem key={p.key} value={p.key}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       }
     >
-      {/* ===== Saúde do Grupo ===== */}
+      {/* ===== KPIs consolidados ===== */}
       <section>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <SectionHeader
+          title="Consolidado do grupo"
+          description={labelPeriodo}
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
-            label="Receita do mês"
-            value={formatBRL(agg.recMes)}
-            trend={agg.trendReceita}
-            status={agg.recMes > 0 ? "ok" : "neutral"}
+            label="Receita"
+            value={formatBRL(consolidado.rec)}
+            trend={consolidado.trendRec}
+            hint="vs período anterior"
             icon={<TrendingUp className="h-4 w-4" />}
+            status="neutral"
           />
           <KpiCard
-            label="Despesas do mês"
-            value={formatBRL(agg.despMes)}
-            trend={agg.trendDespesa != null ? -agg.trendDespesa : null}
-            status={agg.despMes > agg.recMes ? "atencao" : "neutral"}
+            label="Despesa"
+            value={formatBRL(consolidado.desp)}
+            trend={consolidado.trendDesp}
+            hint="vs período anterior"
             icon={<TrendingDown className="h-4 w-4" />}
+            status={
+              consolidado.trendDesp != null && consolidado.trendDesp > 0.1
+                ? "atencao"
+                : "neutral"
+            }
+          />
+          <KpiCard
+            label="Lucro"
+            value={formatBRL(consolidado.lucro)}
+            trend={consolidado.trendLucro}
+            hint="vs período anterior"
+            icon={<PiggyBank className="h-4 w-4" />}
+            status={consolidado.lucro < 0 ? "critico" : "ok"}
           />
           <KpiCard
             label="Margem"
-            value={`${agg.margem.toFixed(1)}%`}
-            trend={agg.trendMargem}
-            status={agg.margem >= 20 ? "ok" : agg.margem >= 0 ? "atencao" : "critico"}
-          />
-          <KpiCard
-            label="Dinheiro parado"
-            value={formatBRL(agg.dinheiroParado)}
-            hint="Receitas abertas / não revisadas"
-            status={agg.dinheiroParado > 0 ? "atencao" : "ok"}
-            icon={<Wallet className="h-4 w-4" />}
-          />
-          <KpiCard
-            label="Items críticos"
-            value={criticos.length}
-            hint={`${tarefasQ.data?.filter((t) => t.prazo && new Date(t.prazo) < new Date()).length ?? 0} tarefas atrasadas`}
-            status={criticos.length > 0 ? "critico" : "ok"}
-            icon={<AlertTriangle className="h-4 w-4" />}
+            value={
+              consolidado.rec > 0
+                ? `${consolidado.margem.toFixed(1)}%`
+                : "—"
+            }
+            hint={
+              consolidado.rec > 0
+                ? `${consolidado.trendMargemPp >= 0 ? "+" : ""}${consolidado.trendMargemPp.toFixed(1)} pp vs anterior`
+                : undefined
+            }
+            icon={<Percent className="h-4 w-4" />}
+            status={
+              consolidado.margem < 0
+                ? "critico"
+                : consolidado.margem < 10
+                  ? "atencao"
+                  : "ok"
+            }
           />
         </div>
       </section>
 
-      {/* ===== Exige minha atenção + Hoje ===== */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        <section className="lg:col-span-2">
-          <SectionHeader
-            title="Exige minha atenção"
-            description="Alertas críticos e tarefas urgentes do dia"
-            action={
-              <Link to="/hoje" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
-                Ver tudo <ArrowRight className="h-3 w-3" />
-              </Link>
-            }
-          />
-          {loading && exigeAtencao.length === 0 ? (
-            <SkeletonItems />
-          ) : exigeAtencao.length === 0 ? (
-            <EmptyState
-              title="Tudo sob controle"
-              description="Nenhum alerta crítico ou tarefa urgente no momento."
-              action={
-                <Button size="sm" variant="outline" onClick={() => drawer.open()}>
-                  <Plus className="h-4 w-4 mr-1" /> Criar Item
-                </Button>
-              }
-            />
-          ) : (
-            <div className="space-y-2">
-              {exigeAtencao.map((it) => (
-                <ItemCard
-                  key={`${it.kind}-${it.data.id}`}
-                  item={it}
-                  onResolver={(id) => ack.mutate({ id, action: "resolver" })}
-                  onSnooze={(id) => ack.mutate({ id, action: "snooze" })}
-                  onConcluir={(id) => concluir.mutate(id)}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* Dinheiro parado breakdown */}
-        <section>
-          <SectionHeader
-            title="Dinheiro parado"
-            description="Receitas em aberto + não revisadas"
-          />
-          <div
-            className="rounded-2xl bg-card p-5 ring-1 ring-white/5"
-            style={{ boxShadow: "var(--shadow-elegant)" }}
-          >
-            <div className="text-3xl font-semibold tabular tracking-tight">
-              {formatBRL(agg.dinheiroParado)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Some o que ainda não virou caixa: receitas em aberto, lançamentos pendentes de revisão.
-            </p>
-            <div className="mt-4 grid gap-2 text-xs">
-              <Link
-                to="/a-revisar"
-                className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 hover:bg-muted/60 transition"
-              >
-                <span>Lançamentos a revisar</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                to="/razao"
-                className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 hover:bg-muted/60 transition"
-              >
-                <span>Ver razão completo</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* ===== Empresas ===== */}
+      {/* ===== Tabela por empresa ===== */}
       <section>
         <SectionHeader
-          title="Empresas do grupo"
-          description="Receita / margem / items abertos por empresa neste mês"
-          action={
-            <Link to="/empresas" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
-              Ver todas <ArrowRight className="h-3 w-3" />
-            </Link>
-          }
+          title="Por empresa"
+          description="Comparativo de desempenho no período"
         />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {(empresas.data ?? []).map((e) => {
-            const a = agg.porEmpresa.get(e.id) ?? { rec: 0, desp: 0 };
-            const margem = a.rec > 0 ? ((a.rec - a.desp) / a.rec) * 100 : 0;
-            const itensEmpresa =
-              (alertasQ.data ?? []).filter((al) => al.empresa_id === e.id && al.status === "aberto").length +
-              (tarefasQ.data ?? []).filter((t) => t.empresa_id === e.id).length;
-            const score = computeScore({ margem, hasReceita: a.rec > 0, items: itensEmpresa });
-            return (
-              <Link
-                key={e.id}
-                to="/empresas/$id"
-                params={{ id: String(e.id) }}
-                className="rounded-2xl bg-card p-4 ring-1 ring-white/5 hover:ring-primary/30 transition"
-                style={{ boxShadow: "var(--shadow-elegant)" }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold truncate">{e.nome}</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        {itensEmpresa} item{itensEmpresa === 1 ? "" : "s"} aberto{itensEmpresa === 1 ? "" : "s"}
+        <div
+          className="rounded-2xl bg-card ring-1 ring-white/5 overflow-hidden"
+          style={{ boxShadow: "var(--shadow-elegant)" }}
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Empresa</TableHead>
+                <TableHead className="text-right">Receita</TableHead>
+                <TableHead className="text-right">Despesa</TableHead>
+                <TableHead className="text-right">Lucro</TableHead>
+                <TableHead className="text-right">Margem</TableHead>
+                <TableHead className="text-right">vs anterior</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    Carregando...
+                  </TableCell>
+                </TableRow>
+              )}
+              {!loading && porEmpresa.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    Nenhum lançamento no período. Cadastre empresas e use
+                    "Lançar" para começar.
+                  </TableCell>
+                </TableRow>
+              )}
+              {porEmpresa.map((e) => {
+                const margemCor =
+                  e.margem < 0
+                    ? "text-destructive"
+                    : e.margem < 10
+                      ? "text-warning"
+                      : "text-success";
+                const deltaCor =
+                  e.deltaMargemPp > 0.5
+                    ? "text-success"
+                    : e.deltaMargemPp < -0.5
+                      ? "text-destructive"
+                      : "text-muted-foreground";
+                return (
+                  <TableRow key={String(e.empresa_id)}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium">{e.nome}</span>
                       </div>
-                    </div>
-                  </div>
-                  <ScoreBadge score={score} />
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                  <Stat label="Receita" value={formatBRL(a.rec)} tone="success" />
-                  <Stat label="Despesa" value={formatBRL(a.desp)} tone="muted" />
-                  <Stat
-                    label="Margem"
-                    value={a.rec > 0 ? `${margem.toFixed(0)}%` : "—"}
-                    tone={margem >= 20 ? "success" : margem >= 0 ? "warning" : "danger"}
-                  />
-                </div>
-              </Link>
-            );
-          })}
+                    </TableCell>
+                    <TableCell className="text-right tabular">
+                      {formatBRL(e.rec)}
+                    </TableCell>
+                    <TableCell className="text-right tabular">
+                      {formatBRL(e.desp)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right tabular font-medium ${e.lucro < 0 ? "text-destructive" : "text-success"}`}
+                    >
+                      {formatBRL(e.lucro)}
+                    </TableCell>
+                    <TableCell
+                      className={`text-right tabular ${margemCor}`}
+                    >
+                      {e.rec > 0 ? `${e.margem.toFixed(1)}%` : "—"}
+                    </TableCell>
+                    <TableCell className={`text-right tabular ${deltaCor}`}>
+                      {e.rec > 0 && e.margemAnt > 0
+                        ? `${e.deltaMargemPp >= 0 ? "+" : ""}${e.deltaMargemPp.toFixed(1)} pp`
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                      >
+                        <Link
+                          to="/empresas/$id"
+                          params={{ id: String(e.empresa_id) }}
+                        >
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {porEmpresa.length > 0 && (
+                <TableRow className="border-t border-white/10 bg-muted/20 font-semibold">
+                  <TableCell>TOTAL</TableCell>
+                  <TableCell className="text-right tabular">
+                    {formatBRL(consolidado.rec)}
+                  </TableCell>
+                  <TableCell className="text-right tabular">
+                    {formatBRL(consolidado.desp)}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right tabular ${consolidado.lucro < 0 ? "text-destructive" : "text-success"}`}
+                  >
+                    {formatBRL(consolidado.lucro)}
+                  </TableCell>
+                  <TableCell className="text-right tabular">
+                    {consolidado.rec > 0
+                      ? `${consolidado.margem.toFixed(1)}%`
+                      : "—"}
+                  </TableCell>
+                  <TableCell />
+                  <TableCell />
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+
+      {/* ===== Evolução 12 meses ===== */}
+      <section>
+        <SectionHeader
+          title="Evolução — últimos 12 meses"
+          description="Receita, despesa e lucro consolidados do grupo"
+        />
+        <div
+          className="rounded-2xl bg-card ring-1 ring-white/5 p-4"
+          style={{ boxShadow: "var(--shadow-elegant)" }}
+        >
+          <div className="h-[320px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={evolucao}
+                margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                  opacity={0.3}
+                />
+                <XAxis
+                  dataKey="mes"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) =>
+                    new Intl.NumberFormat("pt-BR", {
+                      notation: "compact",
+                      maximumFractionDigits: 1,
+                    }).format(v as number)
+                  }
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  formatter={(value: number) => formatBRL(value)}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line
+                  type="monotone"
+                  dataKey="receita"
+                  name="Receita"
+                  stroke="hsl(var(--success))"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="despesa"
+                  name="Despesa"
+                  stroke="hsl(var(--destructive))"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="lucro"
+                  name="Lucro"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </section>
     </PageShell>
-  );
-}
-
-function computeScore({
-  margem,
-  hasReceita,
-  items,
-}: {
-  margem: number;
-  hasReceita: boolean;
-  items: number;
-}): number {
-  if (!hasReceita) return 50;
-  let s = 50;
-  s += Math.min(35, Math.max(-35, margem)); // margem ± 35
-  s -= Math.min(20, items * 2); // 2 pts por item aberto, máx -20
-  return Math.max(0, Math.min(100, Math.round(s)));
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  const tone =
-    score >= 70 ? "text-success" : score >= 40 ? "text-warning" : "text-destructive";
-  return (
-    <div className="text-right">
-      <div className={`text-xl font-bold tabular ${tone}`}>{score}</div>
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">score</div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "success" | "warning" | "danger" | "muted";
-}) {
-  const cls = {
-    success: "text-success",
-    warning: "text-warning",
-    danger: "text-destructive",
-    muted: "text-foreground",
-  }[tone];
-  return (
-    <div className="rounded-lg bg-muted/40 px-2 py-1.5">
-      <div className="text-[10px] text-muted-foreground">{label}</div>
-      <div className={`text-xs font-semibold tabular truncate ${cls}`}>{value}</div>
-    </div>
-  );
-}
-
-function SkeletonItems() {
-  return (
-    <div className="space-y-2">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-xl bg-card p-3 ring-1 ring-white/5 animate-pulse h-16" />
-      ))}
-    </div>
   );
 }
