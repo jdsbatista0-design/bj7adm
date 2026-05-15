@@ -162,13 +162,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const next = await loadCurrentUser(data.session);
         setState(next);
 
-        if (next.status === "no-record") {
-          return {
-            error:
-              "Login válido, mas seu acesso ainda não está vinculado a um cadastro ativo. Atualize as políticas SQL e vincule o usuário em usuarios.",
-          };
-        }
-
         return {};
       },
       signOut: async () => {
