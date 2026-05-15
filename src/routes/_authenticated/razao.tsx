@@ -188,10 +188,10 @@ function RazaoPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={params.revisado} onValueChange={(v) => update({ revisado: v as typeof params.revisado })}>
+          <Select value={params.revisado || "all"} onValueChange={(v) => update({ revisado: (v === "all" ? "" : v) as typeof params.revisado })}>
             <SelectTrigger><SelectValue placeholder="Revisado" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value=" ">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="sim">Revisados</SelectItem>
               <SelectItem value="nao">Não revisados</SelectItem>
             </SelectContent>
