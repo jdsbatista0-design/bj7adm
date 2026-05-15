@@ -191,6 +191,7 @@ create policy usuarios_select_self on public.usuarios
   for select to authenticated
   using (
     auth_uid = auth.uid()
+    or (auth_uid is null and lower(email) = lower(coalesce(auth.jwt()->>'email', '')))
     or exists (select 1 from public.current_user_perms() p where p.pode_gerir_usuarios)
   );
 
@@ -213,6 +214,19 @@ create policy ue_all_admin on public.usuario_empresas
   for all to authenticated
   using (exists (select 1 from public.current_user_perms() p where p.pode_gerir_usuarios))
   with check (exists (select 1 from public.current_user_perms() p where p.pode_gerir_usuarios));
+
+drop policy if exists ue_select_self on public.usuario_empresas;
+create policy ue_select_self on public.usuario_empresas
+  for select to authenticated
+  using (
+    exists (
+      select 1
+      from public.usuarios u
+      where u.id = usuario_id
+        and u.auth_uid = auth.uid()
+    )
+    or exists (select 1 from public.current_user_perms() p where p.pode_gerir_usuarios)
+  );
 
 -- ---------------------------------------------------------------------
 -- 7. Importações — só quem pode importar (Admin/Sócio)
