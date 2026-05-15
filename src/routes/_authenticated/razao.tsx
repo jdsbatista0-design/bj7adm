@@ -101,6 +101,20 @@ function RazaoPage() {
   const categoriaNome = (id: number | null) =>
     categorias.data?.find((c) => c.id === id)?.nome ?? "—";
 
+  const atualizarCategoria = useMutation({
+    mutationFn: async ({ l, categoria_id }: { l: LancamentoRow; categoria_id: number | null }) => {
+      const r = await from("lancamentos")
+        .update({ categoria_id })
+        .eq("id", l.id);
+      if (r.error) throw r.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lancamentos"] });
+      toast.success("Categoria atualizada");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+
   const marcarRevisado = useMutation({
     mutationFn: async (l: LancamentoRow) => {
       const r = await from("lancamentos")
