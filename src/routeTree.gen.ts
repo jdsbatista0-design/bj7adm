@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStoneRouteImport } from './routes/_authenticated/stone'
 import { Route as AuthenticatedRazaoRouteImport } from './routes/_authenticated/razao'
 import { Route as AuthenticatedLancarRouteImport } from './routes/_authenticated/lancar'
+import { Route as AuthenticatedImportacoesRouteImport } from './routes/_authenticated/importacoes'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 
 const LoginRoute = LoginRouteImport.update({
@@ -46,6 +47,12 @@ const AuthenticatedLancarRoute = AuthenticatedLancarRouteImport.update({
   path: '/lancar',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedImportacoesRoute =
+  AuthenticatedImportacoesRouteImport.update({
+    id: '/importacoes',
+    path: '/importacoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedARevisarRoute = AuthenticatedARevisarRouteImport.update({
   id: '/a-revisar',
   path: '/a-revisar',
@@ -56,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
+  '/importacoes': typeof AuthenticatedImportacoesRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
   '/stone': typeof AuthenticatedStoneRoute
@@ -63,6 +71,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
+  '/importacoes': typeof AuthenticatedImportacoesRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
   '/stone': typeof AuthenticatedStoneRoute
@@ -73,6 +82,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
+  '/_authenticated/importacoes': typeof AuthenticatedImportacoesRoute
   '/_authenticated/lancar': typeof AuthenticatedLancarRoute
   '/_authenticated/razao': typeof AuthenticatedRazaoRoute
   '/_authenticated/stone': typeof AuthenticatedStoneRoute
@@ -80,14 +90,29 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/a-revisar' | '/lancar' | '/razao' | '/stone'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/a-revisar'
+    | '/importacoes'
+    | '/lancar'
+    | '/razao'
+    | '/stone'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/a-revisar' | '/lancar' | '/razao' | '/stone' | '/'
+  to:
+    | '/login'
+    | '/a-revisar'
+    | '/importacoes'
+    | '/lancar'
+    | '/razao'
+    | '/stone'
+    | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/a-revisar'
+    | '/_authenticated/importacoes'
     | '/_authenticated/lancar'
     | '/_authenticated/razao'
     | '/_authenticated/stone'
@@ -143,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLancarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/importacoes': {
+      id: '/_authenticated/importacoes'
+      path: '/importacoes'
+      fullPath: '/importacoes'
+      preLoaderRoute: typeof AuthenticatedImportacoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/a-revisar': {
       id: '/_authenticated/a-revisar'
       path: '/a-revisar'
@@ -155,6 +187,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
+  AuthenticatedImportacoesRoute: typeof AuthenticatedImportacoesRoute
   AuthenticatedLancarRoute: typeof AuthenticatedLancarRoute
   AuthenticatedRazaoRoute: typeof AuthenticatedRazaoRoute
   AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
@@ -163,6 +196,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedARevisarRoute: AuthenticatedARevisarRoute,
+  AuthenticatedImportacoesRoute: AuthenticatedImportacoesRoute,
   AuthenticatedLancarRoute: AuthenticatedLancarRoute,
   AuthenticatedRazaoRoute: AuthenticatedRazaoRoute,
   AuthenticatedStoneRoute: AuthenticatedStoneRoute,
