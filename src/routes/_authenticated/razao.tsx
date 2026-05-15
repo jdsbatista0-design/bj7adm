@@ -154,10 +154,10 @@ function RazaoPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={params.tipo} onValueChange={(v) => update({ tipo: v as typeof params.tipo })}>
+          <Select value={params.tipo || "all"} onValueChange={(v) => update({ tipo: (v === "all" ? "" : v) as typeof params.tipo })}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value=" ">Todos tipos</SelectItem>
+              <SelectItem value="all">Todos tipos</SelectItem>
               {tiposPermitidos.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
             </SelectContent>
           </Select>
