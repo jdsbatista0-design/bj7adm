@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedStoneRouteImport } from './routes/_authenticated/stone'
 import { Route as AuthenticatedRazaoRouteImport } from './routes/_authenticated/razao'
 import { Route as AuthenticatedLancarRouteImport } from './routes/_authenticated/lancar'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
@@ -28,6 +29,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStoneRoute = AuthenticatedStoneRouteImport.update({
+  id: '/stone',
+  path: '/stone',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRazaoRoute = AuthenticatedRazaoRouteImport.update({
@@ -52,12 +58,14 @@ export interface FileRoutesByFullPath {
   '/a-revisar': typeof AuthenticatedARevisarRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
+  '/stone': typeof AuthenticatedStoneRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
   '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
+  '/stone': typeof AuthenticatedStoneRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -67,13 +75,14 @@ export interface FileRoutesById {
   '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
   '/_authenticated/lancar': typeof AuthenticatedLancarRoute
   '/_authenticated/razao': typeof AuthenticatedRazaoRoute
+  '/_authenticated/stone': typeof AuthenticatedStoneRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/a-revisar' | '/lancar' | '/razao'
+  fullPaths: '/' | '/login' | '/a-revisar' | '/lancar' | '/razao' | '/stone'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/a-revisar' | '/lancar' | '/razao' | '/'
+  to: '/login' | '/a-revisar' | '/lancar' | '/razao' | '/stone' | '/'
   id:
     | '__root__'
     | '/_authenticated'
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/_authenticated/a-revisar'
     | '/_authenticated/lancar'
     | '/_authenticated/razao'
+    | '/_authenticated/stone'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
@@ -112,6 +122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/stone': {
+      id: '/_authenticated/stone'
+      path: '/stone'
+      fullPath: '/stone'
+      preLoaderRoute: typeof AuthenticatedStoneRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/razao': {
       id: '/_authenticated/razao'
       path: '/razao'
@@ -140,6 +157,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
   AuthenticatedLancarRoute: typeof AuthenticatedLancarRoute
   AuthenticatedRazaoRoute: typeof AuthenticatedRazaoRoute
+  AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -147,6 +165,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedARevisarRoute: AuthenticatedARevisarRoute,
   AuthenticatedLancarRoute: AuthenticatedLancarRoute,
   AuthenticatedRazaoRoute: AuthenticatedRazaoRoute,
+  AuthenticatedStoneRoute: AuthenticatedStoneRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
