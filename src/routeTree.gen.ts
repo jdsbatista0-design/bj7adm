@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedRazaoRouteImport } from './routes/_authenticated/razao'
+import { Route as AuthenticatedLancarRouteImport } from './routes/_authenticated/lancar'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -33,14 +34,21 @@ const AuthenticatedRazaoRoute = AuthenticatedRazaoRouteImport.update({
   path: '/razao',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLancarRoute = AuthenticatedLancarRouteImport.update({
+  id: '/lancar',
+  path: '/lancar',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/lancar': typeof AuthenticatedLancarRoute
   '/razao': typeof AuthenticatedRazaoRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -48,18 +56,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/lancar': typeof AuthenticatedLancarRoute
   '/_authenticated/razao': typeof AuthenticatedRazaoRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/razao'
+  fullPaths: '/' | '/login' | '/lancar' | '/razao'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/razao' | '/'
+  to: '/login' | '/lancar' | '/razao' | '/'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/lancar'
     | '/_authenticated/razao'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -99,15 +109,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRazaoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/lancar': {
+      id: '/_authenticated/lancar'
+      path: '/lancar'
+      fullPath: '/lancar'
+      preLoaderRoute: typeof AuthenticatedLancarRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedLancarRoute: typeof AuthenticatedLancarRoute
   AuthenticatedRazaoRoute: typeof AuthenticatedRazaoRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedLancarRoute: AuthenticatedLancarRoute,
   AuthenticatedRazaoRoute: AuthenticatedRazaoRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
@@ -123,3 +142,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
