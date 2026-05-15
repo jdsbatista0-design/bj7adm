@@ -153,6 +153,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn: async (email, password) => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) return { error: error.message };
+
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          return { error: "Não foi possível concluir sua sessão. Tente novamente." };
+        }
+
+        const next = await loadCurrentUser(data.session);
+        setState(next);
+
+        if (next.status === "no-record") {
+          return {
+            error:
+              "Login válido, mas seu acesso ainda não está vinculado a um cadastro ativo. Atualize as políticas SQL e vincule o usuário em usuarios.",
+          };
+        }
+
         return {};
       },
       signOut: async () => {

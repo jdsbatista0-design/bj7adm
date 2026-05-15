@@ -7,7 +7,7 @@
    - `admin@bj7.test` (papel Admin)
    - `socio@bj7.test` (papel Sócio)
    - `gestor@bj7.test` (papel Gestor, sem `ve_faturamento`)
-3. Em `public.usuarios`, garantir que cada e-mail tenha um registro com `papel_id` correto e `ativo=true`. O front vincula `auth_uid` automaticamente no primeiro login.
+3. Em `public.usuarios`, garantir que cada e-mail tenha um registro com `papel_id` correto e `ativo=true`. Com as políticas SQL atualizadas, o primeiro login consegue localizar o usuário pelo e-mail e vincular `auth_uid` automaticamente.
 
 ## 1. Login
 
@@ -51,13 +51,13 @@
 
 ## 7. RLS (Bloco 7)
 
-1. Vincule `auth_uid` para cada usuário antes de habilitar RLS:
+1. Atualize as políticas com o conteúdo de `supabase/policies.sql` antes de testar o primeiro login. Elas liberam com segurança a leitura do próprio registro por e-mail (quando `auth_uid` ainda está nulo) e os vínculos da própria conta em `usuario_empresas`.
+2. Se quiser retrovincular usuários já existentes de uma vez, rode:
    ```sql
    update public.usuarios
    set auth_uid = (select id from auth.users where email = usuarios.email)
    where auth_uid is null;
    ```
-2. Cole `supabase/policies.sql` no SQL Editor do Supabase.
 3. Re-teste como **Gestor sem `ve_faturamento`**: ele não deve conseguir nem `select` em `lancamentos` com tipo `Receita`, mesmo via REST direto.
 4. Re-teste como **Gestor sem `ve_todas_empresas`** e sem nenhum vínculo em `usuario_empresas`: o Razão fica vazio.
 5. Tentar `update` em `lancamentos` com `revisado=true` como Gestor → deve falhar.
