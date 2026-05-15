@@ -119,6 +119,67 @@ export interface ImportacaoRow {
   criado_por: number | null;
 }
 
+export type Severidade = "info" | "warn" | "critical";
+export type AlertaStatus = "aberto" | "ack" | "resolvido" | "snoozed";
+export type TarefaStatus =
+  | "aberta"
+  | "em_andamento"
+  | "aguardando"
+  | "concluida"
+  | "cancelada";
+export type Prioridade = "baixa" | "media" | "alta" | "urgente";
+
+export interface AlertaRow {
+  id: number;
+  regra_id: number | null;
+  tipo: string;
+  severidade: Severidade;
+  titulo: string;
+  descricao: string | null;
+  entidade_tipo: string | null;
+  entidade_id: string | null;
+  empresa_id: number | null;
+  payload: Record<string, unknown>;
+  dedupe_key: string;
+  status: AlertaStatus;
+  snooze_ate: string | null;
+  criado_em: string;
+  ack_por: number | null;
+  ack_em: string | null;
+  resolvido_em: string | null;
+}
+
+export interface TarefaRow {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  responsavel_id: number | null;
+  criado_por: number | null;
+  prioridade: Prioridade;
+  prazo: string | null;
+  status: TarefaStatus;
+  entidade_tipo: string | null;
+  entidade_id: string | null;
+  empresa_id: number | null;
+  origem: "manual" | "regra" | "alerta" | "sistema";
+  alerta_id: number | null;
+  dedupe_key: string | null;
+  criada_em: string;
+  concluida_em: string | null;
+}
+
+export interface RegraRow {
+  id: number;
+  nome: string;
+  descricao: string | null;
+  tipo: string;
+  config: Record<string, unknown>;
+  severidade: Severidade;
+  gera_tarefa: boolean;
+  ativo: boolean;
+  criado_em: string;
+}
+
 type Tbl<Row, Insert = Partial<Row> & { id?: number }, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
