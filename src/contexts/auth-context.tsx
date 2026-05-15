@@ -33,37 +33,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function loadCurrentUser(session: Session): Promise<AuthState> {
   const email = session.user.email ?? "";
-  const authUid = session.user.id;
 
-  // 1. Tenta achar usuario por auth_uid
-  const byUid = await supabase
-    .from("usuarios")
-    .select("*")
-    .eq("auth_uid", authUid)
-    .maybeSingle();
-
-  let usuarioRow: UsuarioRow | null = (byUid.data as UsuarioRow | null) ?? null;
-
-  // 2. Se não achou e tem email, tenta pelo email e vincula auth_uid
-  if (!usuarioRow && email) {
-    const byEmail = await supabase
-      .from("usuarios")
-      .select("*")
-      .eq("email", email)
-      .is("auth_uid", null)
-      .maybeSingle();
-
-    const byEmailRow = byEmail.data as UsuarioRow | null;
-    if (byEmailRow) {
-      const linked = await supabase
-        .from("usuarios")
-        .update({ auth_uid: authUid })
-        .eq("id", byEmailRow.id)
-        .select("*")
-        .single();
-      usuarioRow = (linked.data as UsuarioRow | null) ?? byEmailRow;
-    }
+  // Garante que existe o registro em public.usuarios para este auth user.
+  // A função SECURITY DEFINER cria/vincula no 1º login.
+  const ensured = await supabase.rpc("ensure_self_usuario");
+  if (ensured.error) {
+    console.error("ensure_self_usuario falhou:", ensured.error);
+    return { status: "no-record", email };
   }
+
+  const usuarioRow = (ensured.data as UsuarioRow | null) ?? null;
 
   if (!usuarioRow) return { status: "no-record", email };
   if (usuarioRow.ativo === false) return { status: "no-record", email };
