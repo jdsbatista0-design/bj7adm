@@ -19,12 +19,11 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
-  Sun,
-  Briefcase,
-  Wrench,
-  Wallet,
   Building2,
-  Sparkles,
+  PlusCircle,
+  BookOpen,
+  BarChart3,
+  Upload,
   Settings,
   LogOut,
   Plus,
@@ -33,13 +32,12 @@ import { ItemDrawerProvider, useItemDrawer } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
 
 const NAV: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { title: "Central", url: "/", icon: LayoutDashboard },
-  { title: "Hoje", url: "/hoje", icon: Sun },
-  { title: "Comercial", url: "/comercial", icon: Briefcase },
-  { title: "Operação", url: "/operacao", icon: Wrench },
-  { title: "Financeiro", url: "/financeiro", icon: Wallet },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Empresas", url: "/empresas", icon: Building2 },
-  { title: "Inteligência", url: "/inteligencia", icon: Sparkles },
+  { title: "Lançar", url: "/lancar", icon: PlusCircle },
+  { title: "Razão", url: "/razao", icon: BookOpen },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Importações", url: "/importacoes", icon: Upload },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
