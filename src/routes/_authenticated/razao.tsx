@@ -267,9 +267,7 @@ function RazaoPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="0">— Sem categoria —</SelectItem>
-                            {(categorias.data ?? [])
-                              .filter((c) => !c.tipo || c.tipo === l.tipo)
-                              .map((c) => (
+                            {(categorias.data ?? []).map((c) => (
                                 <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
                               ))}
                           </SelectContent>
