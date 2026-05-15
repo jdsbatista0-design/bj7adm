@@ -1,110 +1,87 @@
-## Fase 0 + 1 — Fundação invisível + Cockpit Financeiro Inteligente
 
-Objetivo: trocar o sistema passivo por uma central que **detecta problemas, gera tarefas/alertas e cobra ação**, focada em Financeiro como primeiro domínio.
+# BJ7 Central — Redesign baseado no schema real
 
----
+Auditei o banco (arquivos `supabase/*.sql` que o Claude criou). O redesign abaixo se ancora **só no que existe lá** — zero tabela inventada.
 
-### Bloco A — Esquema de dados (migration única)
+## O que o banco entrega hoje
 
-Novas tabelas em `public`, todas com RLS ligada e políticas via `has_role`/`usuarios.auth_uid`:
+**Domínio financeiro (base)**
+`empresas`, `unidades`, `categorias` (com `tipo_predominante`, `grupo`), `lancamentos` (tipo, data, empresa, unidade, categoria, status, revisado, contar_no_total), `notas_fiscais`, `importacoes`.
 
-- `alertas` — id, tipo, severidade (info/warn/critical), titulo, descricao, entidade_tipo, entidade_id, empresa_id, payload jsonb, status (aberto/ack/resolvido/snoozed), snooze_ate, criado_em, ack_por, ack_em, resolvido_em, regra_id.
-- `tarefas` — id, titulo, descricao, responsavel_id (usuarios.id), criado_por, prioridade (baixa/media/alta/urgente), prazo, status (aberta/em_andamento/aguardando/concluida/cancelada), entidade_tipo, entidade_id, empresa_id, origem (manual/regra/alerta), criada_em, concluida_em.
-- `regras` — id, nome, descricao, tipo (anomalia/limite/sla/duplicidade/categoria/projecao), config jsonb (DSL leve: campo, operador, valor, janela_dias, agrupar_por…), severidade, gera_tarefa bool, ativo, criado_em.
-- `regra_execucoes` — id, regra_id, executada_em, alertas_criados, duracao_ms, erro.
-- `interacoes` — id, entidade_tipo, entidade_id, tipo (nota/whatsapp/email/sistema), conteudo, autor_id, criada_em. (Timeline cross-domínio; já entra para ser usada por Imobiliária/Stone depois.)
-- `categoria_sugestoes` — id, hash_descricao, categoria_id, score, hits. (Cache de classificação automática.)
+**Stone**
+`apuracao_rebate`, `evolucao_base_clientes`, `clientes_sumidos`.
 
-Índices nos campos quentes (`status`, `prazo`, `responsavel_id`, `entidade_tipo+entidade_id`, `empresa_id`).
+**Cockpit (Claude)**
+- `regras` (anomalia/limite/sla/duplicidade/categoria/projecao/importacao) + `regra_execucoes`
+- `alertas` (severidade info/warn/critical, status aberto/ack/resolvido/snoozed, dedupe_key, empresa_id, entidade_tipo/id, payload jsonb)
+- `tarefas` (prioridade, prazo, status, responsavel_id, empresa_id, origem manual/regra/alerta/sistema, alerta_id)
+- `interacoes` (nota/whatsapp/email/sistema/ligacao/visita ligadas a entidade_tipo+id)
+- `categoria_sugestoes` (hash_descricao → categoria_id, hits, score, origem humano/ia/regra)
+- RPCs prontas: `ack_alerta`, `resolver_alerta`, `snooze_alerta`, `concluir_tarefa`, `executar_regras`
 
----
+**Acesso**
+`usuarios`, `papeis`, `usuario_empresas` + RLS via `current_user_can_see_empresa`, `current_user_can_see_tipo`, `current_user_perms`.
 
-### Bloco B — Motor de regras (server-side)
+**Regras seed ativas (7)**: sem categoria, categoria estourando, duplicidade, receita ausente, revisão atrasada, importação parcial, concentração de receita.
 
-Server functions em `src/lib/motor.functions.ts`:
+## O que isso significa para a UI
 
-- `executarRegras()` — itera regras ativas, executa cada uma, grava em `regra_execucoes`, cria `alertas`/`tarefas`. Idempotente por chave determinística (regra_id + entidade + janela) para não duplicar alerta no mesmo ciclo.
-- `executarRegra(regra_id)` — manual, para teste.
-- Endpoint público autenticado por secret: `src/routes/api/public/cron-motor.ts` para disparo externo (pg_cron ou cron externo) chamando `executarRegras()`.
+O banco já modela o conceito “Item” via `tarefas` + `alertas`. CRM/contratos/AR-AP **não existem** — então a UI não inventa. Mostra estado vazio honesto e oferece criar como tarefa com `entidade_tipo='lead'|'contrato'|'cobranca'` (campo livre, indexável depois).
 
-Regras seed (Financeiro) já com config pronta:
+`interacoes` permite timeline/histórico em qualquer Item.
+`categoria_sugestoes` permite autocomplete inteligente no lançamento.
+RPCs do Claude resolvem todas as ações (ack, resolver, snooze, concluir).
 
-1. **Lançamento sem categoria > 24h** → alerta + tarefa "Categorizar X lançamentos".
-2. **Categoria estourando** — gasto do mês > média dos últimos 6 meses × 1,3 → alerta crítico por categoria/empresa.
-3. **Despesa duplicada** — mesma data + valor + descrição similar (hash) → alerta + sugestão de merge.
-4. **Receita ausente** — empresa sem receita há > N dias úteis → alerta.
-5. **Revisão atrasada** — `revisado=false` há > 3 dias → tarefa para o revisor padrão.
-6. **Projeção de caixa** — saldo projetado D+30 negativo → alerta crítico.
-7. **Importação parcial** — importação com `linhas_ignoradas > 0` → tarefa de revisão.
+## Telas — mapeamento direto banco → UI
 
-A DSL fica em `config jsonb` para o usuário criar regras novas via UI no futuro sem deploy.
+| Rota | Fonte | Função |
+|---|---|---|
+| `/` Central | RPC nova `kpi_*` agregada + `alertas`+`tarefas` críticos + `lancamentos` agregado | Cockpit CEO: 5 KPIs grupo, "Exige atenção", "Hoje", "Dinheiro parado", grid Empresas com score |
+| `/hoje` | `tarefas` (prazo<=hoje + atrasadas) + `alertas` aberto/ack | Inbox executivo do dia, ações inline (concluir/snooze/resolver) |
+| `/comercial` | `tarefas where entidade_tipo in ('lead','oportunidade','proposta','followup')` | Kanban+lista. Vazio: explica + botão "criar primeiro lead como Item" |
+| `/operacao` | `tarefas where entidade_tipo not in (comerciais)` ou null | Kanban por status, gargalos por responsável |
+| `/financeiro` (tabs) | `lancamentos`, `categorias`, `notas_fiscais` | tabs: Visão (KPIs+breakdown atual), Razão, Lançar, Revisar |
+| `/empresas` + `/empresas/$id` | `empresas` + tudo filtrado por empresa | Lista com score; detalhe com Saúde/Financeiro/Items/Stone(quando Stone) |
+| `/inteligencia` | `regras`, `regra_execucoes`, `alertas`, `categoria_sugestoes` | Toggle regras, histórico execuções, "Rodar motor", sugestões IA |
+| `/config` | `usuarios`, `papeis`, `categorias`, `regras`, `importacoes` | Reúne `/usuarios` e `/importacoes` atuais + CRUD categorias/regras |
 
----
+Telas atuais (`/lancar`, `/razao`, `/a-revisar`, `/stone`, `/usuarios`, `/importacoes`) **continuam funcionando nas mesmas URLs** — viram alvos de links a partir do novo menu, sem renomear arquivos. A nova `/financeiro` agrega visualmente; as URLs antigas seguem válidas (sem 404, sem redirect, sem mexer em rotas).
 
-### Bloco C — Camada de IA (classificação)
+## Sistema de design (frontend, sem mexer em backend)
 
-Server function `classificarLancamento(descricao, valor, empresa_id)`:
-
-1. Tenta `categoria_sugestoes` por hash da descrição normalizada (rápido, grátis).
-2. Se sem hit, chama Lovable AI Gateway (`google/gemini-3-flash-preview`) com tool calling estruturado retornando `{categoria_id, confianca}`.
-3. Grava no cache.
-
-Usado em dois pontos: ao importar CSV (auto-categoriza com `origem_classificacao='ia'`) e em ação manual "Sugerir categoria" no lançamento.
-
----
-
-### Bloco D — Cockpit (UI)
-
-Substitui `/_authenticated/index.tsx`. Layout mobile-first:
-
-```text
-┌────────────────────────────────────────────────┐
-│  Olá, João · 14 mai · [+ Nova ação ▾]          │
-├────────────────────────────────────────────────┤
-│  Tabs:  HOJE · AGUARDANDO · TRAVADO ·          │
-│         OPORTUNIDADES · FOLLOW-UP              │
-├────────────────────────────────────────────────┤
-│  [Aba HOJE]                                    │
-│  🔴 3 alertas críticos                         │
-│   · Caixa projetado negativo em 12 dias        │
-│   · Marketing +47% vs média                    │
-│   · 312 lançamentos sem categoria              │
-│  🟡 8 tarefas vencendo hoje                    │
-│  🟢 2 oportunidades detectadas                 │
-└────────────────────────────────────────────────┘
+Tokens em `src/styles.css` (oklch):
 ```
+--background grafite, --surface chumbo, --foreground branco
+--primary dourado champagne, --success verde, --danger vermelho
+--warning âmbar, --info azul
+--gradient-premium, --shadow-elegant
+```
+Sidebar shadcn `collapsible="icon"` desktop / Sheet no mobile. Header global com seletor de empresa (respeita `current_user_can_see_empresa`), botão "+ Item", busca.
 
-Cada card: título, contexto (1 linha), **ação primária** (Resolver / Categorizar / Snooze / Atribuir). Swipe lateral no mobile = snooze/ack. Sem tabela.
+**Componentes reutilizáveis novos** em `src/components/bj7/`:
+`KpiCard`, `ItemCard`, `ItemList`, `ItemDrawer` (cria tarefa com `entidade_tipo` + opcional `empresa_id`), `EmpresaScoreCard`, `StatusBadge`, `SeveridadeBadge`, `PrioridadeBadge`, `EmptyState` didático, `SectionHeader`, `PageShell`, skeletons.
 
-Componentes novos:
+## Backend — adições mínimas
 
-- `src/components/cockpit/CockpitTabs.tsx`
-- `src/components/cockpit/AlertaCard.tsx`
-- `src/components/cockpit/TarefaCard.tsx`
-- `src/components/cockpit/CapturaRapida.tsx` (FAB global, só botão por enquanto — voz/OCR ficam na fase 2)
+Um único arquivo novo: `supabase/kpis.sql` com RPCs SECURITY DEFINER agregadas (respeitam RLS via `current_user_*`):
+- `kpi_saude_grupo()` → receita_mes, despesa_mes, margem, caixa_estimado, items_criticos, vs mês anterior
+- `kpi_empresa_score(_empresa_id int)` → score 0–100 derivado de margem, % revisado, tarefas no prazo, alertas críticos
+- `kpi_dinheiro_parado()` → soma de receitas com `status` aberto + lançamentos receita não revisados
+- `kpi_hoje(_usuario_id int)` → tarefas+alertas do dia para o usuário
+- `kpi_gargalos()` → top responsáveis por tarefas atrasadas
 
----
+Nada toca: schema, RLS, policies, helpers, seed de regras, RPCs do Claude. Passo manual: rodar `kpis.sql` no SQL Editor.
 
-### Bloco E — Limpeza
+## Ordem de execução
 
-- Apagar dashboard atual (`src/routes/_authenticated/index.tsx`) e refazer.
-- Manter `/razao`, `/lancar`, `/a-revisar`, `/stone`, `/importacoes`, `/usuarios` por ora — serão reformulados nas próximas fases. Não toca neles agora.
+**Fase A (entrega já)**: tokens visuais + sidebar/PageShell + componentes base + Central + Hoje + ItemDrawer global. Reaproveita queries existentes.
 
----
+**Fase B**: Comercial, Operação, Financeiro consolidado, Empresas (lista+detalhe), Inteligência, Configurações.
 
-### Detalhes técnicos
+**Fase C**: `kpis.sql` no SQL Editor + ligar RPCs nos cards de Central/Empresas.
 
-- Banco: 1 migration consolidada para Bloco A.
-- RLS: `alertas`/`tarefas` visíveis se o usuário tem permissão na empresa (reusa lógica `usuario_empresas` + `ve_todas_empresas`); `regras` só admin.
-- Server functions sob `requireSupabaseAuth`; rota cron sob `/api/public/` com header `x-cron-secret`.
-- AI via `process.env.LOVABLE_API_KEY` dentro do handler.
-- Sem mudança em `package.json` esperada.
+## Confirme antes de começar
 
----
-
-### Fora desta fase (próximas)
-
-- Captura por voz e foto+OCR (Fase 2).
-- CRM Imobiliária, Mídia/Pontos, Stone churn (Fases 4-5).
-- Copilot pergunta-livre (Fase 6).
-- WhatsApp como canal (depois).
+1. **Fase A só**, te entrego pra ver, depois B e C — ok?
+2. Manter URLs antigas válidas (sem renomear `/lancar`, `/razao`, etc.) — ok?
+3. Sem novas tabelas; tipos de Item ficam em `tarefas.entidade_tipo` por enquanto — ok?
