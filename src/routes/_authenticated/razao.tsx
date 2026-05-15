@@ -101,6 +101,20 @@ function RazaoPage() {
   const categoriaNome = (id: number | null) =>
     categorias.data?.find((c) => c.id === id)?.nome ?? "—";
 
+  const atualizarCategoria = useMutation({
+    mutationFn: async ({ l, categoria_id }: { l: LancamentoRow; categoria_id: number | null }) => {
+      const r = await from("lancamentos")
+        .update({ categoria_id })
+        .eq("id", l.id);
+      if (r.error) throw r.error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lancamentos"] });
+      toast.success("Categoria atualizada");
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+
   const marcarRevisado = useMutation({
     mutationFn: async (l: LancamentoRow) => {
       const r = await from("lancamentos")
@@ -240,7 +254,28 @@ function RazaoPage() {
                     <TableCell>{formatDate(l.data)}</TableCell>
                     <TableCell className="text-sm">{empresaNome(l.empresa_id)}</TableCell>
                     <TableCell><Badge variant="outline">{l.tipo}</Badge></TableCell>
-                    <TableCell className="text-sm">{categoriaNome(l.categoria_id)}</TableCell>
+                    <TableCell className="text-sm">
+                      {editavel ? (
+                        <Select
+                          value={l.categoria_id ? String(l.categoria_id) : "0"}
+                          onValueChange={(v) =>
+                            atualizarCategoria.mutate({ l, categoria_id: v === "0" ? null : Number(v) })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[180px] text-xs">
+                            <SelectValue placeholder="Sem categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">— Sem categoria —</SelectItem>
+                            {(categorias.data ?? []).map((c) => (
+                                <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        categoriaNome(l.categoria_id)
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm max-w-[280px] truncate" title={l.descricao ?? ""}>{l.descricao ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(Number(l.valor))}</TableCell>
                     <TableCell>
