@@ -19,12 +19,11 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
-  Sun,
-  Briefcase,
-  Wrench,
-  Wallet,
   Building2,
-  Sparkles,
+  PlusCircle,
+  BookOpen,
+  BarChart3,
+  Upload,
   Settings,
   LogOut,
   Plus,
