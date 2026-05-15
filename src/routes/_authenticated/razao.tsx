@@ -254,7 +254,30 @@ function RazaoPage() {
                     <TableCell>{formatDate(l.data)}</TableCell>
                     <TableCell className="text-sm">{empresaNome(l.empresa_id)}</TableCell>
                     <TableCell><Badge variant="outline">{l.tipo}</Badge></TableCell>
-                    <TableCell className="text-sm">{categoriaNome(l.categoria_id)}</TableCell>
+                    <TableCell className="text-sm">
+                      {editavel ? (
+                        <Select
+                          value={l.categoria_id ? String(l.categoria_id) : "0"}
+                          onValueChange={(v) =>
+                            atualizarCategoria.mutate({ l, categoria_id: v === "0" ? null : Number(v) })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[180px] text-xs">
+                            <SelectValue placeholder="Sem categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">— Sem categoria —</SelectItem>
+                            {(categorias.data ?? [])
+                              .filter((c) => !c.tipo || c.tipo === l.tipo)
+                              .map((c) => (
+                                <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        categoriaNome(l.categoria_id)
+                      )}
+                    </TableCell>
                     <TableCell className="text-sm max-w-[280px] truncate" title={l.descricao ?? ""}>{l.descricao ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(Number(l.valor))}</TableCell>
                     <TableCell>
