@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { from, asRows } from "@/integrations/supabase/db";
+import { paginateAll } from "@/integrations/supabase/db";
+import { supabase } from "@/integrations/supabase/client";
+import type { LancamentoRow } from "@/integrations/supabase/database";
 import { useCategorias } from "@/hooks/use-refs";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, toLocalIsoDate } from "@/lib/format";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
 type PeriodoKey = "mes_atual" | "mes_anterior" | "ult_3m" | "ult_12m" | "ano_atual";
@@ -41,8 +43,7 @@ function rangeFor(p: PeriodoKey): { start: string; end: string } {
     start = new Date(y, 0, 1);
     end = new Date(y + 1, 0, 1);
   }
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return { start: iso(start), end: iso(end) };
+  return { start: toLocalIsoDate(start), end: toLocalIsoDate(end) };
 }
 
 export function CategoriaPeriodoBreakdown() {
@@ -54,21 +55,24 @@ export function CategoriaPeriodoBreakdown() {
   const { start, end } = useMemo(() => rangeFor(periodo), [periodo]);
 
   const q = useQuery({
-    queryKey: ["dash-cat-periodo", periodo, user.id],
+    queryKey: ["dash-cat-periodo", start, end, user.id],
     queryFn: async () => {
-      let query = from("lancamentos")
-        .select("categoria_id,tipo,valor,data,contar_no_total")
-        .gte("data", start)
-        .lt("data", end)
-        .eq("contar_no_total", true)
-        .in("tipo", ["Receita", "Despesa"]);
-      if (!user.ve_todas_empresas) {
-        if (user.empresas_ids.length === 0) return [];
-        query = query.in("empresa_id", user.empresas_ids);
-      }
-      const r = await query.limit(20000);
-      if (r.error) throw r.error;
-      return asRows("lancamentos", r.data);
+      if (!user.ve_todas_empresas && user.empresas_ids.length === 0) return [] as LancamentoRow[];
+      // Paginação obrigatória — PostgREST corta em 1000 linhas por request
+      // mesmo passando .limit() maior. Períodos longos sumiam sem isso.
+      return paginateAll<LancamentoRow>((fromIdx, toIdx) => {
+        let query = supabase
+          .from("lancamentos")
+          .select("categoria_id,tipo,valor,data,contar_no_total,empresa_id")
+          .gte("data", start)
+          .lt("data", end)
+          .eq("contar_no_total", true)
+          .in("tipo", ["Receita", "Despesa"]);
+        if (!user.ve_todas_empresas) {
+          query = query.in("empresa_id", user.empresas_ids);
+        }
+        return query.order("id", { ascending: true }).range(fromIdx, toIdx);
+      });
     },
   });
 

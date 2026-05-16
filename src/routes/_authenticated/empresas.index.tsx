@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { from, asRows } from "@/integrations/supabase/db";
+import { paginateAll } from "@/integrations/supabase/db";
 import { supabase } from "@/integrations/supabase/client";
 import type { AlertaRow, LancamentoRow, TarefaRow } from "@/integrations/supabase/database";
 import { useEmpresas } from "@/hooks/use-refs";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { PageShell } from "@/components/bj7/PageShell";
-import { formatBRL } from "@/lib/format";
+import { formatBRL, toLocalIsoDate } from "@/lib/format";
 import { Building2, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresas/")({
@@ -20,24 +20,25 @@ function EmpresasIndex() {
 
   const startMonth = useMemo(() => {
     const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+    return toLocalIsoDate(new Date(d.getFullYear(), d.getMonth(), 1));
   }, []);
 
   const lancQ = useQuery({
     queryKey: ["empresas-list", "lanc", startMonth, user.id],
     queryFn: async () => {
-      let q = from("lancamentos")
-        .select("empresa_id,tipo,valor,contar_no_total,data")
-        .gte("data", startMonth)
-        .eq("contar_no_total", true)
-        .in("tipo", ["Receita", "Despesa"]);
-      if (!user.ve_todas_empresas) {
-        if (user.empresas_ids.length === 0) return [];
-        q = q.in("empresa_id", user.empresas_ids);
-      }
-      const r = await q.limit(20000);
-      if (r.error) throw r.error;
-      return asRows("lancamentos", r.data);
+      if (!user.ve_todas_empresas && user.empresas_ids.length === 0) return [] as LancamentoRow[];
+      return paginateAll<LancamentoRow>((fromIdx, toIdx) => {
+        let q = supabase
+          .from("lancamentos")
+          .select("empresa_id,tipo,valor,contar_no_total,data")
+          .gte("data", startMonth)
+          .eq("contar_no_total", true)
+          .in("tipo", ["Receita", "Despesa"]);
+        if (!user.ve_todas_empresas) {
+          q = q.in("empresa_id", user.empresas_ids);
+        }
+        return q.order("id", { ascending: true }).range(fromIdx, toIdx);
+      });
     },
   });
 

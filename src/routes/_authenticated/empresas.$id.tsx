@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { from } from "@/integrations/supabase/db";
+import { from, paginateAll } from "@/integrations/supabase/db";
 import { useEmpresas } from "@/hooks/use-refs";
 import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
@@ -138,45 +138,46 @@ function EmpresaDetalhe() {
   const periodo = useMemo(() => rangesFor(periodoKey), [periodoKey]);
 
   const dreQ = useQuery({
-    queryKey: ["empresa", empresaId, "dre", periodoKey],
-    queryFn: async () => {
-      const r = await from("dre_view" as never)
-        .select("grupo,tipo,valor_total,mes_ref")
-        .eq("empresa_id", empresaId)
-        .gte("mes_ref", periodo.start)
-        .lt("mes_ref", periodo.end)
-        .limit(5000);
-      if (r.error) throw r.error;
-      return (r.data ?? []) as DreRow[];
-    },
+    queryKey: ["empresa", empresaId, "dre", periodo.start, periodo.end],
+    queryFn: () =>
+      paginateAll<DreRow>((fromIdx, toIdx) =>
+        from("dre_view" as never)
+          .select("grupo,tipo,valor_total,mes_ref,empresa_id")
+          .eq("empresa_id", empresaId)
+          .gte("mes_ref", periodo.start)
+          .lt("mes_ref", periodo.end)
+          .order("mes_ref", { ascending: true })
+          .range(fromIdx, toIdx),
+      ),
   });
 
   const dreAntQ = useQuery({
-    queryKey: ["empresa", empresaId, "dre-ant", periodoKey],
-    queryFn: async () => {
-      const r = await from("dre_view" as never)
-        .select("grupo,tipo,valor_total")
-        .eq("empresa_id", empresaId)
-        .gte("mes_ref", periodo.startPrev)
-        .lt("mes_ref", periodo.endPrev)
-        .limit(5000);
-      if (r.error) throw r.error;
-      return (r.data ?? []) as DreRow[];
-    },
+    queryKey: ["empresa", empresaId, "dre-ant", periodo.startPrev, periodo.endPrev],
+    queryFn: () =>
+      paginateAll<DreRow>((fromIdx, toIdx) =>
+        from("dre_view" as never)
+          .select("grupo,tipo,valor_total,empresa_id,mes_ref")
+          .eq("empresa_id", empresaId)
+          .gte("mes_ref", periodo.startPrev)
+          .lt("mes_ref", periodo.endPrev)
+          .order("mes_ref", { ascending: true })
+          .range(fromIdx, toIdx),
+      ),
   });
 
   const evolQ = useQuery({
     queryKey: ["empresa", empresaId, "evol12m"],
-    queryFn: async () => {
+    queryFn: () => {
       const hoje = new Date();
       const start = isoDate(new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1));
-      const r = await from("dre_view" as never)
-        .select("tipo,valor_total,mes_ref")
-        .eq("empresa_id", empresaId)
-        .gte("mes_ref", start)
-        .limit(10000);
-      if (r.error) throw r.error;
-      return (r.data ?? []) as DreRow[];
+      return paginateAll<DreRow>((fromIdx, toIdx) =>
+        from("dre_view" as never)
+          .select("tipo,valor_total,mes_ref,empresa_id")
+          .eq("empresa_id", empresaId)
+          .gte("mes_ref", start)
+          .order("mes_ref", { ascending: true })
+          .range(fromIdx, toIdx),
+      );
     },
   });
 
