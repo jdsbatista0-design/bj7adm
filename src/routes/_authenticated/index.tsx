@@ -155,8 +155,16 @@ function Dashboard() {
   const user = useCurrentUser();
   const empresas = useEmpresas();
   const [periodoKey, setPeriodoKey] = useState<PeriodoKey>("mes_atual");
+  const hojeISO = isoDate(new Date());
+  const [customStart, setCustomStart] = useState<string>(`${MIN_YEAR}-01-01`);
+  const [customEnd, setCustomEnd] = useState<string>(hojeISO);
 
-  const periodo = useMemo(() => rangesFor(periodoKey), [periodoKey]);
+  const periodo = useMemo(
+    () => rangesFor(periodoKey, { start: customStart, end: customEnd }),
+    [periodoKey, customStart, customEnd],
+  );
+
+  const anos = useMemo(() => anosDisponiveis(), []);
 
   const lancAtualQ = useQuery({
     queryKey: ["dash", "atual", periodoKey, user.id],
