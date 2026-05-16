@@ -37,7 +37,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { formatBRL, MESES_PT } from "@/lib/format";
+import { formatBRL, MESES_PT, toLocalIsoDate } from "@/lib/format";
 import {
   ArrowRight,
   TrendingUp,
@@ -81,7 +81,7 @@ function anosDisponiveis(): number[] {
 }
 
 function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return toLocalIsoDate(d);
 }
 
 function rangesFor(

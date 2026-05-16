@@ -18,6 +18,13 @@ export function formatNumber(value: number | null | undefined, fractionDigits = 
 
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
+  // Datas no formato "YYYY-MM-DD" (column date do Postgres) NÃO devem
+  // ser convertidas para o fuso local — caso contrário, em UTC-3 o dia
+  // exibido fica 1 dia antes do que está no banco.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (dateOnly) {
+    return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+  }
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return new Intl.DateTimeFormat("pt-BR", {
@@ -25,6 +32,19 @@ export function formatDate(iso: string | null | undefined): string {
     month: "2-digit",
     year: "numeric",
   }).format(d);
+}
+
+/**
+ * Converte um Date local para "YYYY-MM-DD" preservando o fuso local.
+ * Usar SEMPRE isso ao montar filtros de período para colunas `date`
+ * do Postgres — `Date.toISOString()` converte para UTC e desloca os
+ * limites de mês/ano em 1 dia para fusos negativos (ex: Brasil UTC-3).
+ */
+export function toLocalIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function formatDateTime(iso: string | null | undefined): string {

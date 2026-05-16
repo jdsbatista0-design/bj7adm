@@ -32,7 +32,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { formatBRL, MESES_PT } from "@/lib/format";
+import { formatBRL, MESES_PT, toLocalIsoDate } from "@/lib/format";
 import {
   ArrowLeft,
   Wallet,
@@ -63,7 +63,7 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
 ];
 
 function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return toLocalIsoDate(d);
 }
 
 function rangesFor(p: PeriodoKey) {
@@ -189,8 +189,11 @@ function EmpresaDetalhe() {
     const sumTipo = (rs: DreRow[], tipo: string) =>
       rs.filter((r) => r.tipo === tipo).reduce((s, r) => s + Number(r.valor_total || 0), 0);
 
-    const receita = sumGrupo(rows, "receita_bruta") + sumGrupo(rows, "receita_locacao");
-    const receitaAnt = sumGrupo(rowsAnt, "receita_bruta") + sumGrupo(rowsAnt, "receita_locacao");
+    // Receita e Despesa totais vêm SEMPRE por tipo — assim qualquer grupo
+    // novo cadastrado no Supabase (ex.: "outras_receitas") é contabilizado
+    // mesmo que ainda não esteja listado em ORDEM_DRE.
+    const receita = sumTipo(rows, "Receita");
+    const receitaAnt = sumTipo(rowsAnt, "Receita");
 
     const despesa = sumTipo(rows, "Despesa");
     const despesaAnt = sumTipo(rowsAnt, "Despesa");
@@ -209,6 +212,46 @@ function EmpresaDetalhe() {
       const variacao = trend(valor, valorAnt);
       return { ...d, valor, valorAnt, pctReceita, variacao };
     }).filter((l) => l.valor > 0 || l.valorAnt > 0);
+
+    // "Outros" — quaisquer grupos retornados pela view que ainda não
+    // foram mapeados em ORDEM_DRE. Garante que a soma da tabela bata
+    // com os KPIs (que somam por tipo, não por grupo conhecido).
+    const conhecidos = new Set(ORDEM_DRE.map((d) => d.grupo));
+    const outrosReceitaCur = rows
+      .filter((r) => r.tipo === "Receita" && !conhecidos.has(r.grupo))
+      .reduce((s, r) => s + Number(r.valor_total || 0), 0);
+    const outrosReceitaAnt = rowsAnt
+      .filter((r) => r.tipo === "Receita" && !conhecidos.has(r.grupo))
+      .reduce((s, r) => s + Number(r.valor_total || 0), 0);
+    const outrosDespCur = rows
+      .filter((r) => r.tipo === "Despesa" && !conhecidos.has(r.grupo))
+      .reduce((s, r) => s + Number(r.valor_total || 0), 0);
+    const outrosDespAnt = rowsAnt
+      .filter((r) => r.tipo === "Despesa" && !conhecidos.has(r.grupo))
+      .reduce((s, r) => s + Number(r.valor_total || 0), 0);
+
+    if (outrosReceitaCur > 0 || outrosReceitaAnt > 0) {
+      linhas.push({
+        grupo: "__outros_receita",
+        label: "Outras Receitas",
+        tipo: "receita",
+        valor: outrosReceitaCur,
+        valorAnt: outrosReceitaAnt,
+        pctReceita: receita > 0 ? (outrosReceitaCur / receita) * 100 : 0,
+        variacao: trend(outrosReceitaCur, outrosReceitaAnt),
+      });
+    }
+    if (outrosDespCur > 0 || outrosDespAnt > 0) {
+      linhas.push({
+        grupo: "__outros_despesa",
+        label: "(-) Outras Despesas",
+        tipo: "subtracao",
+        valor: outrosDespCur,
+        valorAnt: outrosDespAnt,
+        pctReceita: receita > 0 ? (outrosDespCur / receita) * 100 : 0,
+        variacao: trend(outrosDespCur, outrosDespAnt),
+      });
+    }
 
     return {
       receita,
