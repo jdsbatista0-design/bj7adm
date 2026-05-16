@@ -52,15 +52,19 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
+const MIN_YEAR = 2018;
+
 type PeriodoKey =
   | "mes_atual"
   | "mes_anterior"
   | "ult_3m"
   | "ult_6m"
   | "ult_12m"
-  | "ano_atual";
+  | "ano_atual"
+  | `ano_${number}`
+  | "personalizado";
 
-const PERIODOS: { key: PeriodoKey; label: string }[] = [
+const PERIODOS_BASE: { key: PeriodoKey; label: string }[] = [
   { key: "mes_atual", label: "Mês atual" },
   { key: "mes_anterior", label: "Mês anterior" },
   { key: "ult_3m", label: "Últimos 3 meses" },
@@ -69,11 +73,21 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
   { key: "ano_atual", label: "Ano atual" },
 ];
 
+function anosDisponiveis(): number[] {
+  const atual = new Date().getFullYear();
+  const out: number[] = [];
+  for (let y = atual; y >= MIN_YEAR; y--) out.push(y);
+  return out;
+}
+
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function rangesFor(p: PeriodoKey): {
+function rangesFor(
+  p: PeriodoKey,
+  custom: { start: string; end: string },
+): {
   start: string;
   end: string;
   startPrev: string;
@@ -101,9 +115,21 @@ function rangesFor(p: PeriodoKey): {
   } else if (p === "ult_12m") {
     start = new Date(y, m - 11, 1);
     end = new Date(y, m + 1, 1);
-  } else {
+  } else if (p === "ano_atual") {
     start = new Date(y, 0, 1);
     end = new Date(y + 1, 0, 1);
+  } else if (typeof p === "string" && p.startsWith("ano_")) {
+    const yr = Number(p.slice(4));
+    start = new Date(yr, 0, 1);
+    end = new Date(yr + 1, 0, 1);
+  } else {
+    // personalizado — usar inputs; end é exclusivo (+1 dia)
+    const s = custom.start || `${MIN_YEAR}-01-01`;
+    const e = custom.end || isoDate(hoje);
+    start = new Date(`${s}T00:00:00`);
+    const eDate = new Date(`${e}T00:00:00`);
+    eDate.setDate(eDate.getDate() + 1);
+    end = eDate;
   }
 
   const ms = end.getTime() - start.getTime();
