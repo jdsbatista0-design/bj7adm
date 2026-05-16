@@ -79,7 +79,7 @@ export async function paginateAll<T>(
   while (true) {
     const r = await build(offset, offset + PAGE - 1);
     if (r.error) throw new Error(r.error.message);
-    const batch = ((r.data ?? []) as T[]) ?? [];
+    const batch = (r.data ?? []) as T[];
     acc.push(...batch);
     if (batch.length < PAGE) break;
     offset += PAGE;
