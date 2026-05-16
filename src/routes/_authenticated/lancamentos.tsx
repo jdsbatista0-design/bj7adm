@@ -100,25 +100,6 @@ function LancamentosPage() {
   const categoriaNome = (id: number | null) =>
     categorias.data?.find((c) => c.id === id)?.nome ?? "—";
 
-  // Saldo acumulado: calculado a partir dos lançamentos visíveis (página atual),
-  // ordenados do mais antigo para o mais novo. Apenas Receita/Despesa entram.
-  const saldoPorId = useMemo(() => {
-    const map = new Map<number, number>();
-    const rows = list.data?.rows ?? [];
-    const asc = [...rows].sort((a, b) => {
-      if (a.data === b.data) return a.id - b.id;
-      return a.data < b.data ? -1 : 1;
-    });
-    let saldo = 0;
-    for (const l of asc) {
-      const valor = Number(l.valor);
-      if (l.tipo === "Receita") saldo += valor;
-      else if (l.tipo === "Despesa") saldo -= valor;
-      map.set(l.id, saldo);
-    }
-    return map;
-  }, [list.data?.rows]);
-
   const atualizarCategoria = useMutation({
     mutationFn: async ({ l, categoria_id }: { l: LancamentoRow; categoria_id: number | null }) => {
       const r = await from("lancamentos").update({ categoria_id }).eq("id", l.id);
