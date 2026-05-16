@@ -1,181 +1,469 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { from, asRows } from "@/integrations/supabase/db";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { from } from "@/integrations/supabase/db";
 import { useEmpresas } from "@/hooks/use-refs";
-import type { AlertaRow, LancamentoRow, TarefaRow } from "@/integrations/supabase/database";
 import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
-import { ItemCard } from "@/components/bj7/ItemCard";
-import { EmptyState } from "@/components/bj7/EmptyState";
+import { KpiCard } from "@/components/bj7/KpiCard";
 import { Button } from "@/components/ui/button";
-import { useItemDrawer } from "@/components/bj7/ItemDrawer";
-import { formatBRL } from "@/lib/format";
-import { ArrowLeft, Plus, Store } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import { formatBRL, MESES_PT } from "@/lib/format";
+import {
+  ArrowLeft,
+  Wallet,
+  TrendingDown,
+  PiggyBank,
+  Percent,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresas/$id")({
   component: EmpresaDetalhe,
 });
 
+type PeriodoKey =
+  | "mes_atual"
+  | "mes_anterior"
+  | "ult_3m"
+  | "ult_6m"
+  | "ult_12m"
+  | "ano_atual";
+
+const PERIODOS: { key: PeriodoKey; label: string }[] = [
+  { key: "mes_atual", label: "Mês atual" },
+  { key: "mes_anterior", label: "Mês anterior" },
+  { key: "ult_3m", label: "Últimos 3 meses" },
+  { key: "ult_6m", label: "Últimos 6 meses" },
+  { key: "ult_12m", label: "Últimos 12 meses" },
+  { key: "ano_atual", label: "Ano atual" },
+];
+
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function rangesFor(p: PeriodoKey) {
+  const hoje = new Date();
+  const y = hoje.getFullYear();
+  const m = hoje.getMonth();
+  let start: Date;
+  let end: Date;
+  if (p === "mes_atual") {
+    start = new Date(y, m, 1);
+    end = new Date(y, m + 1, 1);
+  } else if (p === "mes_anterior") {
+    start = new Date(y, m - 1, 1);
+    end = new Date(y, m, 1);
+  } else if (p === "ult_3m") {
+    start = new Date(y, m - 2, 1);
+    end = new Date(y, m + 1, 1);
+  } else if (p === "ult_6m") {
+    start = new Date(y, m - 5, 1);
+    end = new Date(y, m + 1, 1);
+  } else if (p === "ult_12m") {
+    start = new Date(y, m - 11, 1);
+    end = new Date(y, m + 1, 1);
+  } else {
+    start = new Date(y, 0, 1);
+    end = new Date(y + 1, 0, 1);
+  }
+  const ms = end.getTime() - start.getTime();
+  const endPrev = new Date(start.getTime());
+  const startPrev = new Date(start.getTime() - ms);
+  return {
+    start: isoDate(start),
+    end: isoDate(end),
+    startPrev: isoDate(startPrev),
+    endPrev: isoDate(endPrev),
+  };
+}
+
+// Ordem fixa de exibição da DRE — define como os grupos aparecem
+const ORDEM_DRE: {
+  grupo: string;
+  label: string;
+  tipo: "receita" | "subtracao" | "neutro";
+}[] = [
+  { grupo: "receita_bruta", label: "Receita Bruta", tipo: "receita" },
+  { grupo: "receita_locacao", label: "Receita de Locação", tipo: "receita" },
+  { grupo: "desp_impostos", label: "(-) Impostos", tipo: "subtracao" },
+  { grupo: "desp_pessoal", label: "(-) Pessoal", tipo: "subtracao" },
+  { grupo: "desp_pessoal_terceiro", label: "(-) Pessoal Terceirizado", tipo: "subtracao" },
+  { grupo: "desp_comissao", label: "(-) Comissões/Bonificações", tipo: "subtracao" },
+  { grupo: "desp_beneficios_veiculo", label: "(-) Veículos e Benefícios", tipo: "subtracao" },
+  { grupo: "desp_aluguel", label: "(-) Aluguel", tipo: "subtracao" },
+  { grupo: "desp_utilities", label: "(-) Água/Luz/Gás/Internet", tipo: "subtracao" },
+  { grupo: "desp_administrativa", label: "(-) Administrativas", tipo: "subtracao" },
+  { grupo: "desp_servicos", label: "(-) Serviços Terceiros", tipo: "subtracao" },
+  { grupo: "desp_marketing", label: "(-) Marketing", tipo: "subtracao" },
+  { grupo: "desp_seguranca", label: "(-) Segurança e Seguros", tipo: "subtracao" },
+  { grupo: "desp_financeira", label: "(-) Despesas Financeiras", tipo: "subtracao" },
+  { grupo: "desp_nao_classificada", label: "(-) Não Classificado", tipo: "subtracao" },
+  { grupo: "investimento_capex", label: "(-) CAPEX/Investimentos", tipo: "subtracao" },
+];
+
+type DreRow = { grupo: string; tipo: string; valor_total: number; mes_ref: string };
+
 function EmpresaDetalhe() {
   const { id } = Route.useParams();
   const empresaId = Number(id);
   const empresas = useEmpresas();
-  const drawer = useItemDrawer();
-  const qc = useQueryClient();
   const empresa = empresas.data?.find((e) => e.id === empresaId);
-  const isStone = (empresa?.nome ?? "").toLowerCase().includes("stone");
 
-  const startMonth = useMemo(
-    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
-    [],
-  );
+  const [periodoKey, setPeriodoKey] = useState<PeriodoKey>("mes_atual");
+  const periodo = useMemo(() => rangesFor(periodoKey), [periodoKey]);
 
-  const lancQ = useQuery({
-    queryKey: ["empresa", empresaId, "lanc", startMonth],
+  const dreQ = useQuery({
+    queryKey: ["empresa", empresaId, "dre", periodoKey],
     queryFn: async () => {
-      const r = await from("lancamentos")
-        .select("tipo,valor,data,contar_no_total")
+      const r = await from("dre_view" as never)
+        .select("grupo,tipo,valor_total,mes_ref")
         .eq("empresa_id", empresaId)
-        .gte("data", startMonth)
-        .eq("contar_no_total", true)
-        .limit(20000);
+        .gte("mes_ref", periodo.start)
+        .lt("mes_ref", periodo.end)
+        .limit(5000);
       if (r.error) throw r.error;
-      return asRows("lancamentos", r.data);
+      return (r.data ?? []) as DreRow[];
     },
   });
 
-  const alertasQ = useQuery({
-    queryKey: ["empresa", empresaId, "alertas"],
+  const dreAntQ = useQuery({
+    queryKey: ["empresa", empresaId, "dre-ant", periodoKey],
     queryFn: async () => {
-      const r = await supabase
-        .from("alertas")
-        .select("*")
+      const r = await from("dre_view" as never)
+        .select("grupo,tipo,valor_total")
         .eq("empresa_id", empresaId)
-        .in("status", ["aberto", "ack"])
-        .limit(200);
+        .gte("mes_ref", periodo.startPrev)
+        .lt("mes_ref", periodo.endPrev)
+        .limit(5000);
       if (r.error) throw r.error;
-      return (r.data ?? []) as AlertaRow[];
+      return (r.data ?? []) as DreRow[];
     },
   });
 
-  const tarefasQ = useQuery({
-    queryKey: ["empresa", empresaId, "tarefas"],
+  const evolQ = useQuery({
+    queryKey: ["empresa", empresaId, "evol12m"],
     queryFn: async () => {
-      const r = await supabase
-        .from("tarefas")
-        .select("*")
+      const hoje = new Date();
+      const start = isoDate(new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1));
+      const r = await from("dre_view" as never)
+        .select("tipo,valor_total,mes_ref")
         .eq("empresa_id", empresaId)
-        .in("status", ["aberta", "em_andamento", "aguardando"])
-        .limit(500);
+        .gte("mes_ref", start)
+        .limit(10000);
       if (r.error) throw r.error;
-      return (r.data ?? []) as TarefaRow[];
+      return (r.data ?? []) as DreRow[];
     },
   });
 
-  const tot = useMemo(() => {
-    const rows = (lancQ.data ?? []) as LancamentoRow[];
-    const rec = rows
-      .filter((r) => r.tipo === "Receita")
-      .reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
-    const desp = rows
-      .filter((r) => r.tipo === "Despesa")
-      .reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
-    return { rec, desp, margem: rec > 0 ? ((rec - desp) / rec) * 100 : 0 };
-  }, [lancQ.data]);
+  const dre = useMemo(() => {
+    const rows = dreQ.data ?? [];
+    const rowsAnt = dreAntQ.data ?? [];
 
-  const ack = useMutation({
-    mutationFn: async ({ id, action }: { id: number; action: "resolver" | "snooze" }) => {
-      const fn = action === "resolver" ? "resolver_alerta" : "snooze_alerta";
-      const params = action === "snooze" ? { _id: id, _horas: 24 } : { _id: id };
-      const r = await supabase.rpc(fn, params);
-      if (r.error) throw r.error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["empresa", empresaId] }),
-  });
-  const concluir = useMutation({
-    mutationFn: async (id: number) => {
-      const r = await supabase.rpc("concluir_tarefa", { _id: id });
-      if (r.error) throw r.error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["empresa", empresaId] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+    const sumGrupo = (rs: DreRow[], grupo: string) =>
+      rs.filter((r) => r.grupo === grupo).reduce((s, r) => s + Number(r.valor_total || 0), 0);
+    const sumTipo = (rs: DreRow[], tipo: string) =>
+      rs.filter((r) => r.tipo === tipo).reduce((s, r) => s + Number(r.valor_total || 0), 0);
+
+    const receita = sumGrupo(rows, "receita_bruta") + sumGrupo(rows, "receita_locacao");
+    const receitaAnt = sumGrupo(rowsAnt, "receita_bruta") + sumGrupo(rowsAnt, "receita_locacao");
+
+    const despesa = sumTipo(rows, "Despesa");
+    const despesaAnt = sumTipo(rowsAnt, "Despesa");
+
+    const lucro = receita - despesa;
+    const lucroAnt = receitaAnt - despesaAnt;
+    const margem = receita > 0 ? (lucro / receita) * 100 : 0;
+    const margemAnt = receitaAnt > 0 ? (lucroAnt / receitaAnt) * 100 : 0;
+
+    const trend = (cur: number, ant: number) => (ant > 0 ? (cur - ant) / ant : null);
+
+    const linhas = ORDEM_DRE.map((d) => {
+      const valor = sumGrupo(rows, d.grupo);
+      const valorAnt = sumGrupo(rowsAnt, d.grupo);
+      const pctReceita = receita > 0 ? (valor / receita) * 100 : 0;
+      const variacao = trend(valor, valorAnt);
+      return { ...d, valor, valorAnt, pctReceita, variacao };
+    }).filter((l) => l.valor > 0 || l.valorAnt > 0);
+
+    return {
+      receita,
+      despesa,
+      lucro,
+      margem,
+      receitaAnt,
+      despesaAnt,
+      lucroAnt,
+      margemAnt,
+      trendRec: trend(receita, receitaAnt),
+      trendDesp: trend(despesa, despesaAnt),
+      trendLucro: trend(lucro, lucroAnt),
+      trendMargemPp: margem - margemAnt,
+      linhas,
+    };
+  }, [dreQ.data, dreAntQ.data]);
+
+  const evolucao = useMemo(() => {
+    const rows = evolQ.data ?? [];
+    const buckets = new Map<string, { receita: number; despesa: number }>();
+    const hoje = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      buckets.set(key, { receita: 0, despesa: 0 });
+    }
+    for (const r of rows) {
+      const key = (r.mes_ref ?? "").slice(0, 7);
+      const b = buckets.get(key);
+      if (!b) continue;
+      const v = Number(r.valor_total || 0);
+      if (r.tipo === "Receita") b.receita += v;
+      else if (r.tipo === "Despesa") b.despesa += v;
+    }
+    return Array.from(buckets.entries()).map(([key, v]) => {
+      const [y, m] = key.split("-").map(Number);
+      return {
+        mes: `${MESES_PT[m - 1]}/${String(y).slice(2)}`,
+        receita: Math.round(v.receita),
+        despesa: Math.round(v.despesa),
+        lucro: Math.round(v.receita - v.despesa),
+      };
+    });
+  }, [evolQ.data]);
+
+  const loading = dreQ.isLoading || dreAntQ.isLoading;
+  const labelPeriodo = PERIODOS.find((p) => p.key === periodoKey)?.label ?? "";
 
   return (
     <PageShell
       title={empresa?.nome ?? `Empresa #${empresaId}`}
-      description="Saúde financeira, items abertos e ações"
+      description={`DRE — ${labelPeriodo}`}
       actions={
         <div className="flex items-center gap-2">
-          <Link to="/empresas" className="text-xs text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
-            <ArrowLeft className="h-3 w-3" /> Empresas
-          </Link>
-          <Button size="sm" onClick={() => drawer.open({ empresa_id: empresaId })}>
-            <Plus className="h-4 w-4 mr-1" /> Item
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/empresas">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Empresas
+            </Link>
           </Button>
+          <Select value={periodoKey} onValueChange={(v) => setPeriodoKey(v as PeriodoKey)}>
+            <SelectTrigger className="h-8 w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PERIODOS.map((p) => (
+                <SelectItem key={p.key} value={p.key}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       }
     >
-      <div className="grid sm:grid-cols-3 gap-3">
-        <Stat label="Receita do mês" value={formatBRL(tot.rec)} />
-        <Stat label="Despesa do mês" value={formatBRL(tot.desp)} />
-        <Stat label="Margem" value={tot.rec > 0 ? `${tot.margem.toFixed(1)}%` : "—"} />
-      </div>
-
-      {isStone && (
-        <Link
-          to="/stone"
-          className="rounded-2xl bg-card p-4 ring-1 ring-white/5 hover:ring-primary/30 transition flex items-center justify-between"
-          style={{ boxShadow: "var(--shadow-elegant)" }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-primary">
-              <Store className="h-4 w-4" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold">Painel Stone</div>
-              <div className="text-xs text-muted-foreground">Rebate, base, churn, clientes sumidos</div>
-            </div>
-          </div>
-          <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground" />
-        </Link>
-      )}
-
+      {/* KPIs */}
       <section>
-        <SectionHeader title="Items abertos" description="Alertas + tarefas desta empresa" />
-        {(alertasQ.data ?? []).length === 0 && (tarefasQ.data ?? []).length === 0 ? (
-          <EmptyState title="Nada aberto" description="Sem alertas ou tarefas para esta empresa." />
-        ) : (
-          <div className="space-y-2">
-            {(alertasQ.data ?? []).map((a) => (
-              <ItemCard
-                key={`a-${a.id}`}
-                item={{ kind: "alerta", data: a }}
-                onResolver={(id) => ack.mutate({ id, action: "resolver" })}
-                onSnooze={(id) => ack.mutate({ id, action: "snooze" })}
-              />
-            ))}
-            {(tarefasQ.data ?? []).map((t) => (
-              <ItemCard
-                key={`t-${t.id}`}
-                item={{ kind: "tarefa", data: t }}
-                onConcluir={(id) => concluir.mutate(id)}
-              />
-            ))}
-          </div>
-        )}
+        <SectionHeader title="Resumo do período" description={labelPeriodo} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiCard
+            label="Receita"
+            value={formatBRL(dre.receita)}
+            trend={dre.trendRec}
+            icon={<Wallet className="h-4 w-4" />}
+            status="neutral"
+          />
+          <KpiCard
+            label="Despesa"
+            value={formatBRL(dre.despesa)}
+            trend={dre.trendDesp}
+            icon={<TrendingDown className="h-4 w-4" />}
+            status={dre.trendDesp != null && dre.trendDesp > 0.1 ? "atencao" : "neutral"}
+          />
+          <KpiCard
+            label="Lucro"
+            value={formatBRL(dre.lucro)}
+            trend={dre.trendLucro}
+            icon={<PiggyBank className="h-4 w-4" />}
+            status={dre.lucro < 0 ? "critico" : "ok"}
+          />
+          <KpiCard
+            label="Margem"
+            value={dre.receita > 0 ? `${dre.margem.toFixed(1)}%` : "—"}
+            hint={
+              dre.receita > 0
+                ? `${dre.trendMargemPp >= 0 ? "+" : ""}${dre.trendMargemPp.toFixed(1)} pp vs anterior`
+                : undefined
+            }
+            icon={<Percent className="h-4 w-4" />}
+            status={dre.margem < 0 ? "critico" : dre.margem < 10 ? "atencao" : "ok"}
+          />
+        </div>
+      </section>
+
+      {/* DRE Detalhada */}
+      <section>
+        <SectionHeader title="DRE detalhada" description="Agrupado por grupo da categoria" />
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Linha</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="text-right w-28">% Receita</TableHead>
+                  <TableHead className="text-right w-32">vs Anterior</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      Carregando...
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!loading && dre.linhas.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      Sem dados no período selecionado.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!loading &&
+                  dre.linhas.map((l) => {
+                    const cor =
+                      l.tipo === "receita"
+                        ? "text-success"
+                        : l.valor > 0
+                          ? ""
+                          : "text-muted-foreground";
+                    const varCor =
+                      l.variacao == null
+                        ? "text-muted-foreground"
+                        : l.variacao > 0.05
+                          ? l.tipo === "receita"
+                            ? "text-success"
+                            : "text-destructive"
+                          : l.variacao < -0.05
+                            ? l.tipo === "receita"
+                              ? "text-destructive"
+                              : "text-success"
+                            : "text-muted-foreground";
+                    return (
+                      <TableRow key={l.grupo}>
+                        <TableCell className="text-sm">{l.label}</TableCell>
+                        <TableCell className={`text-right tabular-nums ${cor}`}>
+                          {formatBRL(l.valor)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
+                          {dre.receita > 0 ? `${l.pctReceita.toFixed(1)}%` : "—"}
+                        </TableCell>
+                        <TableCell className={`text-right text-xs tabular-nums ${varCor}`}>
+                          {l.variacao == null
+                            ? "—"
+                            : `${l.variacao >= 0 ? "+" : ""}${(l.variacao * 100).toFixed(1)}%`}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                {!loading && dre.linhas.length > 0 && (
+                  <TableRow className="bg-muted/40 font-semibold">
+                    <TableCell>Resultado Operacional</TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums ${dre.lucro < 0 ? "text-destructive" : "text-success"}`}
+                    >
+                      {formatBRL(dre.lucro)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                      {dre.receita > 0 ? `${dre.margem.toFixed(1)}%` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-xs text-muted-foreground">
+                      {dre.receita > 0
+                        ? `${dre.trendMargemPp >= 0 ? "+" : ""}${dre.trendMargemPp.toFixed(1)} pp`
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Gráfico evolução 12m */}
+      <section>
+        <SectionHeader title="Evolução últimos 12 meses" />
+        <Card>
+          <CardContent className="p-4">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolucao}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v) =>
+                      new Intl.NumberFormat("pt-BR", {
+                        notation: "compact",
+                        maximumFractionDigits: 1,
+                      }).format(v as number)
+                    }
+                  />
+                  <Tooltip formatter={(v: number) => formatBRL(v)} />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="receita"
+                    name="Receita"
+                    stroke="hsl(var(--success))"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="despesa"
+                    name="Despesa"
+                    stroke="hsl(var(--destructive))"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="lucro"
+                    name="Lucro"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </section>
     </PageShell>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl bg-card p-4 ring-1 ring-white/5" style={{ boxShadow: "var(--shadow-elegant)" }}>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular">{value}</div>
-    </div>
   );
 }
