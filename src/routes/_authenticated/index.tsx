@@ -8,12 +8,16 @@ import type { LancamentoRow } from "@/integrations/supabase/database";
 import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select";
 import {
   Table,
@@ -48,15 +52,19 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
+const MIN_YEAR = 2018;
+
 type PeriodoKey =
   | "mes_atual"
   | "mes_anterior"
   | "ult_3m"
   | "ult_6m"
   | "ult_12m"
-  | "ano_atual";
+  | "ano_atual"
+  | `ano_${number}`
+  | "personalizado";
 
-const PERIODOS: { key: PeriodoKey; label: string }[] = [
+const PERIODOS_BASE: { key: PeriodoKey; label: string }[] = [
   { key: "mes_atual", label: "Mês atual" },
   { key: "mes_anterior", label: "Mês anterior" },
   { key: "ult_3m", label: "Últimos 3 meses" },
@@ -65,11 +73,21 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
   { key: "ano_atual", label: "Ano atual" },
 ];
 
+function anosDisponiveis(): number[] {
+  const atual = new Date().getFullYear();
+  const out: number[] = [];
+  for (let y = atual; y >= MIN_YEAR; y--) out.push(y);
+  return out;
+}
+
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function rangesFor(p: PeriodoKey): {
+function rangesFor(
+  p: PeriodoKey,
+  custom: { start: string; end: string },
+): {
   start: string;
   end: string;
   startPrev: string;
@@ -97,9 +115,21 @@ function rangesFor(p: PeriodoKey): {
   } else if (p === "ult_12m") {
     start = new Date(y, m - 11, 1);
     end = new Date(y, m + 1, 1);
-  } else {
+  } else if (p === "ano_atual") {
     start = new Date(y, 0, 1);
     end = new Date(y + 1, 0, 1);
+  } else if (typeof p === "string" && p.startsWith("ano_")) {
+    const yr = Number(p.slice(4));
+    start = new Date(yr, 0, 1);
+    end = new Date(yr + 1, 0, 1);
+  } else {
+    // personalizado — usar inputs; end é exclusivo (+1 dia)
+    const s = custom.start || `${MIN_YEAR}-01-01`;
+    const e = custom.end || isoDate(hoje);
+    start = new Date(`${s}T00:00:00`);
+    const eDate = new Date(`${e}T00:00:00`);
+    eDate.setDate(eDate.getDate() + 1);
+    end = eDate;
   }
 
   const ms = end.getTime() - start.getTime();
@@ -125,8 +155,16 @@ function Dashboard() {
   const user = useCurrentUser();
   const empresas = useEmpresas();
   const [periodoKey, setPeriodoKey] = useState<PeriodoKey>("mes_atual");
+  const hojeISO = isoDate(new Date());
+  const [customStart, setCustomStart] = useState<string>(`${MIN_YEAR}-01-01`);
+  const [customEnd, setCustomEnd] = useState<string>(hojeISO);
 
-  const periodo = useMemo(() => rangesFor(periodoKey), [periodoKey]);
+  const periodo = useMemo(
+    () => rangesFor(periodoKey, { start: customStart, end: customEnd }),
+    [periodoKey, customStart, customEnd],
+  );
+
+  const anos = useMemo(() => anosDisponiveis(), []);
 
   const lancAtualQ = useQuery({
     queryKey: ["dash", "atual", periodoKey, user.id],
@@ -296,29 +334,78 @@ function Dashboard() {
   }, [lanc12mQ.data]);
 
   const loading = lancAtualQ.isLoading || lancAntQ.isLoading;
-  const labelPeriodo =
-    PERIODOS.find((p) => p.key === periodoKey)?.label ?? "";
+  const labelPeriodo = useMemo(() => {
+    const base = PERIODOS_BASE.find((p) => p.key === periodoKey);
+    if (base) return base.label;
+    if (typeof periodoKey === "string" && periodoKey.startsWith("ano_"))
+      return `Ano ${periodoKey.slice(4)}`;
+    if (periodoKey === "personalizado")
+      return `${customStart} → ${customEnd}`;
+    return "";
+  }, [periodoKey, customStart, customEnd]);
 
   return (
     <PageShell
       title="Dashboard"
       description="Consolidado financeiro do Grupo BJ7"
       actions={
-        <Select
-          value={periodoKey}
-          onValueChange={(v) => setPeriodoKey(v as PeriodoKey)}
-        >
-          <SelectTrigger className="w-[200px] h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIODOS.map((p) => (
-              <SelectItem key={p.key} value={p.key}>
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={periodoKey}
+            onValueChange={(v) => setPeriodoKey(v as PeriodoKey)}
+          >
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Atalhos</SelectLabel>
+                {PERIODOS_BASE.map((p) => (
+                  <SelectItem key={p.key} value={p.key}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Por ano</SelectLabel>
+                {anos.map((y) => (
+                  <SelectItem key={y} value={`ano_${y}`}>
+                    Ano {y}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Personalizado</SelectLabel>
+                <SelectItem value="personalizado">
+                  Intervalo de datas…
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {periodoKey === "personalizado" && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={customStart}
+                min={`${MIN_YEAR}-01-01`}
+                max={customEnd || hojeISO}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="h-9 w-[150px]"
+              />
+              <span className="text-muted-foreground text-xs">→</span>
+              <Input
+                type="date"
+                value={customEnd}
+                min={customStart || `${MIN_YEAR}-01-01`}
+                max={hojeISO}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="h-9 w-[150px]"
+              />
+            </div>
+          )}
+        </div>
       }
     >
       {/* ===== KPIs consolidados ===== */}
