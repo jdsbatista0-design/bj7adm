@@ -166,61 +166,56 @@ function Dashboard() {
 
   const anos = useMemo(() => anosDisponiveis(), []);
 
-  const lancAtualQ = useQuery({
-    queryKey: ["dash", "atual", periodoKey, user.id],
-    queryFn: async () => {
+  // PostgREST aplica um cap silencioso por request (tipicamente 1000 linhas)
+  // mesmo passando .limit(N) grande. Para períodos longos isso fazia o
+  // dashboard "sumir" — paginamos com .range() até esgotar.
+  const PAGE = 1000;
+  async function fetchAllLancamentos(opts: {
+    start: string;
+    end?: string;
+  }): Promise<LancamentoRow[]> {
+    const acc: LancamentoRow[] = [];
+    let offset = 0;
+    while (true) {
       let q = from("lancamentos")
         .select("id,data,empresa_id,tipo,valor,contar_no_total")
-        .gte("data", periodo.start)
-        .lt("data", periodo.end)
+        .gte("data", opts.start)
         .eq("contar_no_total", true)
         .in("tipo", ["Receita", "Despesa"]);
+      if (opts.end) q = q.lt("data", opts.end);
       if (!user.ve_todas_empresas) {
         if (user.empresas_ids.length === 0) return [];
         q = q.in("empresa_id", user.empresas_ids);
       }
-      const r = await q.limit(50000);
+      const r = await q
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE - 1);
       if (r.error) throw r.error;
-      return asRows("lancamentos", r.data);
-    },
+      const batch = asRows("lancamentos", r.data);
+      acc.push(...batch);
+      if (batch.length < PAGE) break;
+      offset += PAGE;
+      if (offset > 500_000) break;
+    }
+    return acc;
+  }
+
+  const lancAtualQ = useQuery({
+    queryKey: ["dash", "atual", periodo.start, periodo.end, user.id],
+    queryFn: () => fetchAllLancamentos({ start: periodo.start, end: periodo.end }),
   });
 
   const lancAntQ = useQuery({
-    queryKey: ["dash", "ant", periodoKey, user.id],
-    queryFn: async () => {
-      let q = from("lancamentos")
-        .select("id,data,empresa_id,tipo,valor,contar_no_total")
-        .gte("data", periodo.startPrev)
-        .lt("data", periodo.endPrev)
-        .eq("contar_no_total", true)
-        .in("tipo", ["Receita", "Despesa"]);
-      if (!user.ve_todas_empresas) {
-        if (user.empresas_ids.length === 0) return [];
-        q = q.in("empresa_id", user.empresas_ids);
-      }
-      const r = await q.limit(50000);
-      if (r.error) throw r.error;
-      return asRows("lancamentos", r.data);
-    },
+    queryKey: ["dash", "ant", periodo.startPrev, periodo.endPrev, user.id],
+    queryFn: () => fetchAllLancamentos({ start: periodo.startPrev, end: periodo.endPrev }),
   });
 
   const lanc12mQ = useQuery({
     queryKey: ["dash", "evolucao12m", user.id],
-    queryFn: async () => {
+    queryFn: () => {
       const hoje = new Date();
       const start = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-      let q = from("lancamentos")
-        .select("data,empresa_id,tipo,valor,contar_no_total")
-        .gte("data", isoDate(start))
-        .eq("contar_no_total", true)
-        .in("tipo", ["Receita", "Despesa"]);
-      if (!user.ve_todas_empresas) {
-        if (user.empresas_ids.length === 0) return [];
-        q = q.in("empresa_id", user.empresas_ids);
-      }
-      const r = await q.limit(100000);
-      if (r.error) throw r.error;
-      return asRows("lancamentos", r.data);
+      return fetchAllLancamentos({ start: isoDate(start) });
     },
   });
 
