@@ -66,10 +66,10 @@ export function asRow<T extends keyof RowMap>(
  *   );
  */
 export async function paginateAll<T>(
-  build: (fromIdx: number, toIdx: number) => PromiseLike<{
-    data: T[] | null;
-    error: { message: string } | null;
-  }>,
+  build: (
+    fromIdx: number,
+    toIdx: number,
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
   opts: { pageSize?: number; hardLimit?: number } = {},
 ): Promise<T[]> {
   const PAGE = opts.pageSize ?? 1000;
@@ -79,7 +79,7 @@ export async function paginateAll<T>(
   while (true) {
     const r = await build(offset, offset + PAGE - 1);
     if (r.error) throw new Error(r.error.message);
-    const batch = (r.data ?? []) as T[];
+    const batch = ((r.data ?? []) as T[]) ?? [];
     acc.push(...batch);
     if (batch.length < PAGE) break;
     offset += PAGE;
