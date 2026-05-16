@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { from, asRows } from "@/integrations/supabase/db";
 import type { LancamentoRow } from "@/integrations/supabase/database";
@@ -39,15 +39,15 @@ const search = z.object({
   page: fallback(z.number().int().min(1), 1).default(1),
 });
 
-export const Route = createFileRoute("/_authenticated/razao")({
+export const Route = createFileRoute("/_authenticated/lancamentos")({
   validateSearch: zodValidator(search),
-  component: RazaoPage,
+  component: LancamentosPage,
 });
 
-function RazaoPage() {
+function LancamentosPage() {
   const user = useCurrentUser();
   const params = Route.useSearch();
-  const navigate = useNavigate({ from: "/razao" });
+  const navigate = useNavigate({ from: "/lancamentos" });
   const empresas = useEmpresas();
   const unidades = useUnidades();
   const categorias = useCategorias();
@@ -65,7 +65,6 @@ function RazaoPage() {
     queryKey,
     queryFn: async () => {
       let q = from("lancamentos").select("*", { count: "exact" });
-      // Restringe por permissão
       q = q.in("tipo", tiposPermitidos);
       if (!user.ve_todas_empresas) {
         if (user.empresas_ids.length === 0) {
@@ -101,11 +100,28 @@ function RazaoPage() {
   const categoriaNome = (id: number | null) =>
     categorias.data?.find((c) => c.id === id)?.nome ?? "—";
 
+  // Saldo acumulado: calculado a partir dos lançamentos visíveis (página atual),
+  // ordenados do mais antigo para o mais novo. Apenas Receita/Despesa entram.
+  const saldoPorId = useMemo(() => {
+    const map = new Map<number, number>();
+    const rows = list.data?.rows ?? [];
+    const asc = [...rows].sort((a, b) => {
+      if (a.data === b.data) return a.id - b.id;
+      return a.data < b.data ? -1 : 1;
+    });
+    let saldo = 0;
+    for (const l of asc) {
+      const valor = Number(l.valor);
+      if (l.tipo === "Receita") saldo += valor;
+      else if (l.tipo === "Despesa") saldo -= valor;
+      map.set(l.id, saldo);
+    }
+    return map;
+  }, [list.data?.rows]);
+
   const atualizarCategoria = useMutation({
     mutationFn: async ({ l, categoria_id }: { l: LancamentoRow; categoria_id: number | null }) => {
-      const r = await from("lancamentos")
-        .update({ categoria_id })
-        .eq("id", l.id);
+      const r = await from("lancamentos").update({ categoria_id }).eq("id", l.id);
       if (r.error) throw r.error;
     },
     onSuccess: () => {
@@ -141,10 +157,13 @@ function RazaoPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Razão</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Lançamentos</h1>
+          <p className="text-sm text-muted-foreground">Conta corrente — entradas, saídas, saldo acumulado</p>
+        </div>
         {podeLancar(user) && (
-          <Button onClick={dlg.openNew}>
-            <Plus className="h-4 w-4 mr-1" /> Novo lançamento
+          <Button size="sm" onClick={dlg.openNew}>
+            <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
           </Button>
         )}
       </div>
@@ -236,19 +255,21 @@ function RazaoPage() {
                 <TableHead>Categoria</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-right">Saldo</TableHead>
                 <TableHead className="w-20">Rev.</TableHead>
                 <TableHead className="w-32 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.isLoading && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
               )}
               {!list.isLoading && (list.data?.rows.length ?? 0) === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum lançamento encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum lançamento encontrado.</TableCell></TableRow>
               )}
               {list.data?.rows.map((l) => {
                 const editavel = podeEditarLancamento(user, l);
+                const saldo = saldoPorId.get(l.id) ?? 0;
                 return (
                   <TableRow key={l.id}>
                     <TableCell>{formatDate(l.data)}</TableCell>
@@ -268,8 +289,8 @@ function RazaoPage() {
                           <SelectContent>
                             <SelectItem value="0">— Sem categoria —</SelectItem>
                             {(categorias.data ?? []).map((c) => (
-                                <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
-                              ))}
+                              <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       ) : (
@@ -278,6 +299,11 @@ function RazaoPage() {
                     </TableCell>
                     <TableCell className="text-sm max-w-[280px] truncate" title={l.descricao ?? ""}>{l.descricao ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(Number(l.valor))}</TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums font-medium ${saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}
+                    >
+                      {formatBRL(saldo)}
+                    </TableCell>
                     <TableCell>
                       {l.revisado
                         ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">sim</Badge>
