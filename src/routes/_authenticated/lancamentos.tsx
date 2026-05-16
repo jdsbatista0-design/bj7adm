@@ -236,21 +236,19 @@ function LancamentosPage() {
                 <TableHead>Categoria</TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
                 <TableHead className="w-20">Rev.</TableHead>
                 <TableHead className="w-32 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {list.isLoading && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
               )}
               {!list.isLoading && (list.data?.rows.length ?? 0) === 0 && (
-                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum lançamento encontrado.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum lançamento encontrado.</TableCell></TableRow>
               )}
               {list.data?.rows.map((l) => {
                 const editavel = podeEditarLancamento(user, l);
-                const saldo = saldoPorId.get(l.id) ?? 0;
                 return (
                   <TableRow key={l.id}>
                     <TableCell>{formatDate(l.data)}</TableCell>
@@ -280,11 +278,6 @@ function LancamentosPage() {
                     </TableCell>
                     <TableCell className="text-sm max-w-[280px] truncate" title={l.descricao ?? ""}>{l.descricao ?? "—"}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(Number(l.valor))}</TableCell>
-                    <TableCell
-                      className={`text-right tabular-nums font-medium ${saldo >= 0 ? "text-emerald-600" : "text-destructive"}`}
-                    >
-                      {formatBRL(saldo)}
-                    </TableCell>
                     <TableCell>
                       {l.revisado
                         ? <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">sim</Badge>
