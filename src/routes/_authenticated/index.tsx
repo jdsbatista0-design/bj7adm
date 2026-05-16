@@ -358,30 +358,13 @@ function Dashboard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectGroup>
-                <SelectLabel>Atalhos</SelectLabel>
-                {PERIODOS_BASE.map((p) => (
-                  <SelectItem key={p.key} value={p.key}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              <SelectSeparator />
-              <SelectGroup>
-                <SelectLabel>Por ano</SelectLabel>
-                {anos.map((y) => (
-                  <SelectItem key={y} value={`ano_${y}`}>
-                    Ano {y}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-              <SelectSeparator />
-              <SelectGroup>
-                <SelectLabel>Personalizado</SelectLabel>
-                <SelectItem value="personalizado">
-                  Intervalo de datas…
+              {PERIODOS_BASE.map((p) => (
+                <SelectItem key={p.key} value={p.key}>
+                  {p.label}
                 </SelectItem>
-              </SelectGroup>
+              ))}
+              <SelectSeparator />
+              <SelectItem value="personalizado">Personalizado…</SelectItem>
             </SelectContent>
           </Select>
           {periodoKey === "personalizado" && (
