@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Building2,
-  PlusCircle,
   BookOpen,
   BarChart3,
   Upload,
@@ -34,8 +33,7 @@ import type { CurrentUser } from "@/lib/permissions";
 const NAV: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Empresas", url: "/empresas", icon: Building2 },
-  { title: "Lançar", url: "/lancar", icon: PlusCircle },
-  { title: "Razão", url: "/razao", icon: BookOpen },
+  { title: "Lançamentos", url: "/lancamentos", icon: BookOpen },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Importações", url: "/importacoes", icon: Upload },
   { title: "Configurações", url: "/config", icon: Settings },

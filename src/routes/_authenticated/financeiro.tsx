@@ -14,8 +14,7 @@ function Financeiro() {
       description="Lançamentos, revisão e visão por categoria/período"
     >
       <div className="grid sm:grid-cols-3 gap-3">
-        <HubCard to="/lancar" icon={<PlusCircle className="h-4 w-4" />} title="Lançar" desc="Novo lançamento" />
-        <HubCard to="/razao" icon={<BookOpen className="h-4 w-4" />} title="Razão" desc="Histórico completo" />
+        <HubCard to="/lancamentos" icon={<BookOpen className="h-4 w-4" />} title="Lançamentos" desc="Conta corrente" />
         <HubCard to="/a-revisar" icon={<CheckSquare className="h-4 w-4" />} title="A revisar" desc="Fila de revisão" />
       </div>
 
