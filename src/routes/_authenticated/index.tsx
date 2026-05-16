@@ -334,29 +334,78 @@ function Dashboard() {
   }, [lanc12mQ.data]);
 
   const loading = lancAtualQ.isLoading || lancAntQ.isLoading;
-  const labelPeriodo =
-    PERIODOS.find((p) => p.key === periodoKey)?.label ?? "";
+  const labelPeriodo = useMemo(() => {
+    const base = PERIODOS_BASE.find((p) => p.key === periodoKey);
+    if (base) return base.label;
+    if (typeof periodoKey === "string" && periodoKey.startsWith("ano_"))
+      return `Ano ${periodoKey.slice(4)}`;
+    if (periodoKey === "personalizado")
+      return `${customStart} → ${customEnd}`;
+    return "";
+  }, [periodoKey, customStart, customEnd]);
 
   return (
     <PageShell
       title="Dashboard"
       description="Consolidado financeiro do Grupo BJ7"
       actions={
-        <Select
-          value={periodoKey}
-          onValueChange={(v) => setPeriodoKey(v as PeriodoKey)}
-        >
-          <SelectTrigger className="w-[200px] h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PERIODOS.map((p) => (
-              <SelectItem key={p.key} value={p.key}>
-                {p.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={periodoKey}
+            onValueChange={(v) => setPeriodoKey(v as PeriodoKey)}
+          >
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Atalhos</SelectLabel>
+                {PERIODOS_BASE.map((p) => (
+                  <SelectItem key={p.key} value={p.key}>
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Por ano</SelectLabel>
+                {anos.map((y) => (
+                  <SelectItem key={y} value={`ano_${y}`}>
+                    Ano {y}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel>Personalizado</SelectLabel>
+                <SelectItem value="personalizado">
+                  Intervalo de datas…
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          {periodoKey === "personalizado" && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={customStart}
+                min={`${MIN_YEAR}-01-01`}
+                max={customEnd || hojeISO}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="h-9 w-[150px]"
+              />
+              <span className="text-muted-foreground text-xs">→</span>
+              <Input
+                type="date"
+                value={customEnd}
+                min={customStart || `${MIN_YEAR}-01-01`}
+                max={hojeISO}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="h-9 w-[150px]"
+              />
+            </div>
+          )}
+        </div>
       }
     >
       {/* ===== KPIs consolidados ===== */}
