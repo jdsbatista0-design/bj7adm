@@ -8,12 +8,16 @@ import type { LancamentoRow } from "@/integrations/supabase/database";
 import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select";
 import {
   Table,
