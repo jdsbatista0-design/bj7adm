@@ -32,7 +32,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { formatBRL, MESES_PT } from "@/lib/format";
+import { formatBRL, MESES_PT, toLocalIsoDate } from "@/lib/format";
 import {
   ArrowLeft,
   Wallet,
@@ -63,7 +63,7 @@ const PERIODOS: { key: PeriodoKey; label: string }[] = [
 ];
 
 function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
+  return toLocalIsoDate(d);
 }
 
 function rangesFor(p: PeriodoKey) {
@@ -189,8 +189,11 @@ function EmpresaDetalhe() {
     const sumTipo = (rs: DreRow[], tipo: string) =>
       rs.filter((r) => r.tipo === tipo).reduce((s, r) => s + Number(r.valor_total || 0), 0);
 
-    const receita = sumGrupo(rows, "receita_bruta") + sumGrupo(rows, "receita_locacao");
-    const receitaAnt = sumGrupo(rowsAnt, "receita_bruta") + sumGrupo(rowsAnt, "receita_locacao");
+    // Receita e Despesa totais vêm SEMPRE por tipo — assim qualquer grupo
+    // novo cadastrado no Supabase (ex.: "outras_receitas") é contabilizado
+    // mesmo que ainda não esteja listado em ORDEM_DRE.
+    const receita = sumTipo(rows, "Receita");
+    const receitaAnt = sumTipo(rowsAnt, "Receita");
 
     const despesa = sumTipo(rows, "Despesa");
     const despesaAnt = sumTipo(rowsAnt, "Despesa");
