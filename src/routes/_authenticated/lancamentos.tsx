@@ -113,6 +113,90 @@ function LancamentosPage() {
   const categoriaNome = (id: number | null) =>
     categorias.data?.find((c) => c.id === id)?.nome ?? "—";
 
+  // Agregado de TODOS os lançamentos que batem com os filtros (não só da página)
+  const aggQ = useQuery({
+    queryKey: ["lancamentos-agg", params, user.id],
+    queryFn: async () => {
+      return paginateAll<Pick<LancamentoRow, "id" | "data" | "tipo" | "valor" | "categoria_id">>(
+        (fromIdx, toIdx) => {
+          let q = from("lancamentos").select("id,data,tipo,valor,categoria_id");
+          q = q.in("tipo", tiposPermitidos);
+          if (!user.ve_todas_empresas) {
+            if (user.empresas_ids.length === 0) {
+              return Promise.resolve({ data: [], error: null });
+            }
+            q = q.in("empresa_id", user.empresas_ids);
+          }
+          if (params.ano) q = q.eq("ano", params.ano);
+          if (params.mes) q = q.eq("mes", params.mes);
+          if (params.tipo) q = q.eq("tipo", params.tipo);
+          if (params.empresa) q = q.eq("empresa_id", params.empresa);
+          if (params.unidade) q = q.eq("unidade_id", params.unidade);
+          if (params.categoria) q = q.eq("categoria_id", params.categoria);
+          if (params.revisado === "sim") q = q.eq("revisado", true);
+          if (params.revisado === "nao") q = q.eq("revisado", false);
+          if (params.q) q = q.ilike("descricao", `%${params.q}%`);
+          return q.order("id", { ascending: true }).range(fromIdx, toIdx);
+        },
+      );
+    },
+  });
+
+  const resumo = useMemo(() => {
+    const rows = aggQ.data ?? [];
+    let receita = 0;
+    let despesa = 0;
+    const porCat = new Map<string, { nome: string; receita: number; despesa: number }>();
+    const porMes = new Map<string, { receita: number; despesa: number }>();
+
+    for (const r of rows) {
+      const v = Math.abs(Number(r.valor) || 0);
+      if (r.tipo === "Receita") receita += v;
+      else if (r.tipo === "Despesa") despesa += v;
+
+      const catKey = r.categoria_id ? String(r.categoria_id) : "sem";
+      const catNome = r.categoria_id ? categoriaNome(r.categoria_id) : "Sem categoria";
+      const c = porCat.get(catKey) ?? { nome: catNome, receita: 0, despesa: 0 };
+      if (r.tipo === "Receita") c.receita += v;
+      else if (r.tipo === "Despesa") c.despesa += v;
+      porCat.set(catKey, c);
+
+      const mesKey = (r.data ?? "").slice(0, 7);
+      if (mesKey) {
+        const m = porMes.get(mesKey) ?? { receita: 0, despesa: 0 };
+        if (r.tipo === "Receita") m.receita += v;
+        else if (r.tipo === "Despesa") m.despesa += v;
+        porMes.set(mesKey, m);
+      }
+    }
+
+    const categorias = Array.from(porCat.values())
+      .map((c) => ({ ...c, total: c.receita + c.despesa }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    const meses = Array.from(porMes.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => {
+        const [y, m] = k.split("-").map(Number);
+        return {
+          mes: `${MESES_PT[m - 1]}/${String(y).slice(2)}`,
+          receita: Math.round(v.receita),
+          despesa: Math.round(v.despesa),
+          saldo: Math.round(v.receita - v.despesa),
+        };
+      });
+
+    return {
+      receita,
+      despesa,
+      saldo: receita - despesa,
+      qtd: rows.length,
+      categorias,
+      meses,
+    };
+  }, [aggQ.data, categorias.data]);
+
   const atualizarCategoria = useMutation({
     mutationFn: async ({ l, categoria_id }: { l: LancamentoRow; categoria_id: number | null }) => {
       const r = await from("lancamentos").update({ categoria_id }).eq("id", l.id);
