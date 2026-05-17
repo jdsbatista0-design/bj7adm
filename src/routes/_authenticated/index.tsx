@@ -217,6 +217,7 @@ function Dashboard() {
 
   const lancAntQ = useQuery({
     queryKey: ["dash", "ant", periodo.startPrev, periodo.endPrev, user.id],
+    enabled: !skipComparison,
     queryFn: () => fetchAllLancamentos({ start: periodo.startPrev, end: periodo.endPrev }),
   });
 
