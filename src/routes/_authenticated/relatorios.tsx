@@ -256,6 +256,68 @@ function RelatoriosBI() {
     };
   }, [lancQ.data, categoriaById, empresaNomeById]);
 
+  const pivot = useMemo(() => {
+    const rows = lancQ.data ?? [];
+    const anosSet = new Set<number>();
+    // catId -> { tipoCount, perYear }
+    const byCat = new Map<number, {
+      nome: string;
+      tipoCount: Map<string, number>;
+      perYear: Map<number, number>;
+      total: number;
+    }>();
+
+    for (const r of rows) {
+      if (!r.categoria_id) continue;
+      const ano = r.ano ?? new Date(r.data).getFullYear();
+      if (!ano) continue;
+      anosSet.add(ano);
+      const v = Math.abs(Number(r.valor) || 0);
+      let entry = byCat.get(r.categoria_id);
+      if (!entry) {
+        entry = {
+          nome: categoriaById.get(r.categoria_id)?.nome ?? `#${r.categoria_id}`,
+          tipoCount: new Map(),
+          perYear: new Map(),
+          total: 0,
+        };
+        byCat.set(r.categoria_id, entry);
+      }
+      entry.tipoCount.set(r.tipo, (entry.tipoCount.get(r.tipo) ?? 0) + 1);
+      entry.perYear.set(ano, (entry.perYear.get(ano) ?? 0) + v);
+      entry.total += v;
+    }
+
+    const anos = Array.from(anosSet).sort((a, b) => a - b);
+    const linhas = Array.from(byCat.entries())
+      .map(([id, e]) => {
+        let tipoPredom = "—";
+        let max = 0;
+        for (const [t, c] of e.tipoCount) {
+          if (c > max) { max = c; tipoPredom = t; }
+        }
+        return {
+          id,
+          nome: e.nome,
+          tipo: tipoPredom,
+          perYear: e.perYear,
+          total: e.total,
+        };
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+    const totaisAno = new Map<number, number>();
+    let totalGeral = 0;
+    for (const l of linhas) {
+      totalGeral += l.total;
+      for (const a of anos) {
+        totaisAno.set(a, (totaisAno.get(a) ?? 0) + (l.perYear.get(a) ?? 0));
+      }
+    }
+
+    return { anos, linhas, totaisAno, totalGeral };
+  }, [lancQ.data, categoriaById]);
+
   const isLoading = lancQ.isLoading || empresas.isLoading || categorias.isLoading;
   const tooltipStyle = {
     background: "#ffffff",
@@ -631,6 +693,72 @@ function RelatoriosBI() {
                   </TableRow>
                 );
               })}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+
+      {/* Tabela pivô Categoria × Ano */}
+      <section className="mb-6">
+        <SectionHeader
+          title="Categorias por ano"
+          description="Volume movimentado por categoria e ano (clique para detalhar)"
+        />
+        <div className="rounded-2xl bg-card ring-1 ring-border overflow-x-auto" style={{ boxShadow: "var(--shadow-elegant)" }}>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary/5">
+                <TableHead className="sticky left-0 bg-card z-10 min-w-[180px]">Categoria</TableHead>
+                <TableHead className="min-w-[110px]">Tipo predom.</TableHead>
+                {pivot.anos.map((a) => (
+                  <TableHead key={a} className="text-right tabular-nums min-w-[110px]">{a}</TableHead>
+                ))}
+                <TableHead className="text-right tabular-nums min-w-[130px] font-bold">TOTAL</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pivot.linhas.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={pivot.anos.length + 3} className="text-center text-sm text-muted-foreground py-6">
+                    Sem dados no período.
+                  </TableCell>
+                </TableRow>
+              )}
+              {pivot.linhas.map((l) => (
+                <TableRow
+                  key={l.id}
+                  className="cursor-pointer hover:bg-accent/50"
+                  onClick={() => setDrill({ kind: "categoria", id: l.id, label: l.nome })}
+                >
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">{l.nome}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{l.tipo}</TableCell>
+                  {pivot.anos.map((a) => {
+                    const v = l.perYear.get(a) ?? 0;
+                    return (
+                      <TableCell key={a} className="text-right tabular-nums text-xs">
+                        {v === 0 ? <span className="text-muted-foreground">—</span> : formatBRL(v)}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-right tabular-nums font-semibold bg-primary/5">
+                    {formatBRL(l.total)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {pivot.linhas.length > 0 && (
+                <TableRow className="bg-muted/50 font-bold">
+                  <TableCell className="sticky left-0 bg-muted/80 z-10">TOTAL</TableCell>
+                  <TableCell />
+                  {pivot.anos.map((a) => (
+                    <TableCell key={a} className="text-right tabular-nums text-xs">
+                      {formatBRL(pivot.totaisAno.get(a) ?? 0)}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-right tabular-nums bg-primary/10">
+                    {formatBRL(pivot.totalGeral)}
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
