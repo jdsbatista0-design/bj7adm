@@ -14,8 +14,10 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedStoneRouteImport } from './routes/_authenticated/stone'
+import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedOperacaoRouteImport } from './routes/_authenticated/operacao'
 import { Route as AuthenticatedLancamentosRouteImport } from './routes/_authenticated/lancamentos'
+import { Route as AuthenticatedItensRouteImport } from './routes/_authenticated/itens'
 import { Route as AuthenticatedInteligenciaRouteImport } from './routes/_authenticated/inteligencia'
 import { Route as AuthenticatedImportacoesRouteImport } from './routes/_authenticated/importacoes'
 import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/hoje'
@@ -50,6 +52,11 @@ const AuthenticatedStoneRoute = AuthenticatedStoneRouteImport.update({
   path: '/stone',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedOperacaoRoute = AuthenticatedOperacaoRouteImport.update({
   id: '/operacao',
   path: '/operacao',
@@ -61,6 +68,11 @@ const AuthenticatedLancamentosRoute =
     path: '/lancamentos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedItensRoute = AuthenticatedItensRouteImport.update({
+  id: '/itens',
+  path: '/itens',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedInteligenciaRoute =
   AuthenticatedInteligenciaRouteImport.update({
     id: '/inteligencia',
@@ -120,8 +132,10 @@ export interface FileRoutesByFullPath {
   '/hoje': typeof AuthenticatedHojeRoute
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/inteligencia': typeof AuthenticatedInteligenciaRoute
+  '/itens': typeof AuthenticatedItensRoute
   '/lancamentos': typeof AuthenticatedLancamentosRoute
   '/operacao': typeof AuthenticatedOperacaoRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
@@ -136,8 +150,10 @@ export interface FileRoutesByTo {
   '/hoje': typeof AuthenticatedHojeRoute
   '/importacoes': typeof AuthenticatedImportacoesRoute
   '/inteligencia': typeof AuthenticatedInteligenciaRoute
+  '/itens': typeof AuthenticatedItensRoute
   '/lancamentos': typeof AuthenticatedLancamentosRoute
   '/operacao': typeof AuthenticatedOperacaoRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -155,8 +171,10 @@ export interface FileRoutesById {
   '/_authenticated/hoje': typeof AuthenticatedHojeRoute
   '/_authenticated/importacoes': typeof AuthenticatedImportacoesRoute
   '/_authenticated/inteligencia': typeof AuthenticatedInteligenciaRoute
+  '/_authenticated/itens': typeof AuthenticatedItensRoute
   '/_authenticated/lancamentos': typeof AuthenticatedLancamentosRoute
   '/_authenticated/operacao': typeof AuthenticatedOperacaoRoute
+  '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/stone': typeof AuthenticatedStoneRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -175,8 +193,10 @@ export interface FileRouteTypes {
     | '/hoje'
     | '/importacoes'
     | '/inteligencia'
+    | '/itens'
     | '/lancamentos'
     | '/operacao'
+    | '/relatorios'
     | '/stone'
     | '/usuarios'
     | '/empresas/$id'
@@ -191,8 +211,10 @@ export interface FileRouteTypes {
     | '/hoje'
     | '/importacoes'
     | '/inteligencia'
+    | '/itens'
     | '/lancamentos'
     | '/operacao'
+    | '/relatorios'
     | '/stone'
     | '/usuarios'
     | '/'
@@ -209,8 +231,10 @@ export interface FileRouteTypes {
     | '/_authenticated/hoje'
     | '/_authenticated/importacoes'
     | '/_authenticated/inteligencia'
+    | '/_authenticated/itens'
     | '/_authenticated/lancamentos'
     | '/_authenticated/operacao'
+    | '/_authenticated/relatorios'
     | '/_authenticated/stone'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -260,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStoneRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/relatorios': {
+      id: '/_authenticated/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/operacao': {
       id: '/_authenticated/operacao'
       path: '/operacao'
@@ -272,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/lancamentos'
       fullPath: '/lancamentos'
       preLoaderRoute: typeof AuthenticatedLancamentosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/itens': {
+      id: '/_authenticated/itens'
+      path: '/itens'
+      fullPath: '/itens'
+      preLoaderRoute: typeof AuthenticatedItensRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/inteligencia': {
@@ -348,8 +386,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedHojeRoute: typeof AuthenticatedHojeRoute
   AuthenticatedImportacoesRoute: typeof AuthenticatedImportacoesRoute
   AuthenticatedInteligenciaRoute: typeof AuthenticatedInteligenciaRoute
+  AuthenticatedItensRoute: typeof AuthenticatedItensRoute
   AuthenticatedLancamentosRoute: typeof AuthenticatedLancamentosRoute
   AuthenticatedOperacaoRoute: typeof AuthenticatedOperacaoRoute
+  AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -365,8 +405,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedHojeRoute: AuthenticatedHojeRoute,
   AuthenticatedImportacoesRoute: AuthenticatedImportacoesRoute,
   AuthenticatedInteligenciaRoute: AuthenticatedInteligenciaRoute,
+  AuthenticatedItensRoute: AuthenticatedItensRoute,
   AuthenticatedLancamentosRoute: AuthenticatedLancamentosRoute,
   AuthenticatedOperacaoRoute: AuthenticatedOperacaoRoute,
+  AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedStoneRoute: AuthenticatedStoneRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

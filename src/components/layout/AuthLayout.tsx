@@ -26,6 +26,7 @@ import {
   Settings,
   LogOut,
   Plus,
+  KanbanSquare,
 } from "lucide-react";
 import { ItemDrawerProvider, useItemDrawer } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
@@ -34,6 +35,7 @@ const NAV: { title: string; url: string; icon: React.ComponentType<{ className?:
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Lançamentos", url: "/lancamentos", icon: BookOpen },
+  { title: "Itens", url: "/itens", icon: KanbanSquare },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Importações", url: "/importacoes", icon: Upload },
   { title: "Configurações", url: "/config", icon: Settings },
