@@ -265,6 +265,68 @@ function RelatoriosBI() {
     color: "#1f2937",
   };
 
+  const drillData = useMemo(() => {
+    if (!drill) return null;
+    const rows = lancQ.data ?? [];
+    const filtered = rows.filter((r) => {
+      if (drill.kind === "categoria") return r.categoria_id === drill.id;
+      if (drill.kind === "grupo") {
+        const g = r.categoria_id ? categoriaById.get(r.categoria_id)?.grupo ?? "Sem grupo" : "Sem grupo";
+        return g === drill.nome;
+      }
+      if (drill.kind === "empresa") {
+        if (r.empresa_id !== drill.id) return false;
+        if (drill.metric === "receita") return r.tipo === "Receita";
+        if (drill.metric === "despesa") return r.tipo === "Despesa" || r.tipo === "Retirada";
+        return true;
+      }
+      if (drill.kind === "tipo") return r.tipo === drill.nome;
+      if (drill.kind === "mes") {
+        const mk = (r.data ?? "").slice(0, 7);
+        if (mk !== drill.mesKey) return false;
+        if (drill.metric === "receita") return r.tipo === "Receita";
+        if (drill.metric === "despesa") return r.tipo === "Despesa" || r.tipo === "Retirada";
+        return true;
+      }
+      return false;
+    });
+
+    const total = filtered.reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
+
+    // Breakdown por descrição (ou subcategoria)
+    const porDesc = new Map<string, { total: number; qtd: number }>();
+    const porEmp = new Map<number, { total: number; qtd: number }>();
+    const porCat = new Map<number, { total: number; qtd: number }>();
+    for (const r of filtered) {
+      const v = Math.abs(Number(r.valor) || 0);
+      const key = (r.descricao?.trim() || r.subcategoria?.trim() || "(sem descrição)");
+      const d = porDesc.get(key) ?? { total: 0, qtd: 0 };
+      d.total += v; d.qtd += 1; porDesc.set(key, d);
+      const e = porEmp.get(r.empresa_id) ?? { total: 0, qtd: 0 };
+      e.total += v; e.qtd += 1; porEmp.set(r.empresa_id, e);
+      if (r.categoria_id) {
+        const c = porCat.get(r.categoria_id) ?? { total: 0, qtd: 0 };
+        c.total += v; c.qtd += 1; porCat.set(r.categoria_id, c);
+      }
+    }
+
+    const breakdownDesc = Array.from(porDesc.entries())
+      .map(([nome, v]) => ({ nome, ...v }))
+      .sort((a, b) => b.total - a.total);
+    const breakdownEmp = Array.from(porEmp.entries())
+      .map(([id, v]) => ({ nome: empresaNomeById.get(id) ?? `#${id}`, ...v }))
+      .sort((a, b) => b.total - a.total);
+    const breakdownCat = Array.from(porCat.entries())
+      .map(([id, v]) => ({ nome: categoriaById.get(id)?.nome ?? `#${id}`, ...v }))
+      .sort((a, b) => b.total - a.total);
+
+    const recentes = [...filtered]
+      .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? ""))
+      .slice(0, 50);
+
+    return { total, qtd: filtered.length, breakdownDesc, breakdownEmp, breakdownCat, recentes };
+  }, [drill, lancQ.data, categoriaById, empresaNomeById]);
+
   return (
     <PageShell
       title="Relatórios BI"
