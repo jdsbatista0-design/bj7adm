@@ -516,6 +516,10 @@ function RelatoriosBI() {
                     outerRadius={90}
                     innerRadius={50}
                     paddingAngle={2}
+                    cursor="pointer"
+                    onClick={(d: any) => {
+                      if (d?.name || d?.nome) setDrill({ kind: "tipo", nome: d.name ?? d.nome, label: d.name ?? d.nome });
+                    }}
                   >
                     {dados.porTipo.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
