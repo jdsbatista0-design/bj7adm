@@ -22,7 +22,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Pencil, CheckCircle2, Plus, Tags } from "lucide-react";
 import { CategoriasManagerDialog } from "@/components/categoria/CategoriasManagerDialog";
-import { useState } from "react";
 import {
   ResponsiveContainer,
   BarChart,
