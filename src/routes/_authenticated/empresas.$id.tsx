@@ -464,11 +464,18 @@ function EmpresaDetalhe() {
           <CardContent className="p-4">
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={evolucao}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                <LineChart data={evolucao} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis
+                    dataKey="mes"
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <YAxis
-                    tick={{ fontSize: 11 }}
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
                     tickFormatter={(v) =>
                       new Intl.NumberFormat("pt-BR", {
                         notation: "compact",
@@ -476,13 +483,24 @@ function EmpresaDetalhe() {
                       }).format(v as number)
                     }
                   />
-                  <Tooltip formatter={(v: number) => formatBRL(v)} />
-                  <Legend />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: "hsl(var(--popover-foreground))",
+                    }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    formatter={(v: number) => formatBRL(v)}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }} />
                   <Line
                     type="monotone"
                     dataKey="receita"
                     name="Receita"
-                    stroke="hsl(var(--success))"
+                    stroke="hsl(142 71% 55%)"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -490,7 +508,7 @@ function EmpresaDetalhe() {
                     type="monotone"
                     dataKey="despesa"
                     name="Despesa"
-                    stroke="hsl(var(--destructive))"
+                    stroke="hsl(0 84% 65%)"
                     strokeWidth={2}
                     dot={false}
                   />
@@ -498,8 +516,8 @@ function EmpresaDetalhe() {
                     type="monotone"
                     dataKey="lucro"
                     name="Lucro"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
+                    stroke="hsl(217 91% 65%)"
+                    strokeWidth={2.5}
                     dot={false}
                   />
                 </LineChart>

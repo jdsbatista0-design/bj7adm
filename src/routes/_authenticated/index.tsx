@@ -630,19 +630,22 @@ function Dashboard() {
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(var(--card))",
+                    background: "hsl(var(--popover))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "hsl(var(--popover-foreground))",
                   }}
+                  labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
+                  itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                   formatter={(value: number) => formatBRL(value)}
                 />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }} />
                 <Line
                   type="monotone"
                   dataKey="receita"
                   name="Receita"
-                  stroke="hsl(var(--success))"
+                  stroke="hsl(142 71% 55%)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -650,7 +653,7 @@ function Dashboard() {
                   type="monotone"
                   dataKey="despesa"
                   name="Despesa"
-                  stroke="hsl(var(--destructive))"
+                  stroke="hsl(0 84% 65%)"
                   strokeWidth={2}
                   dot={false}
                 />
@@ -658,7 +661,7 @@ function Dashboard() {
                   type="monotone"
                   dataKey="lucro"
                   name="Lucro"
-                  stroke="hsl(217 91% 60%)"
+                  stroke="hsl(217 91% 65%)"
                   strokeWidth={2.5}
                   dot={false}
                 />
