@@ -44,6 +44,13 @@ import {
   Wallet,
   Percent,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   component: RelatoriosBI,
@@ -78,6 +85,13 @@ function anosDisponiveis(): number[] {
 
 type PeriodoKey = "todos" | "ult_12m" | "ult_6m" | "ult_3m" | "ano_atual" | `ano_${number}`;
 
+type DrillSpec =
+  | { kind: "categoria"; id: number; label: string }
+  | { kind: "grupo"; nome: string; label: string }
+  | { kind: "empresa"; id: number; label: string; metric?: "receita" | "despesa" | "lucro" }
+  | { kind: "tipo"; nome: string; label: string }
+  | { kind: "mes"; mesKey: string; label: string; metric?: "receita" | "despesa" | "lucro" };
+
 function rangeFor(p: PeriodoKey): { start: string | null; end: string | null } {
   const hoje = new Date();
   const y = hoje.getFullYear();
@@ -104,6 +118,7 @@ function RelatoriosBI() {
 
   const [periodo, setPeriodo] = useState<PeriodoKey>("ult_12m");
   const [empresaId, setEmpresaId] = useState<string>("all");
+  const [drill, setDrill] = useState<DrillSpec | null>(null);
 
   const range = useMemo(() => rangeFor(periodo), [periodo]);
 
@@ -249,6 +264,68 @@ function RelatoriosBI() {
     fontSize: 12,
     color: "#1f2937",
   };
+
+  const drillData = useMemo(() => {
+    if (!drill) return null;
+    const rows = lancQ.data ?? [];
+    const filtered = rows.filter((r) => {
+      if (drill.kind === "categoria") return r.categoria_id === drill.id;
+      if (drill.kind === "grupo") {
+        const g = r.categoria_id ? categoriaById.get(r.categoria_id)?.grupo ?? "Sem grupo" : "Sem grupo";
+        return g === drill.nome;
+      }
+      if (drill.kind === "empresa") {
+        if (r.empresa_id !== drill.id) return false;
+        if (drill.metric === "receita") return r.tipo === "Receita";
+        if (drill.metric === "despesa") return r.tipo === "Despesa" || r.tipo === "Retirada";
+        return true;
+      }
+      if (drill.kind === "tipo") return r.tipo === drill.nome;
+      if (drill.kind === "mes") {
+        const mk = (r.data ?? "").slice(0, 7);
+        if (mk !== drill.mesKey) return false;
+        if (drill.metric === "receita") return r.tipo === "Receita";
+        if (drill.metric === "despesa") return r.tipo === "Despesa" || r.tipo === "Retirada";
+        return true;
+      }
+      return false;
+    });
+
+    const total = filtered.reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
+
+    // Breakdown por descrição (ou subcategoria)
+    const porDesc = new Map<string, { total: number; qtd: number }>();
+    const porEmp = new Map<number, { total: number; qtd: number }>();
+    const porCat = new Map<number, { total: number; qtd: number }>();
+    for (const r of filtered) {
+      const v = Math.abs(Number(r.valor) || 0);
+      const key = (r.descricao?.trim() || r.subcategoria?.trim() || "(sem descrição)");
+      const d = porDesc.get(key) ?? { total: 0, qtd: 0 };
+      d.total += v; d.qtd += 1; porDesc.set(key, d);
+      const e = porEmp.get(r.empresa_id) ?? { total: 0, qtd: 0 };
+      e.total += v; e.qtd += 1; porEmp.set(r.empresa_id, e);
+      if (r.categoria_id) {
+        const c = porCat.get(r.categoria_id) ?? { total: 0, qtd: 0 };
+        c.total += v; c.qtd += 1; porCat.set(r.categoria_id, c);
+      }
+    }
+
+    const breakdownDesc = Array.from(porDesc.entries())
+      .map(([nome, v]) => ({ nome, ...v }))
+      .sort((a, b) => b.total - a.total);
+    const breakdownEmp = Array.from(porEmp.entries())
+      .map(([id, v]) => ({ nome: empresaNomeById.get(id) ?? `#${id}`, ...v }))
+      .sort((a, b) => b.total - a.total);
+    const breakdownCat = Array.from(porCat.entries())
+      .map(([id, v]) => ({ nome: categoriaById.get(id)?.nome ?? `#${id}`, ...v }))
+      .sort((a, b) => b.total - a.total);
+
+    const recentes = [...filtered]
+      .sort((a, b) => (b.data ?? "").localeCompare(a.data ?? ""))
+      .slice(0, 50);
+
+    return { total, qtd: filtered.length, breakdownDesc, breakdownEmp, breakdownCat, recentes };
+  }, [drill, lancQ.data, categoriaById, empresaNomeById]);
 
   return (
     <PageShell
@@ -407,7 +484,17 @@ function RelatoriosBI() {
                     itemStyle={{ color: "#1f2937" }}
                     formatter={(v: number) => formatBRL(v)}
                   />
-                  <Bar dataKey="total" name="Total" fill={COLORS.primary} radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="total"
+                    name="Total"
+                    fill={COLORS.primary}
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => {
+                      const found = (categorias.data ?? []).find((c) => c.nome === d?.nome);
+                      if (found) setDrill({ kind: "categoria", id: found.id, label: found.nome });
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -429,6 +516,10 @@ function RelatoriosBI() {
                     outerRadius={90}
                     innerRadius={50}
                     paddingAngle={2}
+                    cursor="pointer"
+                    onClick={(d: any) => {
+                      if (d?.name || d?.nome) setDrill({ kind: "tipo", nome: d.name ?? d.nome, label: d.name ?? d.nome });
+                    }}
                   >
                     {dados.porTipo.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
@@ -485,9 +576,21 @@ function RelatoriosBI() {
                   formatter={(v: number) => formatBRL(v)}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="receita" name="Receita" fill={COLORS.receita} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="despesa" name="Despesa" fill={COLORS.despesa} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="lucro" name="Lucro" fill={COLORS.lucro} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="receita" name="Receita" fill={COLORS.receita} radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => {
+                    const found = (empresas.data ?? []).find((e) => e.nome === d?.nome);
+                    if (found) setDrill({ kind: "empresa", id: found.id, label: `${found.nome} — Receita`, metric: "receita" });
+                  }} />
+                <Bar dataKey="despesa" name="Despesa" fill={COLORS.despesa} radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => {
+                    const found = (empresas.data ?? []).find((e) => e.nome === d?.nome);
+                    if (found) setDrill({ kind: "empresa", id: found.id, label: `${found.nome} — Despesa`, metric: "despesa" });
+                  }} />
+                <Bar dataKey="lucro" name="Lucro" fill={COLORS.lucro} radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => {
+                    const found = (empresas.data ?? []).find((e) => e.nome === d?.nome);
+                    if (found) setDrill({ kind: "empresa", id: found.id, label: `${found.nome}`, metric: "lucro" });
+                  }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -518,7 +621,8 @@ function RelatoriosBI() {
                 const total = dados.porGrupo.reduce((a, b) => a + b.total, 0);
                 const pct = total > 0 ? (g.total / total) * 100 : 0;
                 return (
-                  <TableRow key={g.nome}>
+                  <TableRow key={g.nome} className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => setDrill({ kind: "grupo", nome: g.nome, label: `Grupo: ${g.nome}` })}>
                     <TableCell className="font-medium">{g.nome}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(g.total)}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">
@@ -531,6 +635,139 @@ function RelatoriosBI() {
           </Table>
         </div>
       </section>
+
+      <Dialog open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhamento: {drill?.label}</DialogTitle>
+            <DialogDescription>
+              {drillData
+                ? `${drillData.qtd.toLocaleString("pt-BR")} lançamentos · ${formatBRL(drillData.total)}`
+                : "Sem dados"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {drillData && (
+            <div className="space-y-5">
+              {drillData.breakdownDesc.length > 1 && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Por descrição</div>
+                  <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead className="text-right w-[80px]">Qtd</TableHead>
+                          <TableHead className="text-right w-[140px]">Total</TableHead>
+                          <TableHead className="text-right w-[80px]">%</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drillData.breakdownDesc.slice(0, 20).map((b) => (
+                          <TableRow key={b.nome}>
+                            <TableCell className="font-medium">{b.nome}</TableCell>
+                            <TableCell className="text-right tabular-nums">{b.qtd}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatBRL(b.total)}</TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {drillData.total > 0 ? ((b.total / drillData.total) * 100).toFixed(1) : "0"}%
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {drill?.kind !== "empresa" && drillData.breakdownEmp.length > 1 && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Por empresa</div>
+                  <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Empresa</TableHead>
+                          <TableHead className="text-right w-[80px]">Qtd</TableHead>
+                          <TableHead className="text-right w-[140px]">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drillData.breakdownEmp.map((b) => (
+                          <TableRow key={b.nome}>
+                            <TableCell className="font-medium">{b.nome}</TableCell>
+                            <TableCell className="text-right tabular-nums">{b.qtd}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatBRL(b.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {(drill?.kind === "grupo" || drill?.kind === "tipo" || drill?.kind === "empresa") && drillData.breakdownCat.length > 1 && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Por categoria</div>
+                  <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Categoria</TableHead>
+                          <TableHead className="text-right w-[80px]">Qtd</TableHead>
+                          <TableHead className="text-right w-[140px]">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drillData.breakdownCat.slice(0, 20).map((b) => (
+                          <TableRow key={b.nome}>
+                            <TableCell className="font-medium">{b.nome}</TableCell>
+                            <TableCell className="text-right tabular-nums">{b.qtd}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatBRL(b.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                  Lançamentos recentes (até 50)
+                </div>
+                <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">Data</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Empresa</TableHead>
+                        <TableHead className="text-right w-[120px]">Valor</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drillData.recentes.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="tabular-nums text-xs">{r.data}</TableCell>
+                          <TableCell className="text-sm">
+                            {r.descricao || r.subcategoria || "—"}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {empresaNomeById.get(r.empresa_id) ?? `#${r.empresa_id}`}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(Math.abs(Number(r.valor) || 0))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
