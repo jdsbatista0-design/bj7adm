@@ -658,8 +658,8 @@ function Dashboard() {
                   type="monotone"
                   dataKey="lucro"
                   name="Lucro"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
+                  stroke="hsl(217 91% 60%)"
+                  strokeWidth={2.5}
                   dot={false}
                 />
               </LineChart>
