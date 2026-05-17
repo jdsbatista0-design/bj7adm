@@ -364,9 +364,7 @@ function LancamentosPage() {
                       formatter={(value: number) => formatBRL(value)} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="receita" name="Receita" stackId="a" fill="hsl(var(--success))" />
-                    <Bar dataKey="despesa" name="Despesa" stackId="a" fill="hsl(var(--destructive))">
-                      {resumo.categorias.map((_, i) => <Cell key={i} />)}
-                    </Bar>
+                    <Bar dataKey="despesa" name="Despesa" stackId="a" fill="hsl(var(--destructive))" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
