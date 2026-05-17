@@ -85,6 +85,13 @@ function anosDisponiveis(): number[] {
 
 type PeriodoKey = "todos" | "ult_12m" | "ult_6m" | "ult_3m" | "ano_atual" | `ano_${number}`;
 
+type DrillSpec =
+  | { kind: "categoria"; id: number; label: string }
+  | { kind: "grupo"; nome: string; label: string }
+  | { kind: "empresa"; id: number; label: string; metric?: "receita" | "despesa" | "lucro" }
+  | { kind: "tipo"; nome: string; label: string }
+  | { kind: "mes"; mesKey: string; label: string; metric?: "receita" | "despesa" | "lucro" };
+
 function rangeFor(p: PeriodoKey): { start: string | null; end: string | null } {
   const hoje = new Date();
   const y = hoje.getFullYear();
