@@ -44,6 +44,13 @@ import {
   Wallet,
   Percent,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   component: RelatoriosBI,
