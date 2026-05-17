@@ -240,12 +240,18 @@ function LancamentosPage() {
           <h1 className="text-2xl font-semibold">Lançamentos</h1>
           <p className="text-sm text-muted-foreground">Conta corrente — entradas, saídas, saldo acumulado</p>
         </div>
-        {podeLancar(user) && (
-          <Button size="sm" onClick={dlg.openNew}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setCatMgrOpen(true)}>
+            <Tags className="h-4 w-4 mr-1" /> Categorias
           </Button>
-        )}
+          {podeLancar(user) && (
+            <Button size="sm" onClick={dlg.openNew}>
+              <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
+            </Button>
+          )}
+        </div>
       </div>
+      <CategoriasManagerDialog open={catMgrOpen} onOpenChange={setCatMgrOpen} />
 
       <Card>
         <CardHeader><CardTitle className="text-sm">Filtros</CardTitle></CardHeader>
