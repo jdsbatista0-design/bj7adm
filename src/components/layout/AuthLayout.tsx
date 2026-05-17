@@ -25,10 +25,9 @@ import {
   Upload,
   Settings,
   LogOut,
-  Plus,
   KanbanSquare,
 } from "lucide-react";
-import { ItemDrawerProvider, useItemDrawer } from "@/components/bj7/ItemDrawer";
+import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
 
 const NAV: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[] = [
