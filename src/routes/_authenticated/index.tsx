@@ -260,12 +260,12 @@ function Dashboard() {
       despAnt,
       lucroAnt,
       margemAnt,
-      trendRec: tr(rec, recAnt),
-      trendDesp: tr(desp, despAnt),
-      trendLucro: tr(lucro, lucroAnt),
-      trendMargemPp: margem - margemAnt,
+      trendRec: skipComparison ? null : tr(rec, recAnt),
+      trendDesp: skipComparison ? null : tr(desp, despAnt),
+      trendLucro: skipComparison ? null : tr(lucro, lucroAnt),
+      trendMargemPp: skipComparison ? null : margem - margemAnt,
     };
-  }, [lancAtualQ.data, lancAntQ.data]);
+  }, [lancAtualQ.data, lancAntQ.data, skipComparison]);
 
   const porEmpresa = useMemo(() => {
     const map = new Map<string | number, EmpresaAgg>();
