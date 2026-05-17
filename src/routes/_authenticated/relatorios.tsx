@@ -484,7 +484,17 @@ function RelatoriosBI() {
                     itemStyle={{ color: "#1f2937" }}
                     formatter={(v: number) => formatBRL(v)}
                   />
-                  <Bar dataKey="total" name="Total" fill={COLORS.primary} radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="total"
+                    name="Total"
+                    fill={COLORS.primary}
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(d: any) => {
+                      const found = (categorias.data ?? []).find((c) => c.nome === d?.nome);
+                      if (found) setDrill({ kind: "categoria", id: found.id, label: found.nome });
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
