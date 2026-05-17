@@ -322,6 +322,85 @@ function LancamentosPage() {
         </CardContent>
       </Card>
 
+      {/* ===== Resumo dos filtros ===== */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-normal">Receita (filtro)</CardTitle></CardHeader>
+          <CardContent className="pt-0"><div className="text-xl font-semibold tabular-nums text-success">{formatBRL(resumo.receita)}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-normal">Despesa (filtro)</CardTitle></CardHeader>
+          <CardContent className="pt-0"><div className="text-xl font-semibold tabular-nums text-destructive">{formatBRL(resumo.despesa)}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-normal">Saldo</CardTitle></CardHeader>
+          <CardContent className="pt-0">
+            <div className={`text-xl font-semibold tabular-nums ${resumo.saldo < 0 ? "text-destructive" : "text-success"}`}>
+              {formatBRL(resumo.saldo)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-normal">Qtd. lançamentos</CardTitle></CardHeader>
+          <CardContent className="pt-0"><div className="text-xl font-semibold tabular-nums">{resumo.qtd}</div></CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Top categorias (receita + despesa)</CardTitle></CardHeader>
+          <CardContent>
+            <div className="h-[280px] w-full">
+              {resumo.categorias.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={resumo.categorias} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} horizontal={false} />
+                    <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v as number)} />
+                    <YAxis type="category" dataKey="nome" width={140} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                      formatter={(value: number) => formatBRL(value)} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar dataKey="receita" name="Receita" stackId="a" fill="hsl(var(--success))" />
+                    <Bar dataKey="despesa" name="Despesa" stackId="a" fill="hsl(var(--destructive))">
+                      {resumo.categorias.map((_, i) => <Cell key={i} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Evolução mensal</CardTitle></CardHeader>
+          <CardContent>
+            <div className="h-[280px] w-full">
+              {resumo.meses.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={resumo.meses} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                    <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v as number)} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                      formatter={(value: number) => formatBRL(value)} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(var(--success))" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="despesa" name="Despesa" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(217 91% 60%)" strokeWidth={2.5} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardContent className="p-0">
           <Table>
