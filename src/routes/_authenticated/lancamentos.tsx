@@ -66,6 +66,7 @@ function LancamentosPage() {
   const categorias = useCategorias();
   const dlg = useLancamentoDialog();
   const qc = useQueryClient();
+  const [catMgrOpen, setCatMgrOpen] = useState(false);
 
   const tiposPermitidos = tiposVisiveis(user);
 
