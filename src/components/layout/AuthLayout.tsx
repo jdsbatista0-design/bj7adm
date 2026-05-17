@@ -92,9 +92,8 @@ export function AuthLayout() {
 }
 
 function TopBar({ user }: { user: CurrentUser }) {
-  const drawer = useItemDrawer();
   return (
-    <header className="sticky top-0 z-30 h-14 flex items-center justify-between border-b border-white/5 bg-background/80 backdrop-blur px-3 sm:px-5">
+    <header className="sticky top-0 z-30 h-14 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur px-3 sm:px-5">
       <div className="flex items-center gap-3 min-w-0">
         <SidebarTrigger />
         <div className="hidden sm:flex items-center gap-2">
@@ -106,15 +105,7 @@ function TopBar({ user }: { user: CurrentUser }) {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => drawer.open()}
-          className="h-8"
-          style={{ background: "var(--gradient-premium)", color: "var(--primary-foreground)" }}
-        >
-          <Plus className="h-4 w-4 mr-1" /> Item
-        </Button>
-        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground border-l border-white/5 pl-3 ml-1">
+        <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
           <span>{user.nome ?? user.email}</span>
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase">{user.papel.nome}</span>
         </div>
