@@ -576,9 +576,21 @@ function RelatoriosBI() {
                   formatter={(v: number) => formatBRL(v)}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="receita" name="Receita" fill={COLORS.receita} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="despesa" name="Despesa" fill={COLORS.despesa} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="lucro" name="Lucro" fill={COLORS.lucro} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="receita" name="Receita" fill={COLORS.receita} radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => {
+                    const found = (empresas.data ?? []).find((e) => e.nome === d?.nome);
+                    if (found) setDrill({ kind: "empresa", id: found.id, label: `${found.nome} — Receita`, metric: "receita" });
+                  }} />
+                <Bar dataKey="despesa" name="Despesa" fill={COLORS.despesa} radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => {
+                    const found = (empresas.data ?? []).find((e) => e.nome === d?.nome);
+                    if (found) setDrill({ kind: "empresa", id: found.id, label: `${found.nome} — Despesa`, metric: "despesa" });
+                  }} />
+                <Bar dataKey="lucro" name="Lucro" fill={COLORS.lucro} radius={[4, 4, 0, 0]} cursor="pointer"
+                  onClick={(d: any) => {
+                    const found = (empresas.data ?? []).find((e) => e.nome === d?.nome);
+                    if (found) setDrill({ kind: "empresa", id: found.id, label: `${found.nome}`, metric: "lucro" });
+                  }} />
               </BarChart>
             </ResponsiveContainer>
           </div>
