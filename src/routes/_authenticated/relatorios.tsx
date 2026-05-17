@@ -698,6 +698,72 @@ function RelatoriosBI() {
         </div>
       </section>
 
+      {/* Tabela pivô Categoria × Ano */}
+      <section className="mb-6">
+        <SectionHeader
+          title="Categorias por ano"
+          description="Volume movimentado por categoria e ano (clique para detalhar)"
+        />
+        <div className="rounded-2xl bg-card ring-1 ring-border overflow-x-auto" style={{ boxShadow: "var(--shadow-elegant)" }}>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-primary/5">
+                <TableHead className="sticky left-0 bg-card z-10 min-w-[180px]">Categoria</TableHead>
+                <TableHead className="min-w-[110px]">Tipo predom.</TableHead>
+                {pivot.anos.map((a) => (
+                  <TableHead key={a} className="text-right tabular-nums min-w-[110px]">{a}</TableHead>
+                ))}
+                <TableHead className="text-right tabular-nums min-w-[130px] font-bold">TOTAL</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pivot.linhas.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={pivot.anos.length + 3} className="text-center text-sm text-muted-foreground py-6">
+                    Sem dados no período.
+                  </TableCell>
+                </TableRow>
+              )}
+              {pivot.linhas.map((l) => (
+                <TableRow
+                  key={l.id}
+                  className="cursor-pointer hover:bg-accent/50"
+                  onClick={() => setDrill({ kind: "categoria", id: l.id, label: l.nome })}
+                >
+                  <TableCell className="font-medium sticky left-0 bg-card z-10">{l.nome}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{l.tipo}</TableCell>
+                  {pivot.anos.map((a) => {
+                    const v = l.perYear.get(a) ?? 0;
+                    return (
+                      <TableCell key={a} className="text-right tabular-nums text-xs">
+                        {v === 0 ? <span className="text-muted-foreground">—</span> : formatBRL(v)}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-right tabular-nums font-semibold bg-primary/5">
+                    {formatBRL(l.total)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {pivot.linhas.length > 0 && (
+                <TableRow className="bg-muted/50 font-bold">
+                  <TableCell className="sticky left-0 bg-muted/80 z-10">TOTAL</TableCell>
+                  <TableCell />
+                  {pivot.anos.map((a) => (
+                    <TableCell key={a} className="text-right tabular-nums text-xs">
+                      {formatBRL(pivot.totaisAno.get(a) ?? 0)}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-right tabular-nums bg-primary/10">
+                    {formatBRL(pivot.totalGeral)}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
+
       <Dialog open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
