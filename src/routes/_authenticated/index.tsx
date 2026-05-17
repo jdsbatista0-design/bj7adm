@@ -166,6 +166,16 @@ function Dashboard() {
 
   const anos = useMemo(() => anosDisponiveis(), []);
 
+  const skipComparison = useMemo(() => {
+    if (periodoKey === "personalizado") return true;
+    const startD = new Date(periodo.start);
+    const endD = new Date(periodo.end);
+    const meses =
+      (endD.getFullYear() - startD.getFullYear()) * 12 +
+      (endD.getMonth() - startD.getMonth());
+    return meses >= 24;
+  }, [periodoKey, periodo.start, periodo.end]);
+
   // PostgREST aplica um cap silencioso por request (tipicamente 1000 linhas)
   // mesmo passando .limit(N) grande. Para períodos longos isso fazia o
   // dashboard "sumir" — paginamos com .range() até esgotar.
@@ -207,6 +217,7 @@ function Dashboard() {
 
   const lancAntQ = useQuery({
     queryKey: ["dash", "ant", periodo.startPrev, periodo.endPrev, user.id],
+    enabled: !skipComparison,
     queryFn: () => fetchAllLancamentos({ start: periodo.startPrev, end: periodo.endPrev }),
   });
 
@@ -249,12 +260,12 @@ function Dashboard() {
       despAnt,
       lucroAnt,
       margemAnt,
-      trendRec: tr(rec, recAnt),
-      trendDesp: tr(desp, despAnt),
-      trendLucro: tr(lucro, lucroAnt),
-      trendMargemPp: margem - margemAnt,
+      trendRec: skipComparison ? null : tr(rec, recAnt),
+      trendDesp: skipComparison ? null : tr(desp, despAnt),
+      trendLucro: skipComparison ? null : tr(lucro, lucroAnt),
+      trendMargemPp: skipComparison ? null : margem - margemAnt,
     };
-  }, [lancAtualQ.data, lancAntQ.data]);
+  }, [lancAtualQ.data, lancAntQ.data, skipComparison]);
 
   const porEmpresa = useMemo(() => {
     const map = new Map<string | number, EmpresaAgg>();
@@ -397,7 +408,7 @@ function Dashboard() {
             label="Receita"
             value={formatBRL(consolidado.rec)}
             trend={consolidado.trendRec}
-            hint="vs período anterior"
+            hint={skipComparison ? "Janela longa demais para comparar" : "vs período anterior"}
             icon={<TrendingUp className="h-4 w-4" />}
             status="neutral"
           />
@@ -405,7 +416,7 @@ function Dashboard() {
             label="Despesa"
             value={formatBRL(consolidado.desp)}
             trend={consolidado.trendDesp}
-            hint="vs período anterior"
+            hint={skipComparison ? "Janela longa demais para comparar" : "vs período anterior"}
             icon={<TrendingDown className="h-4 w-4" />}
             status={
               consolidado.trendDesp != null && consolidado.trendDesp > 0.1
@@ -417,7 +428,7 @@ function Dashboard() {
             label="Lucro"
             value={formatBRL(consolidado.lucro)}
             trend={consolidado.trendLucro}
-            hint="vs período anterior"
+            hint={skipComparison ? "Janela longa demais para comparar" : "vs período anterior"}
             icon={<PiggyBank className="h-4 w-4" />}
             status={consolidado.lucro < 0 ? "critico" : "ok"}
           />
@@ -429,9 +440,11 @@ function Dashboard() {
                 : "—"
             }
             hint={
-              consolidado.rec > 0
-                ? `${consolidado.trendMargemPp >= 0 ? "+" : ""}${consolidado.trendMargemPp.toFixed(1)} pp vs anterior`
-                : undefined
+              skipComparison
+                ? "Janela longa, sem comparação"
+                : consolidado.rec > 0 && consolidado.trendMargemPp != null
+                  ? `${consolidado.trendMargemPp >= 0 ? "+" : ""}${consolidado.trendMargemPp.toFixed(1)} pp vs anterior`
+                  : undefined
             }
             icon={<Percent className="h-4 w-4" />}
             status={
@@ -645,8 +658,8 @@ function Dashboard() {
                   type="monotone"
                   dataKey="lucro"
                   name="Lucro"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
+                  stroke="hsl(217 91% 60%)"
+                  strokeWidth={2.5}
                   dot={false}
                 />
               </LineChart>
