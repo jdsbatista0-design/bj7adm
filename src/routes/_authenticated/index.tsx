@@ -166,6 +166,16 @@ function Dashboard() {
 
   const anos = useMemo(() => anosDisponiveis(), []);
 
+  const skipComparison = useMemo(() => {
+    if (periodoKey === "personalizado") return true;
+    const startD = new Date(periodo.start);
+    const endD = new Date(periodo.end);
+    const meses =
+      (endD.getFullYear() - startD.getFullYear()) * 12 +
+      (endD.getMonth() - startD.getMonth());
+    return meses >= 24;
+  }, [periodoKey, periodo.start, periodo.end]);
+
   // PostgREST aplica um cap silencioso por request (tipicamente 1000 linhas)
   // mesmo passando .limit(N) grande. Para períodos longos isso fazia o
   // dashboard "sumir" — paginamos com .range() até esgotar.
