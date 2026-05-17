@@ -635,6 +635,139 @@ function RelatoriosBI() {
           </Table>
         </div>
       </section>
+
+      <Dialog open={!!drill} onOpenChange={(o) => !o && setDrill(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhamento: {drill?.label}</DialogTitle>
+            <DialogDescription>
+              {drillData
+                ? `${drillData.qtd.toLocaleString("pt-BR")} lançamentos · ${formatBRL(drillData.total)}`
+                : "Sem dados"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {drillData && (
+            <div className="space-y-5">
+              {drillData.breakdownDesc.length > 1 && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Por descrição</div>
+                  <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Descrição</TableHead>
+                          <TableHead className="text-right w-[80px]">Qtd</TableHead>
+                          <TableHead className="text-right w-[140px]">Total</TableHead>
+                          <TableHead className="text-right w-[80px]">%</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drillData.breakdownDesc.slice(0, 20).map((b) => (
+                          <TableRow key={b.nome}>
+                            <TableCell className="font-medium">{b.nome}</TableCell>
+                            <TableCell className="text-right tabular-nums">{b.qtd}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatBRL(b.total)}</TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground">
+                              {drillData.total > 0 ? ((b.total / drillData.total) * 100).toFixed(1) : "0"}%
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {drill?.kind !== "empresa" && drillData.breakdownEmp.length > 1 && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Por empresa</div>
+                  <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Empresa</TableHead>
+                          <TableHead className="text-right w-[80px]">Qtd</TableHead>
+                          <TableHead className="text-right w-[140px]">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drillData.breakdownEmp.map((b) => (
+                          <TableRow key={b.nome}>
+                            <TableCell className="font-medium">{b.nome}</TableCell>
+                            <TableCell className="text-right tabular-nums">{b.qtd}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatBRL(b.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {(drill?.kind === "grupo" || drill?.kind === "tipo" || drill?.kind === "empresa") && drillData.breakdownCat.length > 1 && (
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Por categoria</div>
+                  <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Categoria</TableHead>
+                          <TableHead className="text-right w-[80px]">Qtd</TableHead>
+                          <TableHead className="text-right w-[140px]">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drillData.breakdownCat.slice(0, 20).map((b) => (
+                          <TableRow key={b.nome}>
+                            <TableCell className="font-medium">{b.nome}</TableCell>
+                            <TableCell className="text-right tabular-nums">{b.qtd}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatBRL(b.total)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <div className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                  Lançamentos recentes (até 50)
+                </div>
+                <div className="rounded-lg ring-1 ring-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">Data</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Empresa</TableHead>
+                        <TableHead className="text-right w-[120px]">Valor</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drillData.recentes.map((r) => (
+                        <TableRow key={r.id}>
+                          <TableCell className="tabular-nums text-xs">{r.data}</TableCell>
+                          <TableCell className="text-sm">
+                            {r.descricao || r.subcategoria || "—"}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {empresaNomeById.get(r.empresa_id) ?? `#${r.empresa_id}`}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatBRL(Math.abs(Number(r.valor) || 0))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
