@@ -408,7 +408,7 @@ function Dashboard() {
             label="Receita"
             value={formatBRL(consolidado.rec)}
             trend={consolidado.trendRec}
-            hint="vs período anterior"
+            hint={skipComparison ? "Janela longa demais para comparar" : "vs período anterior"}
             icon={<TrendingUp className="h-4 w-4" />}
             status="neutral"
           />
@@ -416,7 +416,7 @@ function Dashboard() {
             label="Despesa"
             value={formatBRL(consolidado.desp)}
             trend={consolidado.trendDesp}
-            hint="vs período anterior"
+            hint={skipComparison ? "Janela longa demais para comparar" : "vs período anterior"}
             icon={<TrendingDown className="h-4 w-4" />}
             status={
               consolidado.trendDesp != null && consolidado.trendDesp > 0.1
@@ -428,7 +428,7 @@ function Dashboard() {
             label="Lucro"
             value={formatBRL(consolidado.lucro)}
             trend={consolidado.trendLucro}
-            hint="vs período anterior"
+            hint={skipComparison ? "Janela longa demais para comparar" : "vs período anterior"}
             icon={<PiggyBank className="h-4 w-4" />}
             status={consolidado.lucro < 0 ? "critico" : "ok"}
           />
@@ -440,9 +440,11 @@ function Dashboard() {
                 : "—"
             }
             hint={
-              consolidado.rec > 0
-                ? `${consolidado.trendMargemPp >= 0 ? "+" : ""}${consolidado.trendMargemPp.toFixed(1)} pp vs anterior`
-                : undefined
+              skipComparison
+                ? "Janela longa, sem comparação"
+                : consolidado.rec > 0 && consolidado.trendMargemPp != null
+                  ? `${consolidado.trendMargemPp >= 0 ? "+" : ""}${consolidado.trendMargemPp.toFixed(1)} pp vs anterior`
+                  : undefined
             }
             icon={<Percent className="h-4 w-4" />}
             status={
