@@ -243,11 +243,11 @@ function RelatoriosBI() {
 
   const isLoading = lancQ.isLoading || empresas.isLoading || categorias.isLoading;
   const tooltipStyle = {
-    background: "hsl(var(--popover))",
-    border: "1px solid hsl(var(--border))",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb",
     borderRadius: 8,
     fontSize: 12,
-    color: "hsl(var(--popover-foreground))",
+    color: "#1f2937",
   };
 
   return (
@@ -334,15 +334,15 @@ function RelatoriosBI() {
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dados.meses} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                 <XAxis
                   dataKey="mes"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tick={{ fill: "#6b7280", fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tick={{ fill: "#6b7280", fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) =>
@@ -354,8 +354,8 @@ function RelatoriosBI() {
                 />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
-                  itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                  labelStyle={{ color: "#1f2937", fontWeight: 600 }}
+                  itemStyle={{ color: "#1f2937" }}
                   formatter={(v: number) => formatBRL(v)}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -380,10 +380,10 @@ function RelatoriosBI() {
                   layout="vertical"
                   margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} horizontal={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.4} horizontal={false} />
                   <XAxis
                     type="number"
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(v) =>
@@ -397,14 +397,14 @@ function RelatoriosBI() {
                     type="category"
                     dataKey="nome"
                     width={140}
-                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
-                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    labelStyle={{ color: "#1f2937", fontWeight: 600 }}
+                    itemStyle={{ color: "#1f2937" }}
                     formatter={(v: number) => formatBRL(v)}
                   />
                   <Bar dataKey="total" name="Total" fill={COLORS.primary} radius={[0, 6, 6, 0]} />
@@ -456,10 +456,10 @@ function RelatoriosBI() {
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dados.topEmpresas} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                 <XAxis
                   dataKey="nome"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tick={{ fill: "#6b7280", fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
                   interval={0}
@@ -468,7 +468,7 @@ function RelatoriosBI() {
                   height={50}
                 />
                 <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tick={{ fill: "#6b7280", fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v) =>
@@ -480,8 +480,8 @@ function RelatoriosBI() {
                 />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
-                  itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                  labelStyle={{ color: "#1f2937", fontWeight: 600 }}
+                  itemStyle={{ color: "#1f2937" }}
                   formatter={(v: number) => formatBRL(v)}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
