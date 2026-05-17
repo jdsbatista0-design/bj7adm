@@ -621,7 +621,8 @@ function RelatoriosBI() {
                 const total = dados.porGrupo.reduce((a, b) => a + b.total, 0);
                 const pct = total > 0 ? (g.total / total) * 100 : 0;
                 return (
-                  <TableRow key={g.nome}>
+                  <TableRow key={g.nome} className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => setDrill({ kind: "grupo", nome: g.nome, label: `Grupo: ${g.nome}` })}>
                     <TableCell className="font-medium">{g.nome}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatBRL(g.total)}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">
