@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { from, asRows, paginateAll } from "@/integrations/supabase/db";
 import type { LancamentoRow } from "@/integrations/supabase/database";
@@ -20,7 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, CheckCircle2, Plus } from "lucide-react";
+import { Pencil, CheckCircle2, Plus, Tags } from "lucide-react";
+import { CategoriasManagerDialog } from "@/components/categoria/CategoriasManagerDialog";
 import {
   ResponsiveContainer,
   BarChart,
@@ -65,6 +66,7 @@ function LancamentosPage() {
   const categorias = useCategorias();
   const dlg = useLancamentoDialog();
   const qc = useQueryClient();
+  const [catMgrOpen, setCatMgrOpen] = useState(false);
 
   const tiposPermitidos = tiposVisiveis(user);
 
@@ -238,12 +240,18 @@ function LancamentosPage() {
           <h1 className="text-2xl font-semibold">Lançamentos</h1>
           <p className="text-sm text-muted-foreground">Conta corrente — entradas, saídas, saldo acumulado</p>
         </div>
-        {podeLancar(user) && (
-          <Button size="sm" onClick={dlg.openNew}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setCatMgrOpen(true)}>
+            <Tags className="h-4 w-4 mr-1" /> Categorias
           </Button>
-        )}
+          {podeLancar(user) && (
+            <Button size="sm" onClick={dlg.openNew}>
+              <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
+            </Button>
+          )}
+        </div>
       </div>
+      <CategoriasManagerDialog open={catMgrOpen} onOpenChange={setCatMgrOpen} />
 
       <Card>
         <CardHeader><CardTitle className="text-sm">Filtros</CardTitle></CardHeader>
