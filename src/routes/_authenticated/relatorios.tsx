@@ -256,6 +256,68 @@ function RelatoriosBI() {
     };
   }, [lancQ.data, categoriaById, empresaNomeById]);
 
+  const pivot = useMemo(() => {
+    const rows = lancQ.data ?? [];
+    const anosSet = new Set<number>();
+    // catId -> { tipoCount, perYear }
+    const byCat = new Map<number, {
+      nome: string;
+      tipoCount: Map<string, number>;
+      perYear: Map<number, number>;
+      total: number;
+    }>();
+
+    for (const r of rows) {
+      if (!r.categoria_id) continue;
+      const ano = r.ano ?? new Date(r.data).getFullYear();
+      if (!ano) continue;
+      anosSet.add(ano);
+      const v = Math.abs(Number(r.valor) || 0);
+      let entry = byCat.get(r.categoria_id);
+      if (!entry) {
+        entry = {
+          nome: categoriaById.get(r.categoria_id)?.nome ?? `#${r.categoria_id}`,
+          tipoCount: new Map(),
+          perYear: new Map(),
+          total: 0,
+        };
+        byCat.set(r.categoria_id, entry);
+      }
+      entry.tipoCount.set(r.tipo, (entry.tipoCount.get(r.tipo) ?? 0) + 1);
+      entry.perYear.set(ano, (entry.perYear.get(ano) ?? 0) + v);
+      entry.total += v;
+    }
+
+    const anos = Array.from(anosSet).sort((a, b) => a - b);
+    const linhas = Array.from(byCat.entries())
+      .map(([id, e]) => {
+        let tipoPredom = "—";
+        let max = 0;
+        for (const [t, c] of e.tipoCount) {
+          if (c > max) { max = c; tipoPredom = t; }
+        }
+        return {
+          id,
+          nome: e.nome,
+          tipo: tipoPredom,
+          perYear: e.perYear,
+          total: e.total,
+        };
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+    const totaisAno = new Map<number, number>();
+    let totalGeral = 0;
+    for (const l of linhas) {
+      totalGeral += l.total;
+      for (const a of anos) {
+        totaisAno.set(a, (totaisAno.get(a) ?? 0) + (l.perYear.get(a) ?? 0));
+      }
+    }
+
+    return { anos, linhas, totaisAno, totalGeral };
+  }, [lancQ.data, categoriaById]);
+
   const isLoading = lancQ.isLoading || empresas.isLoading || categorias.isLoading;
   const tooltipStyle = {
     background: "#ffffff",
