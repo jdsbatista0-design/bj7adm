@@ -32,7 +32,6 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
-  Cell,
 } from "recharts";
 import { LancamentoDialog, useLancamentoDialog } from "@/components/lancamento/LancamentoDialog";
 import { toast } from "sonner";
