@@ -111,6 +111,7 @@ function RelatoriosBI() {
 
   const [periodo, setPeriodo] = useState<PeriodoKey>("ult_12m");
   const [empresaId, setEmpresaId] = useState<string>("all");
+  const [drill, setDrill] = useState<DrillSpec | null>(null);
 
   const range = useMemo(() => rangeFor(periodo), [periodo]);
 
