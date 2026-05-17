@@ -3,7 +3,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { from, asRows } from "@/integrations/supabase/db";
+import { from, asRows, paginateAll } from "@/integrations/supabase/db";
 import type { LancamentoRow } from "@/integrations/supabase/database";
 import { useEmpresas, useUnidades, useCategorias } from "@/hooks/use-refs";
 import { useCurrentUser } from "@/contexts/auth-context";
@@ -13,7 +13,7 @@ import {
   podeMarcarRevisado,
   podeLancar,
 } from "@/lib/permissions";
-import { formatBRL, formatDate } from "@/lib/format";
+import { formatBRL, formatDate, MESES_PT } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +21,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, CheckCircle2, Plus } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+  Cell,
+} from "recharts";
 import { LancamentoDialog, useLancamentoDialog } from "@/components/lancamento/LancamentoDialog";
 import { toast } from "sonner";
 
