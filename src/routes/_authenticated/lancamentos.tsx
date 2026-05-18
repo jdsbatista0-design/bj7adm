@@ -358,8 +358,12 @@ function LancamentosPage() {
           <CardHeader><CardTitle className="text-sm">Top categorias (receita + despesa)</CardTitle></CardHeader>
           <CardContent>
             <div className="h-[280px] w-full">
-              {resumo.categorias.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sem dados</div>
+              {aggQ.isLoading ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Carregando…</div>
+              ) : aggQ.error ? (
+                <div className="h-full flex items-center justify-center text-sm text-destructive">Erro: {(aggQ.error as Error).message}</div>
+              ) : resumo.categorias.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Sem dados no filtro</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={resumo.categorias} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
