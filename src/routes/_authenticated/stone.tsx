@@ -134,8 +134,8 @@ function SumidosTab() {
         <TableBody>
           {q.data?.map((c) => (
             <TableRow key={c.id}>
-              <TableCell className="text-sm">{c.nome ?? "—"}</TableCell>
-              <TableCell><Badge variant="outline">{c.status ?? "—"}</Badge></TableCell>
+              <TableCell className="text-sm">{c.nome_fantasia ?? "—"}</TableCell>
+              <TableCell><Badge variant="outline">{c.status_mes_anterior ?? "—"}</Badge></TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(Number(c.ultimo_lucro ?? 0))}</TableCell>
               <TableCell>{c.atencao ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">⚠️</Badge> : null}</TableCell>
             </TableRow>
