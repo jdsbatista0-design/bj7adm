@@ -6,17 +6,21 @@ export type TipoLancamento = "Receita" | "Despesa" | "Retirada" | "Empréstimo";
 export interface EmpresaRow {
   id: number;
   nome: string;
+  descricao: string | null;
+  criado_em: string | null;
 }
 export interface UnidadeRow {
   id: number;
   nome: string;
   empresa_id: number;
+  criado_em: string | null;
 }
 export interface CategoriaRow {
   id: number;
   nome: string;
   tipo_predominante: string | null;
   grupo: string | null;
+  criado_em: string | null;
 }
 export interface LancamentoRow {
   id: number;
@@ -45,40 +49,53 @@ export interface LancamentoRow {
   importacao_id: number | null;
   criado_em: string;
   atualizado_em: string | null;
+  fonte_caminho: string | null;
+  competencia: string | null;
 }
 export interface NotaFiscalRow {
   id: number;
   lancamento_id: number | null;
-  numero: string | null;
-  tomador: string | null;
-  categoria: string | null;
-  arquivo: string | null;
+  ano: number | null;
+  mes: number | null;
   data: string | null;
+  numero: string | null;
+  categoria_nota: string | null;
   valor: number | null;
+  tomador: string | null;
+  arquivo: string | null;
+  criado_em: string | null;
 }
 export interface ApuracaoRebateRow {
   id: number;
   ano: number | null;
-  mes: number | null;
+  mes: string | null;
+  qtd_clientes: number | null;
   lucro_bruto: number | null;
   aliquota: number | null;
-  rebate: number | null;
+  rebate_lb: number | null;
   remuneracao_final: number | null;
+  nota_fiscal: number | null;
+  criado_em: string | null;
 }
 export interface EvolucaoBaseRow {
   id: number;
   ano: number | null;
-  mes: number | null;
+  mes: string | null;
   qtd_clientes: number | null;
   novos_no_mes: number | null;
   sumiram_no_mes: number | null;
+  lucro_bruto_total: number | null;
+  criado_em: string | null;
 }
 export interface ClienteSumidoRow {
   id: number;
-  nome: string | null;
+  sumiu_em: string | null;
+  stone_code: string | null;
+  nome_fantasia: string | null;
   ultimo_lucro: number | null;
-  status: string | null;
+  status_mes_anterior: string | null;
   atencao: boolean | null;
+  criado_em: string | null;
 }
 export interface PapelRow {
   id: number;
@@ -113,10 +130,12 @@ export interface UsuarioEmpresaRow {
 export interface ImportacaoRow {
   id: number;
   arquivo: string | null;
-  data: string | null;
+  descricao: string | null;
+  linhas_recebidas: number | null;
   linhas_inseridas: number | null;
   linhas_ignoradas: number | null;
-  criado_por: number | null;
+  importado_por: number | null;
+  importado_em: string | null;
 }
 
 export type Severidade = "info" | "warn" | "critical";
