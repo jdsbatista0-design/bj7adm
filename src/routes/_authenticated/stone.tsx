@@ -69,7 +69,7 @@ function NotasTab() {
               <TableCell>{formatDate(n.data)}</TableCell>
               <TableCell>{n.numero ?? "—"}</TableCell>
               <TableCell className="text-sm">{n.tomador ?? "—"}</TableCell>
-              <TableCell className="text-sm">{n.categoria ?? "—"}</TableCell>
+              <TableCell className="text-sm">{n.categoria_nota ?? "—"}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{n.arquivo ?? "—"}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(Number(n.valor ?? 0))}</TableCell>
             </TableRow>
@@ -101,7 +101,7 @@ function EvolucaoTab() {
         <TableBody>
           {q.data?.map((e) => (
             <TableRow key={e.id}>
-              <TableCell>{MESES_PT[(e.mes ?? 1) - 1]}/{e.ano}</TableCell>
+              <TableCell>{e.mes ?? "—"}/{e.ano}</TableCell>
               <TableCell className="text-right tabular-nums">{e.qtd_clientes ?? 0}</TableCell>
               <TableCell className="text-right tabular-nums text-emerald-700">+{e.novos_no_mes ?? 0}</TableCell>
               <TableCell className="text-right tabular-nums text-destructive">-{e.sumiram_no_mes ?? 0}</TableCell>
@@ -134,8 +134,8 @@ function SumidosTab() {
         <TableBody>
           {q.data?.map((c) => (
             <TableRow key={c.id}>
-              <TableCell className="text-sm">{c.nome ?? "—"}</TableCell>
-              <TableCell><Badge variant="outline">{c.status ?? "—"}</Badge></TableCell>
+              <TableCell className="text-sm">{c.nome_fantasia ?? "—"}</TableCell>
+              <TableCell><Badge variant="outline">{c.status_mes_anterior ?? "—"}</Badge></TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(Number(c.ultimo_lucro ?? 0))}</TableCell>
               <TableCell>{c.atencao ? <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">⚠️</Badge> : null}</TableCell>
             </TableRow>
@@ -168,10 +168,10 @@ function RebateTab() {
         <TableBody>
           {q.data?.map((r) => (
             <TableRow key={r.id}>
-              <TableCell>{MESES_PT[(r.mes ?? 1) - 1]}/{r.ano}</TableCell>
+              <TableCell>{r.mes ?? "—"}/{r.ano}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(Number(r.lucro_bruto ?? 0))}</TableCell>
               <TableCell className="text-right tabular-nums">{((r.aliquota ?? 0) * 100).toFixed(2)}%</TableCell>
-              <TableCell className="text-right tabular-nums">{formatBRL(Number(r.rebate ?? 0))}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatBRL(Number(r.rebate_lb ?? 0))}</TableCell>
               <TableCell className="text-right tabular-nums font-medium">{formatBRL(Number(r.remuneracao_final ?? 0))}</TableCell>
             </TableRow>
           ))}

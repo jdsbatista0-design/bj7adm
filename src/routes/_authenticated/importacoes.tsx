@@ -52,7 +52,7 @@ function ImportacoesPage() {
   const historico = useQuery({
     queryKey: ["importacoes"],
     queryFn: async () => {
-      const r = await from("importacoes").select("*").order("data", { ascending: false }).limit(50);
+      const r = await from("importacoes").select("*").order("importado_em", { ascending: false }).limit(50);
       if (r.error) throw r.error;
       return asRows("importacoes", r.data);
     },
@@ -141,10 +141,11 @@ function ImportacoesPage() {
       const imp = await from("importacoes")
         .insert({
           arquivo: file.name,
-          data: new Date().toISOString(),
+          importado_em: new Date().toISOString(),
+          linhas_recebidas: parseResult.rows.length,
           linhas_inseridas: novos.length,
           linhas_ignoradas: ignorados,
-          criado_por: user.id,
+          importado_por: user.id,
         })
         .select("id")
         .single();
@@ -270,7 +271,7 @@ function ImportacoesPage() {
             <TableBody>
               {historico.data?.map((i) => (
                 <TableRow key={i.id}>
-                  <TableCell>{formatDate(i.data)}</TableCell>
+                  <TableCell>{formatDate(i.importado_em)}</TableCell>
                   <TableCell className="text-sm">{i.arquivo ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{i.linhas_inseridas ?? 0}</TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">{i.linhas_ignoradas ?? 0}</TableCell>
