@@ -52,7 +52,7 @@ function ImportacoesPage() {
   const historico = useQuery({
     queryKey: ["importacoes"],
     queryFn: async () => {
-      const r = await from("importacoes").select("*").order("data", { ascending: false }).limit(50);
+      const r = await from("importacoes").select("*").order("importado_em", { ascending: false }).limit(50);
       if (r.error) throw r.error;
       return asRows("importacoes", r.data);
     },
