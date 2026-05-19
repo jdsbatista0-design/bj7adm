@@ -101,7 +101,7 @@ function EvolucaoTab() {
         <TableBody>
           {q.data?.map((e) => (
             <TableRow key={e.id}>
-              <TableCell>{MESES_PT[(e.mes ?? 1) - 1]}/{e.ano}</TableCell>
+              <TableCell>{e.mes ?? "—"}/{e.ano}</TableCell>
               <TableCell className="text-right tabular-nums">{e.qtd_clientes ?? 0}</TableCell>
               <TableCell className="text-right tabular-nums text-emerald-700">+{e.novos_no_mes ?? 0}</TableCell>
               <TableCell className="text-right tabular-nums text-destructive">-{e.sumiram_no_mes ?? 0}</TableCell>
