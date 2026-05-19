@@ -271,7 +271,7 @@ function ImportacoesPage() {
             <TableBody>
               {historico.data?.map((i) => (
                 <TableRow key={i.id}>
-                  <TableCell>{formatDate(i.data)}</TableCell>
+                  <TableCell>{formatDate(i.importado_em)}</TableCell>
                   <TableCell className="text-sm">{i.arquivo ?? "—"}</TableCell>
                   <TableCell className="text-right tabular-nums">{i.linhas_inseridas ?? 0}</TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">{i.linhas_ignoradas ?? 0}</TableCell>
