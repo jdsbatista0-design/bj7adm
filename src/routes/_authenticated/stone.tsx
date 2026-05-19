@@ -69,7 +69,7 @@ function NotasTab() {
               <TableCell>{formatDate(n.data)}</TableCell>
               <TableCell>{n.numero ?? "—"}</TableCell>
               <TableCell className="text-sm">{n.tomador ?? "—"}</TableCell>
-              <TableCell className="text-sm">{n.categoria ?? "—"}</TableCell>
+              <TableCell className="text-sm">{n.categoria_nota ?? "—"}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{n.arquivo ?? "—"}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(Number(n.valor ?? 0))}</TableCell>
             </TableRow>
