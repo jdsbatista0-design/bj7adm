@@ -168,10 +168,10 @@ function RebateTab() {
         <TableBody>
           {q.data?.map((r) => (
             <TableRow key={r.id}>
-              <TableCell>{MESES_PT[(r.mes ?? 1) - 1]}/{r.ano}</TableCell>
+              <TableCell>{r.mes ?? "—"}/{r.ano}</TableCell>
               <TableCell className="text-right tabular-nums">{formatBRL(Number(r.lucro_bruto ?? 0))}</TableCell>
               <TableCell className="text-right tabular-nums">{((r.aliquota ?? 0) * 100).toFixed(2)}%</TableCell>
-              <TableCell className="text-right tabular-nums">{formatBRL(Number(r.rebate ?? 0))}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatBRL(Number(r.rebate_lb ?? 0))}</TableCell>
               <TableCell className="text-right tabular-nums font-medium">{formatBRL(Number(r.remuneracao_final ?? 0))}</TableCell>
             </TableRow>
           ))}
