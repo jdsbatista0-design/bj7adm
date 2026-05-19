@@ -141,10 +141,11 @@ function ImportacoesPage() {
       const imp = await from("importacoes")
         .insert({
           arquivo: file.name,
-          data: new Date().toISOString(),
+          importado_em: new Date().toISOString(),
+          linhas_recebidas: parseResult.rows.length,
           linhas_inseridas: novos.length,
           linhas_ignoradas: ignorados,
-          criado_por: user.id,
+          importado_por: user.id,
         })
         .select("id")
         .single();
