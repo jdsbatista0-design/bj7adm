@@ -1,56 +1,104 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
-import { CategoriaPeriodoBreakdown } from "@/components/dashboard/CategoriaPeriodoBreakdown";
-import { BookOpen, PlusCircle, CheckSquare, ArrowRight } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
+import { lazy, Suspense } from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LancamentosView } from "@/components/financeiro/LancamentosView";
 
-export const Route = createFileRoute("/_authenticated/financeiro")({
-  component: Financeiro,
+const AnaliseView = lazy(() =>
+  import("@/components/financeiro/AnaliseView").then((m) => ({ default: m.AnaliseView })),
+);
+const RelatoriosView = lazy(() =>
+  import("@/components/financeiro/RelatoriosView").then((m) => ({ default: m.RelatoriosView })),
+);
+
+const TABS = ["lancamentos", "analise", "relatorios"] as const;
+type TabKey = (typeof TABS)[number];
+
+const search = z.object({
+  tab: fallback(z.enum(TABS), "lancamentos").default("lancamentos"),
+  // Filtros de lançamentos preservados na URL
+  ano: fallback(z.number().int(), 0).default(0),
+  mes: fallback(z.number().int().min(0).max(12), 0).default(0),
+  tipo: fallback(z.enum(["", "Receita", "Despesa", "Retirada", "Empréstimo"]), "").default(""),
+  empresa: fallback(z.number().int(), 0).default(0),
+  unidade: fallback(z.number().int(), 0).default(0),
+  categoria: fallback(z.number().int(), 0).default(0),
+  q: fallback(z.string(), "").default(""),
+  revisado: fallback(z.enum(["", "sim", "nao"]), "").default(""),
+  page: fallback(z.number().int().min(1), 1).default(1),
 });
 
-function Financeiro() {
-  return (
-    <PageShell
-      title="Financeiro"
-      description="Lançamentos, revisão e visão por categoria/período"
-    >
-      <div className="grid sm:grid-cols-3 gap-3">
-        <HubCard to="/lancamentos" icon={<BookOpen className="h-4 w-4" />} title="Lançamentos" desc="Conta corrente" />
-        <HubCard to="/a-revisar" icon={<CheckSquare className="h-4 w-4" />} title="A revisar" desc="Fila de revisão" />
-      </div>
+export const Route = createFileRoute("/_authenticated/financeiro")({
+  validateSearch: zodValidator(search),
+  component: FinanceiroPage,
+});
 
-      <section>
-        <SectionHeader title="Visão por categoria & período" />
-        <CategoriaPeriodoBreakdown />
-      </section>
-    </PageShell>
-  );
-}
+const TAB_LABELS: Record<TabKey, string> = {
+  lancamentos: "Lançamentos",
+  analise: "Análise",
+  relatorios: "Relatórios",
+};
 
-function HubCard({
-  to,
-  icon,
-  title,
-  desc,
-}: {
-  to: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
+function FinanceiroPage() {
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate();
+
+  function setTab(next: TabKey) {
+    void navigate({ search: ((prev: { tab?: TabKey }) => ({ ...prev, tab: next })) as never });
+  }
+
   return (
-    <Link
-      to={to}
-      className="rounded-2xl bg-card p-4 ring-1 ring-white/5 hover:ring-primary/30 transition flex items-center justify-between"
-      style={{ boxShadow: "var(--shadow-elegant)" }}
-    >
-      <div className="flex items-center gap-3">
-        <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center text-primary">{icon}</div>
+    <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-sm font-semibold">{title}</div>
-          <div className="text-xs text-muted-foreground">{desc}</div>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Financeiro</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Lançamentos, análise e relatórios do Grupo BJ7
+          </p>
         </div>
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-    </Link>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+        {/* Desktop tabs */}
+        <TabsList className="hidden sm:inline-flex">
+          {TABS.map((t) => (
+            <TabsTrigger key={t} value={t}>
+              {TAB_LABELS[t]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {/* Mobile dropdown */}
+        <div className="sm:hidden">
+          <Select value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TABS.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {TAB_LABELS[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <TabsContent value="lancamentos" className="mt-4">
+          <LancamentosView />
+        </TabsContent>
+        <TabsContent value="analise" className="mt-4">
+          <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando análise…</div>}>
+            {tab === "analise" && <AnaliseView />}
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="relatorios" className="mt-4">
+          <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando relatórios…</div>}>
+            {tab === "relatorios" && <RelatoriosView />}
+          </Suspense>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
