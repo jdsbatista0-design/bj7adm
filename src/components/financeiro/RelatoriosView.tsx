@@ -52,9 +52,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/_authenticated/relatorios")({
-  component: RelatoriosBI,
-});
+export function RelatoriosView() {
+  return <RelatoriosBI />;
+}
+
 
 const MIN_YEAR = 2018;
 
