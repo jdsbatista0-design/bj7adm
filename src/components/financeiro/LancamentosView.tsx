@@ -39,27 +39,30 @@ import { toast } from "sonner";
 const PAGE_SIZE = 50;
 const ANOS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
-const search = z.object({
-  ano: fallback(z.number().int(), 0).default(0),
-  mes: fallback(z.number().int().min(0).max(12), 0).default(0),
-  tipo: fallback(z.enum(["", "Receita", "Despesa", "Retirada", "Empréstimo"]), "").default(""),
-  empresa: fallback(z.number().int(), 0).default(0),
-  unidade: fallback(z.number().int(), 0).default(0),
-  categoria: fallback(z.number().int(), 0).default(0),
-  q: fallback(z.string(), "").default(""),
-  revisado: fallback(z.enum(["", "sim", "nao"]), "").default(""),
-  page: fallback(z.number().int().min(1), 1).default(1),
-});
+type Tipo = "" | "Receita" | "Despesa" | "Retirada" | "Empréstimo";
+type Revisado = "" | "sim" | "nao";
+type LancSearch = {
+  ano: number; mes: number; tipo: Tipo; empresa: number;
+  unidade: number; categoria: number; q: string;
+  revisado: Revisado; page: number;
+};
 
-export const Route = createFileRoute("/_authenticated/lancamentos")({
-  validateSearch: zodValidator(search),
-  component: LancamentosPage,
-});
+const financeiroRoute = getRouteApi("/_authenticated/financeiro");
+
+export function LancamentosView() {
+  return <LancamentosPage />;
+}
 
 function LancamentosPage() {
   const user = useCurrentUser();
-  const params = Route.useSearch();
-  const navigate = useNavigate({ from: "/lancamentos" });
+  const all = financeiroRoute.useSearch() as LancSearch & { tab?: string };
+  const params: LancSearch = {
+    ano: all.ano ?? 0, mes: all.mes ?? 0, tipo: (all.tipo ?? "") as Tipo,
+    empresa: all.empresa ?? 0, unidade: all.unidade ?? 0,
+    categoria: all.categoria ?? 0, q: all.q ?? "",
+    revisado: (all.revisado ?? "") as Revisado, page: all.page ?? 1,
+  };
+  const navigate = useNavigate();
   const empresas = useEmpresas();
   const unidades = useUnidades();
   const categorias = useCategorias();
