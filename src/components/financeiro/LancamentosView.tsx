@@ -231,9 +231,13 @@ function LancamentosPage() {
     onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro"),
   });
 
-  function update(patch: Partial<typeof params>) {
-    void navigate({ search: (prev: typeof params) => ({ ...prev, ...patch, page: 1 }) });
+  function nav(reducer: (prev: LancSearch & { tab?: string }) => Partial<LancSearch & { tab?: string }>) {
+    void navigate({ search: reducer as never });
   }
+  function update(patch: Partial<typeof params>) {
+    nav((prev) => ({ ...prev, ...patch, page: 1 }));
+  }
+
 
   return (
     <div className="p-6 space-y-4">
@@ -325,9 +329,10 @@ function LancamentosPage() {
             }}
             className="lg:col-span-2"
           />
-          <Button variant="ghost" onClick={() => void navigate({ search: () => ({ ano: 0, mes: 0, tipo: "" as const, empresa: 0, unidade: 0, categoria: 0, q: "", revisado: "" as const, page: 1 }) })}>
+          <Button variant="ghost" onClick={() => nav((prev) => ({ tab: prev.tab, ano: 0, mes: 0, tipo: "", empresa: 0, unidade: 0, categoria: 0, q: "", revisado: "", page: 1 }))}>
             Limpar
           </Button>
+
         </CardContent>
       </Card>
 
@@ -503,13 +508,14 @@ function LancamentosPage() {
         <span className="text-muted-foreground">{total} lançamentos · página {params.page} de {totalPages}</span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled={params.page <= 1}
-            onClick={() => void navigate({ search: (p: typeof params) => ({ ...p, page: Math.max(1, p.page - 1) }) })}>
+            onClick={() => nav((p) => ({ ...p, page: Math.max(1, (p.page ?? 1) - 1) }))}>
             Anterior
           </Button>
           <Button variant="outline" size="sm" disabled={params.page >= totalPages}
-            onClick={() => void navigate({ search: (p: typeof params) => ({ ...p, page: Math.min(totalPages, p.page + 1) }) })}>
+            onClick={() => nav((p) => ({ ...p, page: Math.min(totalPages, (p.page ?? 1) + 1) }))}>
             Próxima
           </Button>
+
         </div>
       </div>
 
