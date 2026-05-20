@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { from, asRows } from "@/integrations/supabase/db";
@@ -48,9 +48,10 @@ import {
   Building2,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/")({
-  component: Dashboard,
-});
+export function AnaliseView() {
+  return <Dashboard />;
+}
+
 
 const MIN_YEAR = 2018;
 
