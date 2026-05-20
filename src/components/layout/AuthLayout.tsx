@@ -18,10 +18,9 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
+  Home,
   Building2,
-  BookOpen,
-  BarChart3,
+  Wallet,
   Upload,
   Settings,
   LogOut,
@@ -30,15 +29,20 @@ import {
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
 
-const NAV: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+const NAV: {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  search?: Record<string, string>;
+}[] = [
+  { title: "Início", url: "/", icon: Home },
   { title: "Empresas", url: "/empresas", icon: Building2 },
-  { title: "Lançamentos", url: "/lancamentos", icon: BookOpen },
+  { title: "Financeiro", url: "/financeiro", icon: Wallet, search: { tab: "lancamentos" } },
   { title: "Itens", url: "/itens", icon: KanbanSquare },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Importações", url: "/importacoes", icon: Upload },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
+
 
 export function AuthLayout() {
   const { state, signOut } = useAuth();
