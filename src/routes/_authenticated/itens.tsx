@@ -282,11 +282,15 @@ function KanbanColumn({
   tarefas,
   empresaNomeById,
   onDrop,
+  onCardClick,
+  onAddInColumn,
 }: {
   column: { key: ColKey; title: string; tone: string; dot: string };
   tarefas: TarefaRow[];
   empresaNomeById: Map<number, string>;
   onDrop: (id: number) => void;
+  onCardClick: (t: TarefaRow) => void;
+  onAddInColumn: () => void;
 }) {
   const [hover, setHover] = useState(false);
 
@@ -321,8 +325,18 @@ function KanbanColumn({
           <h2 className={cn("text-sm font-semibold tracking-tight", column.tone)}>
             {column.title}
           </h2>
+          <span className="text-[11px] text-muted-foreground tabular-nums">
+            {tarefas.length}
+          </span>
         </div>
-        <span className="text-[11px] text-muted-foreground tabular-nums">{tarefas.length}</span>
+        <button
+          type="button"
+          onClick={onAddInColumn}
+          className="text-muted-foreground hover:text-foreground transition"
+          aria-label="Adicionar item"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className="p-2 space-y-2 flex-1">
         {tarefas.length === 0 ? (
@@ -335,6 +349,7 @@ function KanbanColumn({
               key={t.id}
               tarefa={t}
               empresaNome={t.empresa_id ? empresaNomeById.get(t.empresa_id) ?? null : null}
+              onClick={() => onCardClick(t)}
             />
           ))
         )}
