@@ -28,6 +28,7 @@ import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
 import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_authenticated/fiscal.dashboard'
+import { Route as AuthenticatedFiscalCalendarioRouteImport } from './routes/_authenticated/fiscal.calendario'
 import { Route as AuthenticatedEmpresasIdRouteImport } from './routes/_authenticated/empresas.$id'
 
 const LoginRoute = LoginRouteImport.update({
@@ -130,6 +131,12 @@ const AuthenticatedFiscalDashboardRoute =
     path: '/fiscal/dashboard',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFiscalCalendarioRoute =
+  AuthenticatedFiscalCalendarioRouteImport.update({
+    id: '/fiscal/calendario',
+    path: '/fiscal/calendario',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEmpresasIdRoute = AuthenticatedEmpresasIdRouteImport.update({
   id: '/empresas/$id',
   path: '/empresas/$id',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
@@ -197,6 +206,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/_authenticated/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/_authenticated/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/stone'
     | '/usuarios'
     | '/empresas/$id'
+    | '/fiscal/calendario'
     | '/fiscal/dashboard'
     | '/open-finance/conectar'
     | '/empresas/'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/'
     | '/empresas/$id'
+    | '/fiscal/calendario'
     | '/fiscal/dashboard'
     | '/open-finance/conectar'
     | '/empresas'
@@ -263,6 +275,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/'
     | '/_authenticated/empresas/$id'
+    | '/_authenticated/fiscal/calendario'
     | '/_authenticated/fiscal/dashboard'
     | '/_authenticated/open-finance/conectar'
     | '/_authenticated/empresas/'
@@ -408,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFiscalDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/fiscal/calendario': {
+      id: '/_authenticated/fiscal/calendario'
+      path: '/fiscal/calendario'
+      fullPath: '/fiscal/calendario'
+      preLoaderRoute: typeof AuthenticatedFiscalCalendarioRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/empresas/$id': {
       id: '/_authenticated/empresas/$id'
       path: '/empresas/$id'
@@ -434,6 +454,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedEmpresasIdRoute: typeof AuthenticatedEmpresasIdRoute
+  AuthenticatedFiscalCalendarioRoute: typeof AuthenticatedFiscalCalendarioRoute
   AuthenticatedFiscalDashboardRoute: typeof AuthenticatedFiscalDashboardRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
@@ -455,6 +476,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedEmpresasIdRoute: AuthenticatedEmpresasIdRoute,
+  AuthenticatedFiscalCalendarioRoute: AuthenticatedFiscalCalendarioRoute,
   AuthenticatedFiscalDashboardRoute: AuthenticatedFiscalDashboardRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
