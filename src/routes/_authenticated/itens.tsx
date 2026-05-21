@@ -396,8 +396,12 @@ function TaskCard({
     <div
       draggable
       onDragStart={handleDragStart}
+      onClick={onClick}
+      onKeyDown={handleKey}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "group rounded-xl bg-background/40 p-2.5 ring-1 ring-white/5 cursor-grab active:cursor-grabbing transition hover:ring-primary/30",
+        "group rounded-xl bg-background/40 p-2.5 ring-1 ring-white/5 cursor-grab active:cursor-grabbing transition hover:ring-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/60",
         overdue && "ring-destructive/40",
         done && "opacity-75",
       )}
