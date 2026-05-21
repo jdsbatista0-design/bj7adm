@@ -2,7 +2,8 @@ import { useNavigate, getRouteApi } from "@tanstack/react-router";
 
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { from, asRows, paginateAll } from "@/integrations/supabase/db";
+import { from, asRows } from "@/integrations/supabase/db";
+import { supabase } from "@/integrations/supabase/client";
 import type { LancamentoRow } from "@/integrations/supabase/database";
 import { useEmpresas, useUnidades, useCategorias } from "@/hooks/use-refs";
 import { useCurrentUser } from "@/contexts/auth-context";
