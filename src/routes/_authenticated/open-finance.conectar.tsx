@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Link2 } from "lucide-react";
-import { PluggyConnect } from "react-pluggy-connect";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresas } from "@/hooks/use-refs";
