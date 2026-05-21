@@ -101,8 +101,11 @@ function OpenFinanceConectarPage() {
   useEffect(() => {
     // Client-only dynamic import — react-pluggy-connect depends on `zoid`,
     // which references `window` at module scope and crashes during SSR.
+    // The package name is built at runtime so Vite's static scanner does NOT
+    // try to pre-bundle it for the SSR environment.
     let cancelled = false;
-    import("react-pluggy-connect")
+    const pkg = "react-pluggy" + "-connect";
+    import(/* @vite-ignore */ pkg)
       .then((mod) => {
         if (!cancelled) setPluggyConnect(() => mod.PluggyConnect);
       })
@@ -333,7 +336,7 @@ function OpenFinanceConectarPage() {
         </CardContent>
       </Card>
 
-      {widget ? (
+      {widget && PluggyConnect ? (
         <PluggyConnect
           connectToken={widget.token}
           includeSandbox={false}
