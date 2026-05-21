@@ -374,7 +374,7 @@ function LancamentosPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-normal">Qtd. lançamentos</CardTitle></CardHeader>
-          <CardContent className="pt-0"><div className="text-xl font-semibold tabular-nums">{resumo.qtd}</div></CardContent>
+          <CardContent className="pt-0"><div className="text-xl font-semibold tabular-nums">{total}</div></CardContent>
         </Card>
       </div>
 
