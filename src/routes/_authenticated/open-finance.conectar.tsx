@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, type ComponentType } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Link2 } from "lucide-react";
@@ -7,6 +7,12 @@ import { Loader2, RefreshCw, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresas } from "@/hooks/use-refs";
 import { PageShell } from "@/components/bj7/PageShell";
+
+// react-pluggy-connect depends on `zoid`, which touches `window` at module
+// scope. Load it lazily on the client so it never executes during SSR.
+const PluggyConnect = lazy(() =>
+  import("react-pluggy-connect").then((m) => ({ default: m.PluggyConnect })),
+);
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
