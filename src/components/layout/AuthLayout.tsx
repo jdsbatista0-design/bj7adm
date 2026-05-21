@@ -25,6 +25,7 @@ import {
   Settings,
   LogOut,
   KanbanSquare,
+  Landmark,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
@@ -38,10 +39,12 @@ const NAV: {
   { title: "Início", url: "/", icon: Home },
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Financeiro", url: "/financeiro", icon: Wallet, search: { tab: "lancamentos" } },
+  { title: "Open Finance", url: "/open-finance/conectar", icon: Landmark },
   { title: "Itens", url: "/itens", icon: KanbanSquare },
   { title: "Importações", url: "/importacoes", icon: Upload },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
+
 
 
 export function AuthLayout() {
