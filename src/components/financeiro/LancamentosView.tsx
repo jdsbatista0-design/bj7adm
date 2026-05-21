@@ -133,7 +133,8 @@ function LancamentosPage() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     queryFn: async () => {
-      let q = from("dre_consolidada")
+      let q = supabase
+        .from("dre_consolidada")
         .select("empresa_id,mes_ref,tipo,grupo,valor_total")
         .eq("entra_dre", true);
       if (!user.ve_todas_empresas) {
@@ -142,16 +143,13 @@ function LancamentosPage() {
       }
       if (params.empresa) q = q.eq("empresa_id", params.empresa);
       if (params.tipo) q = q.eq("tipo", params.tipo);
-      // ano/mes -> filtro por mes_ref
       if (params.ano && params.mes) {
         const start = `${params.ano}-${String(params.mes).padStart(2, "0")}-01`;
-        const next = new Date(params.ano, params.mes, 1);
-        q = q.eq("mes_ref", start).lte("mes_ref", start);
-        void next;
+        q = q.eq("mes_ref", start);
       } else if (params.ano) {
-        q = q.gte("mes_ref", `${params.ano}-01-01`).lt("mes_ref", `${params.ano + 1}-01-01`);
-      } else if (params.mes) {
-        // só mês sem ano: pula filtro (raro)
+        q = q
+          .gte("mes_ref", `${params.ano}-01-01`)
+          .lt("mes_ref", `${params.ano + 1}-01-01`);
       }
       const r = await q;
       if (r.error) throw r.error;
@@ -169,22 +167,22 @@ function LancamentosPage() {
     const rows = aggQ.data ?? [];
     let receita = 0;
     let despesa = 0;
-    const porCat = new Map<string, { nome: string; receita: number; despesa: number }>();
+    const porGrupo = new Map<string, { nome: string; receita: number; despesa: number }>();
     const porMes = new Map<string, { receita: number; despesa: number }>();
 
     for (const r of rows) {
-      const v = Math.abs(Number(r.valor) || 0);
+      const v = Math.abs(Number(r.valor_total) || 0);
       if (r.tipo === "Receita") receita += v;
       else if (r.tipo === "Despesa") despesa += v;
 
-      const catKey = r.categoria_id ? String(r.categoria_id) : "sem";
-      const catNome = r.categoria_id ? categoriaNome(r.categoria_id) : "Sem categoria";
-      const c = porCat.get(catKey) ?? { nome: catNome, receita: 0, despesa: 0 };
-      if (r.tipo === "Receita") c.receita += v;
-      else if (r.tipo === "Despesa") c.despesa += v;
-      porCat.set(catKey, c);
+      const gKey = r.grupo ?? "sem";
+      const gNome = r.grupo ?? "Sem grupo";
+      const g = porGrupo.get(gKey) ?? { nome: gNome, receita: 0, despesa: 0 };
+      if (r.tipo === "Receita") g.receita += v;
+      else if (r.tipo === "Despesa") g.despesa += v;
+      porGrupo.set(gKey, g);
 
-      const mesKey = (r.data ?? "").slice(0, 7);
+      const mesKey = (r.mes_ref ?? "").slice(0, 7);
       if (mesKey) {
         const m = porMes.get(mesKey) ?? { receita: 0, despesa: 0 };
         if (r.tipo === "Receita") m.receita += v;
@@ -193,7 +191,7 @@ function LancamentosPage() {
       }
     }
 
-    const categorias = Array.from(porCat.values())
+    const grupos = Array.from(porGrupo.values())
       .map((c) => ({ ...c, total: c.receita + c.despesa }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
@@ -214,11 +212,10 @@ function LancamentosPage() {
       receita,
       despesa,
       saldo: receita - despesa,
-      qtd: rows.length,
-      categorias,
+      categorias: grupos, // mantém a chave usada pelo chart (rotulado como grupos)
       meses,
     };
-  }, [aggQ.data, categorias.data]);
+  }, [aggQ.data]);
 
   const atualizarCategoria = useMutation({
     mutationFn: async ({ l, categoria_id }: { l: LancamentoRow; categoria_id: number | null }) => {
