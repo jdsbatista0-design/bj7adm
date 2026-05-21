@@ -414,7 +414,9 @@ function LancamentosPage() {
           <CardHeader><CardTitle className="text-sm">Evolução mensal</CardTitle></CardHeader>
           <CardContent>
             <div className="h-[280px] w-full">
-              {aggQ.isLoading ? (
+              {!aggSuportado ? (
+                <div className="h-full flex items-center justify-center text-xs text-muted-foreground text-center px-4">Gráfico desativado para filtros avançados.</div>
+              ) : aggQ.isLoading ? (
                 <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Carregando…</div>
               ) : aggQ.error ? (
                 <div className="h-full flex items-center justify-center text-sm text-destructive">Erro: {(aggQ.error as Error).message}</div>
