@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Link2 } from "lucide-react";
-import { PluggyConnect } from "react-pluggy-connect";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresas } from "@/hooks/use-refs";
@@ -96,6 +95,24 @@ function OpenFinanceConectarPage() {
   const [syncingId, setSyncingId] = useState<string | number | null>(null);
   const [reconectandoId, setReconectandoId] = useState<string | number | null>(null);
   const [widget, setWidget] = useState<WidgetState>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [PluggyConnect, setPluggyConnect] = useState<ComponentType<any> | null>(null);
+
+  useEffect(() => {
+    // Client-only dynamic import — react-pluggy-connect depends on `zoid`,
+    // which references `window` at module scope and crashes during SSR.
+    let cancelled = false;
+    import("react-pluggy-connect")
+      .then((mod) => {
+        if (!cancelled) setPluggyConnect(() => mod.PluggyConnect);
+      })
+      .catch((e) => {
+        console.error("Falha ao carregar react-pluggy-connect", e);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const empresaNomeById = (id: number): string => {
     const e = (empresas.data ?? []).find((x) => x.id === id);
