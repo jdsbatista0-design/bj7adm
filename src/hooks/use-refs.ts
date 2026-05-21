@@ -36,3 +36,15 @@ export function useCategorias() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useUsuarios() {
+  return useQuery({
+    queryKey: ["usuarios"],
+    queryFn: async () => {
+      const r = await from("usuarios").select("*").order("nome");
+      if (r.error) throw r.error;
+      return asRows("usuarios", r.data);
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}

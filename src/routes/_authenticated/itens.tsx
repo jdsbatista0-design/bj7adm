@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type DragEvent } from "react";
+import { useMemo, useState, type DragEvent, type KeyboardEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/auth-context";
@@ -243,6 +243,8 @@ function ItensPage() {
               tarefas={cols[c.key]}
               empresaNomeById={empresaNomeById}
               onDrop={(id) => moveMut.mutate({ id, status: c.key })}
+              onCardClick={(t) => drawer.open({ tarefa: t })}
+              onAddInColumn={() => drawer.open({})}
             />
           ))}
         </div>
@@ -280,11 +282,15 @@ function KanbanColumn({
   tarefas,
   empresaNomeById,
   onDrop,
+  onCardClick,
+  onAddInColumn,
 }: {
   column: { key: ColKey; title: string; tone: string; dot: string };
   tarefas: TarefaRow[];
   empresaNomeById: Map<number, string>;
   onDrop: (id: number) => void;
+  onCardClick: (t: TarefaRow) => void;
+  onAddInColumn: () => void;
 }) {
   const [hover, setHover] = useState(false);
 
@@ -319,8 +325,18 @@ function KanbanColumn({
           <h2 className={cn("text-sm font-semibold tracking-tight", column.tone)}>
             {column.title}
           </h2>
+          <span className="text-[11px] text-muted-foreground tabular-nums">
+            {tarefas.length}
+          </span>
         </div>
-        <span className="text-[11px] text-muted-foreground tabular-nums">{tarefas.length}</span>
+        <button
+          type="button"
+          onClick={onAddInColumn}
+          className="text-muted-foreground hover:text-foreground transition"
+          aria-label="Adicionar item"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className="p-2 space-y-2 flex-1">
         {tarefas.length === 0 ? (
@@ -333,6 +349,7 @@ function KanbanColumn({
               key={t.id}
               tarefa={t}
               empresaNome={t.empresa_id ? empresaNomeById.get(t.empresa_id) ?? null : null}
+              onClick={() => onCardClick(t)}
             />
           ))
         )}
@@ -348,7 +365,15 @@ function formatPrazo(iso: string | null) {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
-function TaskCard({ tarefa, empresaNome }: { tarefa: TarefaRow; empresaNome: string | null }) {
+function TaskCard({
+  tarefa,
+  empresaNome,
+  onClick,
+}: {
+  tarefa: TarefaRow;
+  empresaNome: string | null;
+  onClick?: () => void;
+}) {
   const overdue =
     !!tarefa.prazo &&
     tarefa.status !== "concluida" &&
@@ -360,12 +385,23 @@ function TaskCard({ tarefa, empresaNome }: { tarefa: TarefaRow; empresaNome: str
     e.dataTransfer.effectAllowed = "move";
   };
 
+  const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick?.();
+    }
+  };
+
   return (
     <div
       draggable
       onDragStart={handleDragStart}
+      onClick={onClick}
+      onKeyDown={handleKey}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={cn(
-        "group rounded-xl bg-background/40 p-2.5 ring-1 ring-white/5 cursor-grab active:cursor-grabbing transition hover:ring-primary/30",
+        "group rounded-xl bg-background/40 p-2.5 ring-1 ring-white/5 cursor-grab active:cursor-grabbing transition hover:ring-primary/30 focus:outline-none focus:ring-2 focus:ring-primary/60",
         overdue && "ring-destructive/40",
         done && "opacity-75",
       )}
