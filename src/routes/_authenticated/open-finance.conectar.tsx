@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { ClientOnly, createFileRoute } from "@tanstack/react-router";
 import { useState, lazy, Suspense } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,10 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEmpresas } from "@/hooks/use-refs";
 import { PageShell } from "@/components/bj7/PageShell";
 
-// react-pluggy-connect depends on `zoid`, which touches `window` at module
-// scope. Load it lazily on the client so it never executes during SSR.
-const PluggyConnect = lazy(() =>
-  import("react-pluggy-connect").then((m) => ({ default: m.PluggyConnect })),
+const PluggyConnectClient = lazy(() =>
+  import("@/components/open-finance/PluggyConnectWidget.client").then((m) => ({
+    default: m.PluggyConnectWidget,
+  })),
 );
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -321,35 +321,39 @@ function OpenFinanceConectarPage() {
         </CardContent>
       </Card>
 
-      {widget ? (
-        <Suspense fallback={null}>
-          <PluggyConnect
-            connectToken={widget.token}
-            includeSandbox={false}
-            onSuccess={async (itemData: { item: { id: string; connector?: { id?: number; name?: string } } }) => {
-              try {
-                const { error } = await supabase.functions.invoke("pluggy-register-item", {
-                  body: {
-                    empresa_id: widget.empresaId,
-                    item_id: itemData?.item?.id,
-                    connector_id: itemData?.item?.connector?.id,
-                    connector_name: itemData?.item?.connector?.name,
-                  },
-                });
-                if (error) throw error;
-                toast.success("Conta conectada com sucesso!");
-                recarregarConexoes();
-              } catch (e) {
-                toast.error("Erro ao registrar conexão: " + ((e as Error)?.message || "desconhecido"));
-              }
-            }}
-            onError={(error: { message?: string }) => {
-              toast.error("Erro ao conectar: " + (error?.message || "desconhecido"));
-            }}
-            onClose={closeWidget}
-          />
-        </Suspense>
-      ) : null}
+      <ClientOnly fallback={null}>
+        {widget ? (
+          <Suspense fallback={null}>
+            <PluggyConnectClient
+              connectToken={widget.token}
+              includeSandbox={false}
+              onSuccess={async (itemData: { item: { id: string; connector?: { id?: number; name?: string } } }) => {
+                try {
+                  const { error } = await supabase.functions.invoke("pluggy-register-item", {
+                    body: {
+                      empresa_id: widget.empresaId,
+                      item_id: itemData?.item?.id,
+                      connector_id: itemData?.item?.connector?.id,
+                      connector_name: itemData?.item?.connector?.name,
+                    },
+                  });
+                  if (error) throw error;
+                  toast.success("Conta conectada com sucesso!");
+                  closeWidget();
+                  recarregarConexoes();
+                } catch (e) {
+                  toast.error("Erro ao registrar conexão: " + ((e as Error)?.message || "desconhecido"));
+                }
+              }}
+              onError={(error: { message?: string }) => {
+                toast.error("Erro ao conectar: " + (error?.message || "desconhecido"));
+                closeWidget();
+              }}
+              onClose={closeWidget}
+            />
+          </Suspense>
+        ) : null}
+      </ClientOnly>
     </PageShell>
   );
 }
