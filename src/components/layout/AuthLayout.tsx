@@ -42,6 +42,8 @@ const NAV: {
   { title: "Financeiro", url: "/financeiro", icon: Wallet, search: { tab: "lancamentos" } },
   { title: "Fiscal · Dashboard", url: "/fiscal/dashboard", icon: Receipt },
   { title: "Fiscal · Calendário", url: "/fiscal/calendario", icon: Receipt },
+  { title: "Fiscal · Pendências Contábeis", url: "/fiscal/pendencias", icon: Receipt },
+  { title: "Fiscal · Faturamento Simples", url: "/fiscal/faturamento-simples", icon: Receipt },
   { title: "Open Finance", url: "/open-finance/conectar", icon: Landmark },
   { title: "Itens", url: "/itens", icon: KanbanSquare },
   { title: "Importações", url: "/importacoes", icon: Upload },
