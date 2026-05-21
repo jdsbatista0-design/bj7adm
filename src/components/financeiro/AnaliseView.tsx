@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { from, asRows } from "@/integrations/supabase/db";
+import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { useEmpresas } from "@/hooks/use-refs";
-import type { LancamentoRow } from "@/integrations/supabase/database";
+import type { DreConsolidadaRow } from "@/integrations/supabase/database";
 import { PageShell, SectionHeader } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  SelectGroup,
-  SelectLabel,
   SelectSeparator,
 } from "@/components/ui/select";
 import {
@@ -42,7 +40,6 @@ import {
   ArrowRight,
   TrendingUp,
   TrendingDown,
-  Wallet,
   PiggyBank,
   Percent,
   Building2,
@@ -52,8 +49,8 @@ export function AnaliseView() {
   return <Dashboard />;
 }
 
-
 const MIN_YEAR = 2018;
+const STALE = 5 * 60 * 1000;
 
 type PeriodoKey =
   | "mes_atual"
@@ -124,13 +121,14 @@ function rangesFor(
     start = new Date(yr, 0, 1);
     end = new Date(yr + 1, 0, 1);
   } else {
-    // personalizado — usar inputs; end é exclusivo (+1 dia)
     const s = custom.start || `${MIN_YEAR}-01-01`;
     const e = custom.end || isoDate(hoje);
     start = new Date(`${s}T00:00:00`);
     const eDate = new Date(`${e}T00:00:00`);
-    eDate.setDate(eDate.getDate() + 1);
-    end = eDate;
+    // Normaliza para o 1º dia do mês seguinte (mes_ref é o 1º dia do mês).
+    end = new Date(eDate.getFullYear(), eDate.getMonth() + 1, 1);
+    // alinha start ao 1º dia do mês
+    start = new Date(start.getFullYear(), start.getMonth(), 1);
   }
 
   const ms = end.getTime() - start.getTime();
@@ -151,6 +149,30 @@ type EmpresaAgg = {
   recAnt: number;
   despAnt: number;
 };
+
+/**
+ * Busca linhas agregadas da view dre_consolidada para um intervalo de meses.
+ * mes_ref é o 1º dia do mês; o intervalo é semi-aberto [start, end).
+ */
+async function fetchDreRange(opts: {
+  start: string;
+  end: string;
+  empresaIds: number[] | null; // null = todas
+}): Promise<DreConsolidadaRow[]> {
+  let q = supabase
+    .from("dre_consolidada")
+    .select("empresa_id,mes_ref,tipo,grupo,valor_total")
+    .eq("entra_dre", true)
+    .gte("mes_ref", opts.start)
+    .lt("mes_ref", opts.end);
+  if (opts.empresaIds) {
+    if (opts.empresaIds.length === 0) return [];
+    q = q.in("empresa_id", opts.empresaIds);
+  }
+  const r = await q;
+  if (r.error) throw r.error;
+  return (r.data ?? []) as DreConsolidadaRow[];
+}
 
 function Dashboard() {
   const user = useCurrentUser();
@@ -177,75 +199,64 @@ function Dashboard() {
     return meses >= 24;
   }, [periodoKey, periodo.start, periodo.end]);
 
-  // PostgREST aplica um cap silencioso por request (tipicamente 1000 linhas)
-  // mesmo passando .limit(N) grande. Para períodos longos isso fazia o
-  // dashboard "sumir" — paginamos com .range() até esgotar.
-  const PAGE = 1000;
-  async function fetchAllLancamentos(opts: {
-    start: string;
-    end?: string;
-  }): Promise<LancamentoRow[]> {
-    const acc: LancamentoRow[] = [];
-    let offset = 0;
-    while (true) {
-      let q = from("lancamentos")
-        .select("id,data,empresa_id,tipo,valor,contar_no_total")
-        .gte("data", opts.start)
-        .eq("contar_no_total", true)
-        .in("tipo", ["Receita", "Despesa"]);
-      if (opts.end) q = q.lt("data", opts.end);
-      if (!user.ve_todas_empresas) {
-        if (user.empresas_ids.length === 0) return [];
-        q = q.in("empresa_id", user.empresas_ids);
-      }
-      const r = await q
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE - 1);
-      if (r.error) throw r.error;
-      const batch = asRows("lancamentos", r.data);
-      acc.push(...batch);
-      if (batch.length < PAGE) break;
-      offset += PAGE;
-      if (offset > 500_000) break;
-    }
-    return acc;
-  }
+  const empresaIds = user.ve_todas_empresas ? null : user.empresas_ids;
+  const empresaKey = empresaIds ? empresaIds.join(",") : "all";
 
-  const lancAtualQ = useQuery({
-    queryKey: ["dash", "atual", periodo.start, periodo.end, user.id],
-    queryFn: () => fetchAllLancamentos({ start: periodo.start, end: periodo.end }),
+  const atualQ = useQuery({
+    queryKey: ["dre", "atual", periodo.start, periodo.end, empresaKey],
+    queryFn: () =>
+      fetchDreRange({ start: periodo.start, end: periodo.end, empresaIds }),
+    staleTime: STALE,
+    gcTime: 10 * 60 * 1000,
   });
 
-  const lancAntQ = useQuery({
-    queryKey: ["dash", "ant", periodo.startPrev, periodo.endPrev, user.id],
+  const antQ = useQuery({
+    queryKey: ["dre", "ant", periodo.startPrev, periodo.endPrev, empresaKey],
     enabled: !skipComparison,
-    queryFn: () => fetchAllLancamentos({ start: periodo.startPrev, end: periodo.endPrev }),
+    queryFn: () =>
+      fetchDreRange({
+        start: periodo.startPrev,
+        end: periodo.endPrev,
+        empresaIds,
+      }),
+    staleTime: STALE,
+    gcTime: 10 * 60 * 1000,
   });
 
-  const lanc12mQ = useQuery({
-    queryKey: ["dash", "evolucao12m", user.id],
+  // Evolução 12m: range fixo, cache mais longo
+  const evol12mQ = useQuery({
+    queryKey: ["dre", "evol12m", empresaKey],
     queryFn: () => {
       const hoje = new Date();
       const start = new Date(hoje.getFullYear(), hoje.getMonth() - 11, 1);
-      return fetchAllLancamentos({ start: isoDate(start) });
+      const end = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1);
+      return fetchDreRange({
+        start: isoDate(start),
+        end: isoDate(end),
+        empresaIds,
+      });
     },
+    staleTime: STALE,
+    gcTime: 10 * 60 * 1000,
   });
 
-  const consolidado = useMemo(() => {
-    const rows = (lancAtualQ.data ?? []) as LancamentoRow[];
-    const rowsAnt = (lancAntQ.data ?? []) as LancamentoRow[];
-    const sum = (rs: LancamentoRow[], tipo: string) =>
-      rs
-        .filter((r) => r.tipo === tipo)
-        .reduce((s, r) => s + Math.abs(Number(r.valor) || 0), 0);
+  function sumByTipo(rows: DreConsolidadaRow[], tipo: string) {
+    return rows
+      .filter((r) => r.tipo === tipo)
+      .reduce((s, r) => s + Math.abs(Number(r.valor_total) || 0), 0);
+  }
 
-    const rec = sum(rows, "Receita");
-    const desp = sum(rows, "Despesa");
+  const consolidado = useMemo(() => {
+    const rows = atualQ.data ?? [];
+    const rowsAnt = antQ.data ?? [];
+
+    const rec = sumByTipo(rows, "Receita");
+    const desp = sumByTipo(rows, "Despesa");
     const lucro = rec - desp;
     const margem = rec > 0 ? (lucro / rec) * 100 : 0;
 
-    const recAnt = sum(rowsAnt, "Receita");
-    const despAnt = sum(rowsAnt, "Despesa");
+    const recAnt = sumByTipo(rowsAnt, "Receita");
+    const despAnt = sumByTipo(rowsAnt, "Despesa");
     const lucroAnt = recAnt - despAnt;
     const margemAnt = recAnt > 0 ? (lucroAnt / recAnt) * 100 : 0;
 
@@ -257,63 +268,57 @@ function Dashboard() {
       desp,
       lucro,
       margem,
-      recAnt,
-      despAnt,
-      lucroAnt,
-      margemAnt,
       trendRec: skipComparison ? null : tr(rec, recAnt),
       trendDesp: skipComparison ? null : tr(desp, despAnt),
       trendLucro: skipComparison ? null : tr(lucro, lucroAnt),
       trendMargemPp: skipComparison ? null : margem - margemAnt,
     };
-  }, [lancAtualQ.data, lancAntQ.data, skipComparison]);
+  }, [atualQ.data, antQ.data, skipComparison]);
 
   const porEmpresa = useMemo(() => {
-    const map = new Map<string | number, EmpresaAgg>();
-    const rows = (lancAtualQ.data ?? []) as LancamentoRow[];
-    const rowsAnt = (lancAntQ.data ?? []) as LancamentoRow[];
+    const map = new Map<number, EmpresaAgg>();
+    const rows = atualQ.data ?? [];
+    const rowsAnt = antQ.data ?? [];
     for (const r of rows) {
-      const key = r.empresa_id as string | number;
-      const cur = map.get(key) ?? { rec: 0, desp: 0, recAnt: 0, despAnt: 0 };
-      const v = Math.abs(Number(r.valor) || 0);
+      const cur = map.get(r.empresa_id) ?? { rec: 0, desp: 0, recAnt: 0, despAnt: 0 };
+      const v = Math.abs(Number(r.valor_total) || 0);
       if (r.tipo === "Receita") cur.rec += v;
-      else cur.desp += v;
-      map.set(key, cur);
+      else if (r.tipo === "Despesa") cur.desp += v;
+      map.set(r.empresa_id, cur);
     }
     for (const r of rowsAnt) {
-      const key = r.empresa_id as string | number;
-      const cur = map.get(key) ?? { rec: 0, desp: 0, recAnt: 0, despAnt: 0 };
-      const v = Math.abs(Number(r.valor) || 0);
+      const cur = map.get(r.empresa_id) ?? { rec: 0, desp: 0, recAnt: 0, despAnt: 0 };
+      const v = Math.abs(Number(r.valor_total) || 0);
       if (r.tipo === "Receita") cur.recAnt += v;
-      else cur.despAnt += v;
-      map.set(key, cur);
+      else if (r.tipo === "Despesa") cur.despAnt += v;
+      map.set(r.empresa_id, cur);
     }
 
-    const lista = Array.from(map.entries()).map(([empresa_id, v]) => {
-      const lucro = v.rec - v.desp;
-      const margem = v.rec > 0 ? (lucro / v.rec) * 100 : 0;
-      const lucroAnt = v.recAnt - v.despAnt;
-      const margemAnt = v.recAnt > 0 ? (lucroAnt / v.recAnt) * 100 : 0;
-      const nome =
-        empresas.data?.find((e) => e.id === empresa_id)?.nome ??
-        `#${empresa_id}`;
-      return {
-        empresa_id,
-        nome,
-        rec: v.rec,
-        desp: v.desp,
-        lucro,
-        margem,
-        margemAnt,
-        deltaMargemPp: margem - margemAnt,
-      };
-    });
-    lista.sort((a, b) => b.lucro - a.lucro);
-    return lista;
-  }, [lancAtualQ.data, lancAntQ.data, empresas.data]);
+    return Array.from(map.entries())
+      .map(([empresa_id, v]) => {
+        const lucro = v.rec - v.desp;
+        const margem = v.rec > 0 ? (lucro / v.rec) * 100 : 0;
+        const lucroAnt = v.recAnt - v.despAnt;
+        const margemAnt = v.recAnt > 0 ? (lucroAnt / v.recAnt) * 100 : 0;
+        const nome =
+          empresas.data?.find((e) => e.id === empresa_id)?.nome ??
+          `#${empresa_id}`;
+        return {
+          empresa_id,
+          nome,
+          rec: v.rec,
+          desp: v.desp,
+          lucro,
+          margem,
+          margemAnt,
+          deltaMargemPp: margem - margemAnt,
+        };
+      })
+      .sort((a, b) => b.lucro - a.lucro);
+  }, [atualQ.data, antQ.data, empresas.data]);
 
   const evolucao = useMemo(() => {
-    const rows = (lanc12mQ.data ?? []) as LancamentoRow[];
+    const rows = evol12mQ.data ?? [];
     const buckets = new Map<string, { receita: number; despesa: number }>();
     const hoje = new Date();
     for (let i = 11; i >= 0; i--) {
@@ -322,12 +327,12 @@ function Dashboard() {
       buckets.set(key, { receita: 0, despesa: 0 });
     }
     for (const r of rows) {
-      const key = (r.data ?? "").slice(0, 7);
+      const key = (r.mes_ref ?? "").slice(0, 7);
       const b = buckets.get(key);
       if (!b) continue;
-      const v = Math.abs(Number(r.valor) || 0);
+      const v = Math.abs(Number(r.valor_total) || 0);
       if (r.tipo === "Receita") b.receita += v;
-      else b.despesa += v;
+      else if (r.tipo === "Despesa") b.despesa += v;
     }
     return Array.from(buckets.entries()).map(([key, v]) => {
       const [y, m] = key.split("-").map(Number);
@@ -338,9 +343,9 @@ function Dashboard() {
         lucro: Math.round(v.receita - v.despesa),
       };
     });
-  }, [lanc12mQ.data]);
+  }, [evol12mQ.data]);
 
-  const loading = lancAtualQ.isLoading || lancAntQ.isLoading;
+  const loading = atualQ.isLoading || antQ.isLoading;
   const labelPeriodo = useMemo(() => {
     const base = PERIODOS_BASE.find((p) => p.key === periodoKey);
     if (base) return base.label;
@@ -353,8 +358,8 @@ function Dashboard() {
 
   return (
     <PageShell
-      title="Dashboard"
-      description="Consolidado financeiro do Grupo BJ7"
+      title="Análise"
+      description="Consolidado financeiro do Grupo BJ7 (views DRE)"
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <Select
@@ -368,6 +373,12 @@ function Dashboard() {
               {PERIODOS_BASE.map((p) => (
                 <SelectItem key={p.key} value={p.key}>
                   {p.label}
+                </SelectItem>
+              ))}
+              <SelectSeparator />
+              {anos.map((y) => (
+                <SelectItem key={y} value={`ano_${y}`}>
+                  Ano {y}
                 </SelectItem>
               ))}
               <SelectSeparator />
@@ -398,12 +409,14 @@ function Dashboard() {
         </div>
       }
     >
-      {/* ===== KPIs consolidados ===== */}
+      {atualQ.error && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 text-destructive text-sm p-3">
+          Erro carregando DRE: {(atualQ.error as Error).message}
+        </div>
+      )}
+
       <section>
-        <SectionHeader
-          title="Consolidado do grupo"
-          description={labelPeriodo}
-        />
+        <SectionHeader title="Consolidado do grupo" description={labelPeriodo} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
             label="Receita"
@@ -435,11 +448,7 @@ function Dashboard() {
           />
           <KpiCard
             label="Margem"
-            value={
-              consolidado.rec > 0
-                ? `${consolidado.margem.toFixed(1)}%`
-                : "—"
-            }
+            value={consolidado.rec > 0 ? `${consolidado.margem.toFixed(1)}%` : "—"}
             hint={
               skipComparison
                 ? "Janela longa, sem comparação"
@@ -459,12 +468,8 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* ===== Tabela por empresa ===== */}
       <section>
-        <SectionHeader
-          title="Por empresa"
-          description="Comparativo de desempenho no período"
-        />
+        <SectionHeader title="Por empresa" description="Desempenho no período" />
         <div
           className="rounded-2xl bg-card ring-1 ring-white/5 overflow-hidden"
           style={{ boxShadow: "var(--shadow-elegant)" }}
@@ -484,22 +489,15 @@ function Dashboard() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-muted-foreground py-8"
-                  >
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     Carregando...
                   </TableCell>
                 </TableRow>
               )}
               {!loading && porEmpresa.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-muted-foreground py-8"
-                  >
-                    Nenhum lançamento no período. Cadastre empresas e use
-                    "Lançar" para começar.
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    Nenhum lançamento no período.
                   </TableCell>
                 </TableRow>
               )}
@@ -517,27 +515,21 @@ function Dashboard() {
                       ? "text-destructive"
                       : "text-muted-foreground";
                 return (
-                  <TableRow key={String(e.empresa_id)}>
+                  <TableRow key={e.empresa_id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="font-medium">{e.nome}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right tabular">
-                      {formatBRL(e.rec)}
-                    </TableCell>
-                    <TableCell className="text-right tabular">
-                      {formatBRL(e.desp)}
-                    </TableCell>
+                    <TableCell className="text-right tabular">{formatBRL(e.rec)}</TableCell>
+                    <TableCell className="text-right tabular">{formatBRL(e.desp)}</TableCell>
                     <TableCell
                       className={`text-right tabular font-medium ${e.lucro < 0 ? "text-destructive" : "text-success"}`}
                     >
                       {formatBRL(e.lucro)}
                     </TableCell>
-                    <TableCell
-                      className={`text-right tabular ${margemCor}`}
-                    >
+                    <TableCell className={`text-right tabular ${margemCor}`}>
                       {e.rec > 0 ? `${e.margem.toFixed(1)}%` : "—"}
                     </TableCell>
                     <TableCell className={`text-right tabular ${deltaCor}`}>
@@ -546,16 +538,8 @@ function Dashboard() {
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                      >
-                        <Link
-                          to="/empresas/$id"
-                          params={{ id: String(e.empresa_id) }}
-                        >
+                      <Button asChild variant="ghost" size="sm" className="h-7 px-2">
+                        <Link to="/empresas/$id" params={{ id: String(e.empresa_id) }}>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                       </Button>
@@ -566,21 +550,15 @@ function Dashboard() {
               {porEmpresa.length > 0 && (
                 <TableRow className="border-t border-white/10 bg-muted/20 font-semibold">
                   <TableCell>TOTAL</TableCell>
-                  <TableCell className="text-right tabular">
-                    {formatBRL(consolidado.rec)}
-                  </TableCell>
-                  <TableCell className="text-right tabular">
-                    {formatBRL(consolidado.desp)}
-                  </TableCell>
+                  <TableCell className="text-right tabular">{formatBRL(consolidado.rec)}</TableCell>
+                  <TableCell className="text-right tabular">{formatBRL(consolidado.desp)}</TableCell>
                   <TableCell
                     className={`text-right tabular ${consolidado.lucro < 0 ? "text-destructive" : "text-success"}`}
                   >
                     {formatBRL(consolidado.lucro)}
                   </TableCell>
                   <TableCell className="text-right tabular">
-                    {consolidado.rec > 0
-                      ? `${consolidado.margem.toFixed(1)}%`
-                      : "—"}
+                    {consolidado.rec > 0 ? `${consolidado.margem.toFixed(1)}%` : "—"}
                   </TableCell>
                   <TableCell />
                   <TableCell />
@@ -591,83 +569,60 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* ===== Evolução 12 meses ===== */}
       <section>
         <SectionHeader
           title="Evolução — últimos 12 meses"
-          description="Receita, despesa e lucro consolidados do grupo"
+          description="Receita, despesa e lucro consolidados (DRE)"
         />
         <div
           className="rounded-2xl bg-card ring-1 ring-white/5 p-4"
           style={{ boxShadow: "var(--shadow-elegant)" }}
         >
           <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={evolucao}
-                margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  opacity={0.3}
-                />
-                <XAxis
-                  dataKey="mes"
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) =>
-                    new Intl.NumberFormat("pt-BR", {
-                      notation: "compact",
-                      maximumFractionDigits: 1,
-                    }).format(v as number)
-                  }
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: "hsl(var(--popover-foreground))",
-                  }}
-                  labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
-                  itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                  formatter={(value: number) => formatBRL(value)}
-                />
-                <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }} />
-                <Line
-                  type="monotone"
-                  dataKey="receita"
-                  name="Receita"
-                  stroke="hsl(142 71% 55%)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="despesa"
-                  name="Despesa"
-                  stroke="hsl(0 84% 65%)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="lucro"
-                  name="Lucro"
-                  stroke="hsl(217 91% 65%)"
-                  strokeWidth={2.5}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {evol12mQ.isLoading ? (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                Carregando…
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={evolucao} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                  <XAxis
+                    dataKey="mes"
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) =>
+                      new Intl.NumberFormat("pt-BR", {
+                        notation: "compact",
+                        maximumFractionDigits: 1,
+                      }).format(v as number)
+                    }
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: "hsl(var(--popover-foreground))",
+                    }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    formatter={(value: number) => formatBRL(value)}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }} />
+                  <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(142 71% 55%)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="despesa" name="Despesa" stroke="hsl(0 84% 65%)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="lucro" name="Lucro" stroke="hsl(217 91% 65%)" strokeWidth={2.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </section>
