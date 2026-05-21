@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Link2 } from "lucide-react";
+import { PluggyConnect } from "react-pluggy-connect";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresas } from "@/hooks/use-refs";
@@ -31,8 +32,6 @@ export const Route = createFileRoute("/_authenticated/open-finance/conectar")({
   component: OpenFinanceConectarPage,
 });
 
-const PLUGGY_SCRIPT_URL = "https://cdn.pluggy.ai/web-connect/v2.9.0/pluggy-connect.js";
-
 type ConnectionRow = {
   id: number | string;
   empresa_id: number;
@@ -44,32 +43,7 @@ type ConnectionRow = {
   last_sync_at: string | null;
   last_sync_status: string | null;
   last_error: string | null;
-  empresas: { nome: string } | null;
 };
-
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  interface Window { PluggyConnect?: any }
-}
-
-let pluggyScriptPromise: Promise<void> | null = null;
-function loadPluggyScript(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (window.PluggyConnect) return Promise.resolve();
-  if (pluggyScriptPromise) return pluggyScriptPromise;
-  pluggyScriptPromise = new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = PLUGGY_SCRIPT_URL;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => {
-      pluggyScriptPromise = null;
-      reject(new Error("Falha ao carregar Pluggy Connect"));
-    };
-    document.head.appendChild(s);
-  });
-  return pluggyScriptPromise;
-}
 
 function statusVariant(status: string | null): {
   variant: "default" | "secondary" | "destructive" | "outline";
@@ -108,6 +82,11 @@ function formatLastSync(iso: string | null): string {
   }
 }
 
+type WidgetState = {
+  token: string;
+  empresaId: number;
+} | null;
+
 function OpenFinanceConectarPage() {
   const empresas = useEmpresas();
   const queryClient = useQueryClient();
@@ -116,15 +95,19 @@ function OpenFinanceConectarPage() {
   const [conectando, setConectando] = useState(false);
   const [syncingId, setSyncingId] = useState<string | number | null>(null);
   const [reconectandoId, setReconectandoId] = useState<string | number | null>(null);
-  const widgetRef = useRef<unknown>(null);
+  const [widget, setWidget] = useState<WidgetState>(null);
+
+  const empresaNomeById = (id: number): string => {
+    const e = (empresas.data ?? []).find((x) => x.id === id);
+    return e?.nome ?? `#${id}`;
+  };
 
   const conexoesQ = useQuery({
     queryKey: ["openfinance-connections"],
     queryFn: async () => {
       const r = await supabase
-        .schema("openfinance" as never)
-        .from("connections")
-        .select("*, empresas(nome)")
+        .from("openfinance_connections")
+        .select("*")
         .order("id", { ascending: false });
       if (r.error) throw r.error;
       return (r.data ?? []) as unknown as ConnectionRow[];
@@ -135,45 +118,10 @@ function OpenFinanceConectarPage() {
     void queryClient.invalidateQueries({ queryKey: ["openfinance-connections"] });
   };
 
-  async function abrirWidget(
-    accessToken: string,
-    empresaId: number,
-    opts?: { onClose?: () => void },
-  ) {
-    await loadPluggyScript();
-    if (!window.PluggyConnect) throw new Error("PluggyConnect indisponível");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pluggyConnect = new (window.PluggyConnect as any)({
-      connectToken: accessToken,
-      includeSandbox: false,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onSuccess: async (itemData: any) => {
-        try {
-          const { error } = await supabase.functions.invoke("pluggy-register-item", {
-            body: {
-              empresa_id: empresaId,
-              item_id: itemData?.item?.id,
-              connector_id: itemData?.item?.connector?.id,
-              connector_name: itemData?.item?.connector?.name,
-            },
-          });
-          if (error) throw error;
-          toast.success("Conta conectada com sucesso!");
-          recarregarConexoes();
-        } catch (e) {
-          toast.error("Erro ao registrar conexão: " + ((e as Error)?.message || "desconhecido"));
-        }
-      },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onError: (error: any) => {
-        toast.error("Erro ao conectar: " + (error?.message || "desconhecido"));
-      },
-      onClose: () => {
-        opts?.onClose?.();
-      },
-    });
-    widgetRef.current = pluggyConnect;
-    pluggyConnect.init();
+  function closeWidget() {
+    setWidget(null);
+    setConectando(false);
+    setReconectandoId(null);
   }
 
   async function handleConectar() {
@@ -187,7 +135,7 @@ function OpenFinanceConectarPage() {
       if (error) throw error;
       const accessToken = (data as { accessToken?: string } | null)?.accessToken;
       if (!accessToken) throw new Error("Resposta sem accessToken");
-      await abrirWidget(accessToken, empresaId, { onClose: () => setConectando(false) });
+      setWidget({ token: accessToken, empresaId });
     } catch (e) {
       toast.error("Erro ao iniciar conexão: " + ((e as Error)?.message || "desconhecido"));
       setConectando(false);
@@ -219,9 +167,7 @@ function OpenFinanceConectarPage() {
       if (error) throw error;
       const accessToken = (data as { accessToken?: string } | null)?.accessToken;
       if (!accessToken) throw new Error("Resposta sem accessToken");
-      await abrirWidget(accessToken, row.empresa_id, {
-        onClose: () => setReconectandoId(null),
-      });
+      setWidget({ token: accessToken, empresaId: row.empresa_id });
     } catch (e) {
       toast.error("Erro ao reconectar: " + ((e as Error)?.message || "desconhecido"));
       setReconectandoId(null);
@@ -321,9 +267,7 @@ function OpenFinanceConectarPage() {
                   const sv = statusVariant(row.status);
                   return (
                     <TableRow key={String(row.id)}>
-                      <TableCell className="font-medium">
-                        {row.empresas?.nome ?? `#${row.empresa_id}`}
-                      </TableCell>
+                      <TableCell className="font-medium">{empresaNomeById(row.empresa_id)}</TableCell>
                       <TableCell>{row.connector_name ?? "—"}</TableCell>
                       <TableCell>
                         <Badge variant={sv.variant} className={sv.className}>
@@ -371,6 +315,34 @@ function OpenFinanceConectarPage() {
           )}
         </CardContent>
       </Card>
+
+      {widget ? (
+        <PluggyConnect
+          connectToken={widget.token}
+          includeSandbox={false}
+          onSuccess={async (itemData: { item: { id: string; connector?: { id?: number; name?: string } } }) => {
+            try {
+              const { error } = await supabase.functions.invoke("pluggy-register-item", {
+                body: {
+                  empresa_id: widget.empresaId,
+                  item_id: itemData?.item?.id,
+                  connector_id: itemData?.item?.connector?.id,
+                  connector_name: itemData?.item?.connector?.name,
+                },
+              });
+              if (error) throw error;
+              toast.success("Conta conectada com sucesso!");
+              recarregarConexoes();
+            } catch (e) {
+              toast.error("Erro ao registrar conexão: " + ((e as Error)?.message || "desconhecido"));
+            }
+          }}
+          onError={(error: { message?: string }) => {
+            toast.error("Erro ao conectar: " + (error?.message || "desconhecido"));
+          }}
+          onClose={closeWidget}
+        />
+      ) : null}
     </PageShell>
   );
 }
