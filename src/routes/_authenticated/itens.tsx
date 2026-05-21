@@ -243,6 +243,8 @@ function ItensPage() {
               tarefas={cols[c.key]}
               empresaNomeById={empresaNomeById}
               onDrop={(id) => moveMut.mutate({ id, status: c.key })}
+              onCardClick={(t) => drawer.open({ tarefa: t })}
+              onAddInColumn={() => drawer.open({})}
             />
           ))}
         </div>
