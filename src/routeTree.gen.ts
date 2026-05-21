@@ -26,6 +26,7 @@ import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedComercialRouteImport } from './routes/_authenticated/comercial'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
+import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
 import { Route as AuthenticatedEmpresasIdRouteImport } from './routes/_authenticated/empresas.$id'
 
 const LoginRoute = LoginRouteImport.update({
@@ -116,6 +117,12 @@ const AuthenticatedEmpresasIndexRoute =
     path: '/empresas/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedOpenFinanceConectarRoute =
+  AuthenticatedOpenFinanceConectarRouteImport.update({
+    id: '/open-finance/conectar',
+    path: '/open-finance/conectar',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedEmpresasIdRoute = AuthenticatedEmpresasIdRouteImport.update({
   id: '/empresas/$id',
   path: '/empresas/$id',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
 }
 export interface FileRoutesById {
@@ -179,6 +188,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
 export interface FileRouteTypes {
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/stone'
     | '/usuarios'
     | '/empresas/$id'
+    | '/open-finance/conectar'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/'
     | '/empresas/$id'
+    | '/open-finance/conectar'
     | '/empresas'
   id:
     | '__root__'
@@ -239,6 +251,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/'
     | '/_authenticated/empresas/$id'
+    | '/_authenticated/open-finance/conectar'
     | '/_authenticated/empresas/'
   fileRoutesById: FileRoutesById
 }
@@ -368,6 +381,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresasIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/open-finance/conectar': {
+      id: '/_authenticated/open-finance/conectar'
+      path: '/open-finance/conectar'
+      fullPath: '/open-finance/conectar'
+      preLoaderRoute: typeof AuthenticatedOpenFinanceConectarRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/empresas/$id': {
       id: '/_authenticated/empresas/$id'
       path: '/empresas/$id'
@@ -394,6 +414,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedEmpresasIdRoute: typeof AuthenticatedEmpresasIdRoute
+  AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
 }
 
@@ -413,6 +434,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedEmpresasIdRoute: AuthenticatedEmpresasIdRoute,
+  AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
 }
 
