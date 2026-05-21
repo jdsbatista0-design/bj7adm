@@ -27,6 +27,8 @@ import { Route as AuthenticatedComercialRouteImport } from './routes/_authentica
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
+import { Route as AuthenticatedFiscalPendenciasRouteImport } from './routes/_authenticated/fiscal.pendencias'
+import { Route as AuthenticatedFiscalFaturamentoSimplesRouteImport } from './routes/_authenticated/fiscal.faturamento-simples'
 import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_authenticated/fiscal.dashboard'
 import { Route as AuthenticatedFiscalCalendarioRouteImport } from './routes/_authenticated/fiscal.calendario'
 import { Route as AuthenticatedEmpresasIdRouteImport } from './routes/_authenticated/empresas.$id'
@@ -125,6 +127,18 @@ const AuthenticatedOpenFinanceConectarRoute =
     path: '/open-finance/conectar',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFiscalPendenciasRoute =
+  AuthenticatedFiscalPendenciasRouteImport.update({
+    id: '/fiscal/pendencias',
+    path: '/fiscal/pendencias',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedFiscalFaturamentoSimplesRoute =
+  AuthenticatedFiscalFaturamentoSimplesRouteImport.update({
+    id: '/fiscal/faturamento-simples',
+    path: '/fiscal/faturamento-simples',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFiscalDashboardRoute =
   AuthenticatedFiscalDashboardRouteImport.update({
     id: '/fiscal/dashboard',
@@ -162,6 +176,8 @@ export interface FileRoutesByFullPath {
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
+  '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
@@ -184,6 +200,8 @@ export interface FileRoutesByTo {
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
+  '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
 }
@@ -208,6 +226,8 @@ export interface FileRoutesById {
   '/_authenticated/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/_authenticated/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/_authenticated/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
+  '/_authenticated/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  '/_authenticated/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
@@ -232,6 +252,8 @@ export interface FileRouteTypes {
     | '/empresas/$id'
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
+    | '/fiscal/faturamento-simples'
+    | '/fiscal/pendencias'
     | '/open-finance/conectar'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
@@ -254,6 +276,8 @@ export interface FileRouteTypes {
     | '/empresas/$id'
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
+    | '/fiscal/faturamento-simples'
+    | '/fiscal/pendencias'
     | '/open-finance/conectar'
     | '/empresas'
   id:
@@ -277,6 +301,8 @@ export interface FileRouteTypes {
     | '/_authenticated/empresas/$id'
     | '/_authenticated/fiscal/calendario'
     | '/_authenticated/fiscal/dashboard'
+    | '/_authenticated/fiscal/faturamento-simples'
+    | '/_authenticated/fiscal/pendencias'
     | '/_authenticated/open-finance/conectar'
     | '/_authenticated/empresas/'
   fileRoutesById: FileRoutesById
@@ -414,6 +440,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOpenFinanceConectarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/fiscal/pendencias': {
+      id: '/_authenticated/fiscal/pendencias'
+      path: '/fiscal/pendencias'
+      fullPath: '/fiscal/pendencias'
+      preLoaderRoute: typeof AuthenticatedFiscalPendenciasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/fiscal/faturamento-simples': {
+      id: '/_authenticated/fiscal/faturamento-simples'
+      path: '/fiscal/faturamento-simples'
+      fullPath: '/fiscal/faturamento-simples'
+      preLoaderRoute: typeof AuthenticatedFiscalFaturamentoSimplesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/fiscal/dashboard': {
       id: '/_authenticated/fiscal/dashboard'
       path: '/fiscal/dashboard'
@@ -456,6 +496,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEmpresasIdRoute: typeof AuthenticatedEmpresasIdRoute
   AuthenticatedFiscalCalendarioRoute: typeof AuthenticatedFiscalCalendarioRoute
   AuthenticatedFiscalDashboardRoute: typeof AuthenticatedFiscalDashboardRoute
+  AuthenticatedFiscalFaturamentoSimplesRoute: typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
 }
@@ -478,6 +520,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEmpresasIdRoute: AuthenticatedEmpresasIdRoute,
   AuthenticatedFiscalCalendarioRoute: AuthenticatedFiscalCalendarioRoute,
   AuthenticatedFiscalDashboardRoute: AuthenticatedFiscalDashboardRoute,
+  AuthenticatedFiscalFaturamentoSimplesRoute:
+    AuthenticatedFiscalFaturamentoSimplesRoute,
+  AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
 }
