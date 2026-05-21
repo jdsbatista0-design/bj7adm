@@ -80,7 +80,11 @@ function LancamentosPage() {
   const list = useQuery({
     queryKey,
     queryFn: async () => {
-      let q = from("lancamentos").select("*", { count: "exact" });
+      // Seleciona apenas as colunas usadas na UI (era select=* = 28 colunas)
+      let q = from("lancamentos").select(
+        "id,data,ano,mes,empresa_id,unidade_id,categoria_id,tipo,descricao,valor,contar_no_total,revisado,revisado_por,revisado_em",
+        { count: "exact" },
+      );
       q = q.in("tipo", tiposPermitidos);
       if (!user.ve_todas_empresas) {
         if (user.empresas_ids.length === 0) {
@@ -106,6 +110,9 @@ function LancamentosPage() {
       if (r.error) throw r.error;
       return { rows: asRows("lancamentos", r.data), count: r.count ?? 0 };
     },
+    staleTime: 30_000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const total = list.data?.count ?? 0;
@@ -116,32 +123,45 @@ function LancamentosPage() {
   const categoriaNome = (id: number | null) =>
     categorias.data?.find((c) => c.id === id)?.nome ?? "—";
 
-  // Agregado de TODOS os lançamentos que batem com os filtros (não só da página)
+  // Agregação via view DRE (não pagina lançamentos brutos).
+  // Filtros incompatíveis com a view (categoria, texto livre) desativam o agg.
+  const aggSuportado = !params.categoria && !params.q;
+
   const aggQ = useQuery({
-    queryKey: ["lancamentos-agg", params, user.id],
+    queryKey: ["lanc-agg-dre", params.ano, params.mes, params.tipo, params.empresa, user.id, aggSuportado],
+    enabled: aggSuportado,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
-      return paginateAll<Pick<LancamentoRow, "id" | "data" | "tipo" | "valor" | "categoria_id">>(
-        (fromIdx, toIdx) => {
-          let q = from("lancamentos").select("id,data,tipo,valor,categoria_id");
-          q = q.in("tipo", tiposPermitidos);
-          if (!user.ve_todas_empresas) {
-            if (user.empresas_ids.length === 0) {
-              return Promise.resolve({ data: [], error: null });
-            }
-            q = q.in("empresa_id", user.empresas_ids);
-          }
-          if (params.ano) q = q.eq("ano", params.ano);
-          if (params.mes) q = q.eq("mes", params.mes);
-          if (params.tipo) q = q.eq("tipo", params.tipo);
-          if (params.empresa) q = q.eq("empresa_id", params.empresa);
-          if (params.unidade) q = q.eq("unidade_id", params.unidade);
-          if (params.categoria) q = q.eq("categoria_id", params.categoria);
-          if (params.revisado === "sim") q = q.eq("revisado", true);
-          if (params.revisado === "nao") q = q.eq("revisado", false);
-          if (params.q) q = q.ilike("descricao", `%${params.q}%`);
-          return q.order("id", { ascending: true }).range(fromIdx, toIdx);
-        },
-      );
+      let q = from("dre_consolidada")
+        .select("empresa_id,mes_ref,tipo,grupo,valor_total")
+        .eq("entra_dre", true);
+      if (!user.ve_todas_empresas) {
+        if (user.empresas_ids.length === 0) return [];
+        q = q.in("empresa_id", user.empresas_ids);
+      }
+      if (params.empresa) q = q.eq("empresa_id", params.empresa);
+      if (params.tipo) q = q.eq("tipo", params.tipo);
+      // ano/mes -> filtro por mes_ref
+      if (params.ano && params.mes) {
+        const start = `${params.ano}-${String(params.mes).padStart(2, "0")}-01`;
+        const next = new Date(params.ano, params.mes, 1);
+        q = q.eq("mes_ref", start).lte("mes_ref", start);
+        void next;
+      } else if (params.ano) {
+        q = q.gte("mes_ref", `${params.ano}-01-01`).lt("mes_ref", `${params.ano + 1}-01-01`);
+      } else if (params.mes) {
+        // só mês sem ano: pula filtro (raro)
+      }
+      const r = await q;
+      if (r.error) throw r.error;
+      return (r.data ?? []) as Array<{
+        empresa_id: number;
+        mes_ref: string;
+        tipo: string;
+        grupo: string | null;
+        valor_total: number;
+      }>;
     },
   });
 
