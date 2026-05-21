@@ -1,5 +1,5 @@
 import { ClientOnly, createFileRoute } from "@tanstack/react-router";
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, Link2 } from "lucide-react";
@@ -8,11 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEmpresas } from "@/hooks/use-refs";
 import { PageShell } from "@/components/bj7/PageShell";
 
-const PluggyConnectClient = lazy(() =>
-  import("@/components/open-finance/PluggyConnectWidget.client").then((m) => ({
-    default: m.PluggyConnectWidget,
-  })),
-);
+const PluggyConnectClient = lazy(async () => {
+  const mod = await import("@/components/open-finance/PluggyConnectWidget.client");
+  return { default: mod.PluggyConnectWidget as ComponentType<any> };
+});
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
@@ -34,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/open-finance/conectar")({
+  ssr: false,
   component: OpenFinanceConectarPage,
 });
 
