@@ -383,7 +383,9 @@ function LancamentosPage() {
           <CardHeader><CardTitle className="text-sm">Top grupos (receita + despesa)</CardTitle></CardHeader>
           <CardContent>
             <div className="h-[280px] w-full">
-              {aggQ.isLoading ? (
+              {!aggSuportado ? (
+                <div className="h-full flex items-center justify-center text-xs text-muted-foreground text-center px-4">Gráfico desativado: filtros por categoria ou texto livre não são suportados pela view agregada. Limpe o filtro de categoria/busca para ver agregação.</div>
+              ) : aggQ.isLoading ? (
                 <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Carregando…</div>
               ) : aggQ.error ? (
                 <div className="h-full flex items-center justify-center text-sm text-destructive">Erro: {(aggQ.error as Error).message}</div>
