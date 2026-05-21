@@ -385,7 +385,7 @@ function TaskCard({
     e.dataTransfer.effectAllowed = "move";
   };
 
-  const handleKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onClick?.();
