@@ -199,6 +199,46 @@ export interface RegraRow {
   criado_em: string;
 }
 
+// ===== Views =====
+
+export interface VResumoDreRow {
+  empresa_id: number;
+  empresa: string | null;
+  ano: number;
+  receita_operacional: number | null;
+  despesa_operacional: number | null;
+  ebitda_operacional: number | null;
+  despesa_nao_operacional: number | null;
+  investimentos: number | null;
+  movimentacao_patrimonial: number | null;
+  lucro_liquido_pre_capex: number | null;
+}
+
+export interface DreConsolidadaRow {
+  empresa_id: number;
+  mes_ref: string; // YYYY-MM-DD (first day of month)
+  tipo: string;
+  grupo: string | null;
+  natureza_dre: string | null;
+  entra_dre: boolean | null;
+  entra_dre_operacional: boolean | null;
+  qtd_lancamentos: number;
+  valor_total: number;
+}
+
+export interface DreOperacionalRow {
+  empresa_id: number;
+  empresa: string | null;
+  ano: number;
+  mes: number;
+  mes_ref: string;
+  natureza: string | null;
+  grupo: string | null;
+  categoria: string | null;
+  qtd_lancamentos: number;
+  valor_total: number;
+}
+
 type Tbl<Row, Insert = Partial<Row> & { id?: number }, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -226,7 +266,11 @@ export interface Database {
       >;
       importacoes: Tbl<ImportacaoRow>;
     };
-    Views: Record<string, never>;
+    Views: {
+      v_resumo_dre: { Row: VResumoDreRow };
+      dre_consolidada: { Row: DreConsolidadaRow };
+      dre_operacional: { Row: DreOperacionalRow };
+    };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
