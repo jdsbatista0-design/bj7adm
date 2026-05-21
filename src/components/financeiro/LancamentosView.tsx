@@ -380,7 +380,7 @@ function LancamentosPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader><CardTitle className="text-sm">Top categorias (receita + despesa)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-sm">Top grupos (receita + despesa)</CardTitle></CardHeader>
           <CardContent>
             <div className="h-[280px] w-full">
               {aggQ.isLoading ? (
