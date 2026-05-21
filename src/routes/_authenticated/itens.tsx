@@ -365,7 +365,15 @@ function formatPrazo(iso: string | null) {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
-function TaskCard({ tarefa, empresaNome }: { tarefa: TarefaRow; empresaNome: string | null }) {
+function TaskCard({
+  tarefa,
+  empresaNome,
+  onClick,
+}: {
+  tarefa: TarefaRow;
+  empresaNome: string | null;
+  onClick?: () => void;
+}) {
   const overdue =
     !!tarefa.prazo &&
     tarefa.status !== "concluida" &&
@@ -375,6 +383,13 @@ function TaskCard({ tarefa, empresaNome }: { tarefa: TarefaRow; empresaNome: str
   const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData("text/plain", String(tarefa.id));
     e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick?.();
+    }
   };
 
   return (
