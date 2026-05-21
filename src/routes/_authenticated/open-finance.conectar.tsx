@@ -321,7 +321,35 @@ function OpenFinanceConectarPage() {
         </CardContent>
       </Card>
 
-      {widget && PluggyConnect ? (
+      {widget ? (
+        <Suspense fallback={null}>
+          <PluggyConnect
+            connectToken={widget.token}
+            includeSandbox={false}
+            onSuccess={async (itemData: { item: { id: string; connector?: { id?: number; name?: string } } }) => {
+              try {
+                const { error } = await supabase.functions.invoke("pluggy-register-item", {
+                  body: {
+                    empresa_id: widget.empresaId,
+                    item_id: itemData?.item?.id,
+                    connector_id: itemData?.item?.connector?.id,
+                    connector_name: itemData?.item?.connector?.name,
+                  },
+                });
+                if (error) throw error;
+                toast.success("Conta conectada com sucesso!");
+                recarregarConexoes();
+              } catch (e) {
+                toast.error("Erro ao registrar conexão: " + ((e as Error)?.message || "desconhecido"));
+              }
+            }}
+            onError={(error: { message?: string }) => {
+              toast.error("Erro ao conectar: " + (error?.message || "desconhecido"));
+            }}
+            onClose={closeWidget}
+          />
+        </Suspense>
+      ) : null}
         <PluggyConnect
           connectToken={widget.token}
           includeSandbox={false}
