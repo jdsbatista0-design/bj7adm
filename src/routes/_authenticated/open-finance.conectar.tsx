@@ -336,7 +336,7 @@ function OpenFinanceConectarPage() {
         </CardContent>
       </Card>
 
-      {widget ? (
+      {widget && PluggyConnect ? (
         <PluggyConnect
           connectToken={widget.token}
           includeSandbox={false}
