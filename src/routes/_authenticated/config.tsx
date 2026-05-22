@@ -19,7 +19,7 @@ function Config() {
       show: podeGerirUsuarios(user),
     },
     {
-      to: "/importacoes",
+      to: "/fiscal/importacoes",
       icon: <Upload className="h-4 w-4" />,
       title: "Importações",
       desc: "Histórico de importações de planilhas",
