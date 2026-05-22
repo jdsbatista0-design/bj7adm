@@ -50,7 +50,9 @@ type DocRow = {
   vigencia_inicio: string | null; vigencia_fim: string | null;
   valor_total: number | null; valor_mensal: number | null; status: string;
   renovacao_automatica: boolean | null; documento_pai_id: number | null;
+  versao: string | null;
   arquivo_path: string | null; arquivo_nome: string | null;
+  arquivo_tamanho_kb: number | null; arquivo_mime: string | null;
   tags: string[] | null; notas: string | null;
   created_at: string | null;
 };
