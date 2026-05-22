@@ -73,6 +73,17 @@ function fmtDate(iso: string | null | undefined) {
   });
 }
 
+function fmtCompetencia(v: string | null | undefined) {
+  if (!v) return "—";
+  // Aceita "YYYY-MM" ou "YYYY-MM-DD"
+  const m = /^(\d{4})-(\d{2})/.exec(v);
+  if (!m) return v;
+  const ano = m[1];
+  const mes = Number(m[2]) - 1;
+  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return `${meses[mes] ?? "?"}/${ano.slice(2)}`;
+}
+
 function FiscalDashboardPage() {
   const dashQ = useQuery({
     queryKey: ["fiscal", "v_dashboard"],
