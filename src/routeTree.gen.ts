@@ -27,6 +27,7 @@ import { Route as AuthenticatedComercialRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
+import { Route as AuthenticatedDocumentosIndexRouteImport } from './routes/_authenticated/documentos.index'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
 import { Route as AuthenticatedFiscalPendenciasRouteImport } from './routes/_authenticated/fiscal.pendencias'
 import { Route as AuthenticatedFiscalImportacoesRouteImport } from './routes/_authenticated/fiscal.importacoes'
@@ -34,6 +35,8 @@ import { Route as AuthenticatedFiscalFaturamentoSimplesRouteImport } from './rou
 import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_authenticated/fiscal.dashboard'
 import { Route as AuthenticatedFiscalCalendarioRouteImport } from './routes/_authenticated/fiscal.calendario'
 import { Route as AuthenticatedEmpresasIdRouteImport } from './routes/_authenticated/empresas.$id'
+import { Route as AuthenticatedDocumentosVencimentosRouteImport } from './routes/_authenticated/documentos.vencimentos'
+import { Route as AuthenticatedDocumentosPorTipoRouteImport } from './routes/_authenticated/documentos.por-tipo'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -128,6 +131,12 @@ const AuthenticatedEmpresasIndexRoute =
     path: '/empresas/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedDocumentosIndexRoute =
+  AuthenticatedDocumentosIndexRouteImport.update({
+    id: '/documentos/',
+    path: '/documentos/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedOpenFinanceConectarRoute =
   AuthenticatedOpenFinanceConectarRouteImport.update({
     id: '/open-finance/conectar',
@@ -169,6 +178,18 @@ const AuthenticatedEmpresasIdRoute = AuthenticatedEmpresasIdRouteImport.update({
   path: '/empresas/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDocumentosVencimentosRoute =
+  AuthenticatedDocumentosVencimentosRouteImport.update({
+    id: '/documentos/vencimentos',
+    path: '/documentos/vencimentos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDocumentosPorTipoRoute =
+  AuthenticatedDocumentosPorTipoRouteImport.update({
+    id: '/documentos/por-tipo',
+    path: '/documentos/por-tipo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -187,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
+  '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
@@ -194,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
+  '/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -213,6 +237,8 @@ export interface FileRoutesByTo {
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
+  '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
+  '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
@@ -220,6 +246,7 @@ export interface FileRoutesByTo {
   '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
+  '/documentos': typeof AuthenticatedDocumentosIndexRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
 }
 export interface FileRoutesById {
@@ -241,6 +268,8 @@ export interface FileRoutesById {
   '/_authenticated/stone': typeof AuthenticatedStoneRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
+  '/_authenticated/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/_authenticated/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/_authenticated/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/_authenticated/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
@@ -248,6 +277,7 @@ export interface FileRoutesById {
   '/_authenticated/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/_authenticated/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
+  '/_authenticated/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
 export interface FileRouteTypes {
@@ -269,6 +299,8 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/stone'
     | '/usuarios'
+    | '/documentos/por-tipo'
+    | '/documentos/vencimentos'
     | '/empresas/$id'
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
@@ -276,6 +308,7 @@ export interface FileRouteTypes {
     | '/fiscal/importacoes'
     | '/fiscal/pendencias'
     | '/open-finance/conectar'
+    | '/documentos/'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -295,6 +328,8 @@ export interface FileRouteTypes {
     | '/stone'
     | '/usuarios'
     | '/'
+    | '/documentos/por-tipo'
+    | '/documentos/vencimentos'
     | '/empresas/$id'
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
@@ -302,6 +337,7 @@ export interface FileRouteTypes {
     | '/fiscal/importacoes'
     | '/fiscal/pendencias'
     | '/open-finance/conectar'
+    | '/documentos'
     | '/empresas'
   id:
     | '__root__'
@@ -322,6 +358,8 @@ export interface FileRouteTypes {
     | '/_authenticated/stone'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
+    | '/_authenticated/documentos/por-tipo'
+    | '/_authenticated/documentos/vencimentos'
     | '/_authenticated/empresas/$id'
     | '/_authenticated/fiscal/calendario'
     | '/_authenticated/fiscal/dashboard'
@@ -329,6 +367,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fiscal/importacoes'
     | '/_authenticated/fiscal/pendencias'
     | '/_authenticated/open-finance/conectar'
+    | '/_authenticated/documentos/'
     | '/_authenticated/empresas/'
   fileRoutesById: FileRoutesById
 }
@@ -465,6 +504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresasIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/documentos/': {
+      id: '/_authenticated/documentos/'
+      path: '/documentos'
+      fullPath: '/documentos/'
+      preLoaderRoute: typeof AuthenticatedDocumentosIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/open-finance/conectar': {
       id: '/_authenticated/open-finance/conectar'
       path: '/open-finance/conectar'
@@ -514,6 +560,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEmpresasIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/documentos/vencimentos': {
+      id: '/_authenticated/documentos/vencimentos'
+      path: '/documentos/vencimentos'
+      fullPath: '/documentos/vencimentos'
+      preLoaderRoute: typeof AuthenticatedDocumentosVencimentosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/documentos/por-tipo': {
+      id: '/_authenticated/documentos/por-tipo'
+      path: '/documentos/por-tipo'
+      fullPath: '/documentos/por-tipo'
+      preLoaderRoute: typeof AuthenticatedDocumentosPorTipoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -533,6 +593,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedDocumentosPorTipoRoute: typeof AuthenticatedDocumentosPorTipoRoute
+  AuthenticatedDocumentosVencimentosRoute: typeof AuthenticatedDocumentosVencimentosRoute
   AuthenticatedEmpresasIdRoute: typeof AuthenticatedEmpresasIdRoute
   AuthenticatedFiscalCalendarioRoute: typeof AuthenticatedFiscalCalendarioRoute
   AuthenticatedFiscalDashboardRoute: typeof AuthenticatedFiscalDashboardRoute
@@ -540,6 +602,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFiscalImportacoesRoute: typeof AuthenticatedFiscalImportacoesRoute
   AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
+  AuthenticatedDocumentosIndexRoute: typeof AuthenticatedDocumentosIndexRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
 }
 
@@ -559,6 +622,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStoneRoute: AuthenticatedStoneRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedDocumentosPorTipoRoute: AuthenticatedDocumentosPorTipoRoute,
+  AuthenticatedDocumentosVencimentosRoute:
+    AuthenticatedDocumentosVencimentosRoute,
   AuthenticatedEmpresasIdRoute: AuthenticatedEmpresasIdRoute,
   AuthenticatedFiscalCalendarioRoute: AuthenticatedFiscalCalendarioRoute,
   AuthenticatedFiscalDashboardRoute: AuthenticatedFiscalDashboardRoute,
@@ -567,6 +633,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFiscalImportacoesRoute: AuthenticatedFiscalImportacoesRoute,
   AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
+  AuthenticatedDocumentosIndexRoute: AuthenticatedDocumentosIndexRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
 }
 

@@ -119,9 +119,9 @@ const NAV: NavItem[] = [
     title: "Documentos",
     icon: FolderOpen,
     children: [
-      { title: "Repositório", url: "/", icon: FolderOpen, comingSoon: true },
-      { title: "Vencimentos", url: "/", icon: AlertCircle, comingSoon: true },
-      { title: "Por Tipo", url: "/", icon: ListTodo, comingSoon: true },
+      { title: "Repositório", url: "/documentos", icon: FolderOpen },
+      { title: "Vencimentos", url: "/documentos/vencimentos", icon: AlertCircle },
+      { title: "Por Tipo", url: "/documentos/por-tipo", icon: ListTodo },
     ],
   },
   {
