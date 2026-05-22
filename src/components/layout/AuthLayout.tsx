@@ -39,6 +39,12 @@ import {
   AlertCircle,
   Inbox,
   ChevronRight,
+  FolderOpen,
+  Workflow,
+  Users,
+  Target,
+  Eye,
+  MapPin,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
@@ -90,6 +96,37 @@ const NAV: NavItem[] = [
       { title: "Faturamento (Simples)", url: "/fiscal/faturamento-simples", icon: Percent },
       { title: "Pendências Contábeis", url: "/fiscal/pendencias", icon: AlertCircle },
       { title: "Importações Fiscais", url: "/fiscal/importacoes", icon: Upload },
+    ],
+  },
+  {
+    title: "Documentos",
+    icon: FolderOpen,
+    children: [
+      { title: "Repositório", url: "/documentos", icon: FolderOpen },
+      { title: "Vencimentos", url: "/documentos/vencimentos", icon: AlertCircle },
+      { title: "Por Tipo", url: "/documentos/por-tipo", icon: ListTodo },
+    ],
+  },
+  {
+    title: "Sistema (BJ7)",
+    icon: Workflow,
+    children: [
+      { title: "Procedimentos", url: "/sistema/procedimentos", icon: ListTodo },
+      { title: "Em Execução", url: "/sistema/execucoes", icon: Eye },
+      { title: "Por Eixo BJ7", url: "/sistema/por-eixo", icon: Target },
+      { title: "Templates", url: "/sistema/templates", icon: FileText },
+    ],
+  },
+  {
+    title: "Pessoas",
+    icon: Users,
+    children: [
+      { title: "Dashboard", url: "/pessoas", icon: Eye },
+      { title: "Colaboradores", url: "/pessoas/colaboradores", icon: Users },
+      { title: "PDI", url: "/pessoas/pdi", icon: Target },
+      { title: "OKRs", url: "/pessoas/okrs", icon: Target },
+      { title: "1:1", url: "/pessoas/one-on-ones", icon: Users },
+      { title: "Rotina de Rua", url: "/pessoas/rotina-rua", icon: MapPin },
     ],
   },
   { title: "Itens", url: "/itens", icon: ListTodo },
