@@ -77,8 +77,7 @@ const NAV: NavItem[] = [
     icon: Wallet,
     children: [
       { title: "Visão Financeira", url: "/financeiro", icon: DollarSign },
-      { title: "Relatórios", url: "/relatorios", icon: FileText },
-      { title: "DRE Consolidado", url: "/financeiro/dre-consolidado", icon: DollarSign },
+      { title: "DRE Consolidado", url: "/financeiro/dre-consolidado", icon: FileText },
       { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
       {
         title: "Open Finance",
@@ -102,19 +101,7 @@ const NAV: NavItem[] = [
       { title: "Importações Fiscais", url: "/fiscal/importacoes", icon: Upload },
     ],
   },
-  {
-    title: "Cockpit",
-    icon: ListTodo,
-    children: [
-      { title: "Visão Geral", url: "/itens", icon: Eye },
-      { title: "Tarefas", url: "/itens", icon: ListTodo, search: { tipo: "TAREFA" } },
-      { title: "Decisões", url: "/itens", icon: Target, search: { tipo: "DECISAO" } },
-      { title: "Reuniões", url: "/itens", icon: Users, search: { tipo: "REUNIAO" } },
-      { title: "Projetos", url: "/itens", icon: Workflow, search: { tipo: "PROJETO" } },
-      { title: "Ideias", url: "/itens", icon: AlertCircle, search: { tipo: "IDEIA" } },
-      { title: "Notas", url: "/itens", icon: FileText, search: { tipo: "NOTA" } },
-    ],
-  },
+  { title: "Cockpit", url: "/itens", icon: ListTodo },
   {
     title: "Documentos",
     icon: FolderOpen,
@@ -124,16 +111,7 @@ const NAV: NavItem[] = [
       { title: "Por Tipo", url: "/documentos/por-tipo", icon: ListTodo },
     ],
   },
-  {
-    title: "Sistema (BJ7)",
-    icon: Workflow,
-    children: [
-      { title: "Procedimentos", url: "/sistema/procedimentos", icon: ListTodo },
-      { title: "Em Execução", url: "/sistema/execucoes", icon: Eye },
-      { title: "Por Eixo BJ7", url: "/sistema/por-eixo", icon: Target },
-      { title: "Templates", url: "/sistema/templates", icon: FileText },
-    ],
-  },
+  { title: "Sistema (BJ7)", url: "/sistema", icon: Workflow },
   {
     title: "Pessoas",
     icon: Users,
