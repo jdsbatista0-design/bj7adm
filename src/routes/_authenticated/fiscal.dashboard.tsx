@@ -112,7 +112,7 @@ function FiscalDashboardPage() {
   });
 
   const calendarioQ = useQuery({
-    queryKey: ["fiscal", "v_calendario_proximo"],
+    queryKey: ["fiscal", "v_calendario_proximo", "dashboard-preview"],
     queryFn: async () => {
       const limite = new Date();
       limite.setDate(limite.getDate() + 30);
@@ -123,7 +123,8 @@ function FiscalDashboardPage() {
         .select("*")
         .neq("status", "CUMPRIDA")
         .lte("vencimento", limiteIso)
-        .order("vencimento", { ascending: true });
+        .order("vencimento", { ascending: true })
+        .limit(15);
       if (r.error) throw r.error;
       return (r.data ?? []) as CalendarioRow[];
     },
