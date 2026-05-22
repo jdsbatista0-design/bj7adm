@@ -42,9 +42,6 @@ import {
   FolderOpen,
   Workflow,
   Users,
-  Target,
-  Eye,
-  MapPin,
   Construction,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";

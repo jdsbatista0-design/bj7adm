@@ -16,6 +16,7 @@ import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedStoneRouteImport } from './routes/_authenticated/stone'
 import { Route as AuthenticatedSistemaRouteImport } from './routes/_authenticated/sistema'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
+import { Route as AuthenticatedPessoasRouteImport } from './routes/_authenticated/pessoas'
 import { Route as AuthenticatedOperacaoRouteImport } from './routes/_authenticated/operacao'
 import { Route as AuthenticatedLancamentosRouteImport } from './routes/_authenticated/lancamentos'
 import { Route as AuthenticatedItensRouteImport } from './routes/_authenticated/itens'
@@ -79,6 +80,11 @@ const AuthenticatedSistemaRoute = AuthenticatedSistemaRouteImport.update({
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   id: '/relatorios',
   path: '/relatorios',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPessoasRoute = AuthenticatedPessoasRouteImport.update({
+  id: '/pessoas',
+  path: '/pessoas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedOperacaoRoute = AuthenticatedOperacaoRouteImport.update({
@@ -267,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/itens': typeof AuthenticatedItensRoute
   '/lancamentos': typeof AuthenticatedLancamentosRoute
   '/operacao': typeof AuthenticatedOperacaoRoute
+  '/pessoas': typeof AuthenticatedPessoasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/sistema': typeof AuthenticatedSistemaRouteWithChildren
   '/stone': typeof AuthenticatedStoneRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/itens': typeof AuthenticatedItensRoute
   '/lancamentos': typeof AuthenticatedLancamentosRoute
   '/operacao': typeof AuthenticatedOperacaoRoute
+  '/pessoas': typeof AuthenticatedPessoasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -342,6 +350,7 @@ export interface FileRoutesById {
   '/_authenticated/itens': typeof AuthenticatedItensRoute
   '/_authenticated/lancamentos': typeof AuthenticatedLancamentosRoute
   '/_authenticated/operacao': typeof AuthenticatedOperacaoRoute
+  '/_authenticated/pessoas': typeof AuthenticatedPessoasRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/sistema': typeof AuthenticatedSistemaRouteWithChildren
   '/_authenticated/stone': typeof AuthenticatedStoneRoute
@@ -383,6 +392,7 @@ export interface FileRouteTypes {
     | '/itens'
     | '/lancamentos'
     | '/operacao'
+    | '/pessoas'
     | '/relatorios'
     | '/sistema'
     | '/stone'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/itens'
     | '/lancamentos'
     | '/operacao'
+    | '/pessoas'
     | '/relatorios'
     | '/stone'
     | '/usuarios'
@@ -457,6 +468,7 @@ export interface FileRouteTypes {
     | '/_authenticated/itens'
     | '/_authenticated/lancamentos'
     | '/_authenticated/operacao'
+    | '/_authenticated/pessoas'
     | '/_authenticated/relatorios'
     | '/_authenticated/sistema'
     | '/_authenticated/stone'
@@ -537,6 +549,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pessoas': {
+      id: '/_authenticated/pessoas'
+      path: '/pessoas'
+      fullPath: '/pessoas'
+      preLoaderRoute: typeof AuthenticatedPessoasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/operacao': {
@@ -804,6 +823,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedItensRoute: typeof AuthenticatedItensRoute
   AuthenticatedLancamentosRoute: typeof AuthenticatedLancamentosRoute
   AuthenticatedOperacaoRoute: typeof AuthenticatedOperacaoRoute
+  AuthenticatedPessoasRoute: typeof AuthenticatedPessoasRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedSistemaRoute: typeof AuthenticatedSistemaRouteWithChildren
   AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
@@ -834,6 +854,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedItensRoute: AuthenticatedItensRoute,
   AuthenticatedLancamentosRoute: AuthenticatedLancamentosRoute,
   AuthenticatedOperacaoRoute: AuthenticatedOperacaoRoute,
+  AuthenticatedPessoasRoute: AuthenticatedPessoasRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedSistemaRoute: AuthenticatedSistemaRouteWithChildren,
   AuthenticatedStoneRoute: AuthenticatedStoneRoute,
