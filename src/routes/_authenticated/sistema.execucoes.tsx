@@ -27,10 +27,16 @@ type ExecRow = {
   total_etapas: number | null; etapas_concluidas: number | null;
   iniciada_em: string | null; referencia: string | null;
 };
+type EtapaInfo = { titulo: string; ordem: number | null; obrigatoria: boolean | null };
 type EtapaExec = {
   id: number; execucao_id: number; etapa_id: number; status: string;
   observacoes: string | null; iniciada_em: string | null; concluida_em: string | null;
-  etapas?: { titulo: string; ordem: number | null; obrigatoria: boolean | null } | null;
+  etapas?: EtapaInfo | EtapaInfo[] | null;
+};
+const getEtapa = (e: EtapaExec): EtapaInfo | null => {
+  const x = e.etapas;
+  if (!x) return null;
+  return Array.isArray(x) ? (x[0] ?? null) : x;
 };
 
 const sb = () => supabase.schema("sistema" as never);
