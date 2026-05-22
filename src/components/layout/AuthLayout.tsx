@@ -78,8 +78,8 @@ const NAV: NavItem[] = [
     children: [
       { title: "Visão Financeira", url: "/financeiro", icon: DollarSign },
       { title: "Relatórios", url: "/relatorios", icon: FileText },
-      { title: "DRE Consolidado", url: "/financeiro", icon: DollarSign, comingSoon: true },
-      { title: "Categorias", url: "/financeiro", icon: Percent, comingSoon: true },
+      { title: "DRE Consolidado", url: "/financeiro/dre-consolidado", icon: DollarSign },
+      { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
       {
         title: "Open Finance",
         icon: Landmark,
