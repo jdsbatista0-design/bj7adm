@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedStoneRouteImport } from './routes/_authenticated/stone'
+import { Route as AuthenticatedSistemaRouteImport } from './routes/_authenticated/sistema'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedOperacaoRouteImport } from './routes/_authenticated/operacao'
 import { Route as AuthenticatedLancamentosRouteImport } from './routes/_authenticated/lancamentos'
@@ -26,6 +27,7 @@ import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedComercialRouteImport } from './routes/_authenticated/comercial'
 import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
+import { Route as AuthenticatedSistemaIndexRouteImport } from './routes/_authenticated/sistema.index'
 import { Route as AuthenticatedFinanceiroIndexRouteImport } from './routes/_authenticated/financeiro.index'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedDocumentosIndexRouteImport } from './routes/_authenticated/documentos.index'
@@ -67,6 +69,11 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
 const AuthenticatedStoneRoute = AuthenticatedStoneRouteImport.update({
   id: '/stone',
   path: '/stone',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSistemaRoute = AuthenticatedSistemaRouteImport.update({
+  id: '/sistema',
+  path: '/sistema',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
@@ -132,6 +139,12 @@ const AuthenticatedARevisarRoute = AuthenticatedARevisarRouteImport.update({
   path: '/a-revisar',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedSistemaIndexRoute =
+  AuthenticatedSistemaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedSistemaRoute,
+  } as any)
 const AuthenticatedFinanceiroIndexRoute =
   AuthenticatedFinanceiroIndexRouteImport.update({
     id: '/',
@@ -152,27 +165,27 @@ const AuthenticatedDocumentosIndexRoute =
   } as any)
 const AuthenticatedSistemaTemplatesRoute =
   AuthenticatedSistemaTemplatesRouteImport.update({
-    id: '/sistema/templates',
-    path: '/sistema/templates',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/templates',
+    path: '/templates',
+    getParentRoute: () => AuthenticatedSistemaRoute,
   } as any)
 const AuthenticatedSistemaProcedimentosRoute =
   AuthenticatedSistemaProcedimentosRouteImport.update({
-    id: '/sistema/procedimentos',
-    path: '/sistema/procedimentos',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/procedimentos',
+    path: '/procedimentos',
+    getParentRoute: () => AuthenticatedSistemaRoute,
   } as any)
 const AuthenticatedSistemaPorEixoRoute =
   AuthenticatedSistemaPorEixoRouteImport.update({
-    id: '/sistema/por-eixo',
-    path: '/sistema/por-eixo',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/por-eixo',
+    path: '/por-eixo',
+    getParentRoute: () => AuthenticatedSistemaRoute,
   } as any)
 const AuthenticatedSistemaExecucoesRoute =
   AuthenticatedSistemaExecucoesRouteImport.update({
-    id: '/sistema/execucoes',
-    path: '/sistema/execucoes',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/execucoes',
+    path: '/execucoes',
+    getParentRoute: () => AuthenticatedSistemaRoute,
   } as any)
 const AuthenticatedOpenFinanceConectarRoute =
   AuthenticatedOpenFinanceConectarRouteImport.update({
@@ -255,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/lancamentos': typeof AuthenticatedLancamentosRoute
   '/operacao': typeof AuthenticatedOperacaoRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/sistema': typeof AuthenticatedSistemaRouteWithChildren
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
@@ -275,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
   '/financeiro/': typeof AuthenticatedFinanceiroIndexRoute
+  '/sistema/': typeof AuthenticatedSistemaIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -310,6 +325,7 @@ export interface FileRoutesByTo {
   '/documentos': typeof AuthenticatedDocumentosIndexRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
   '/financeiro': typeof AuthenticatedFinanceiroIndexRoute
+  '/sistema': typeof AuthenticatedSistemaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -327,6 +343,7 @@ export interface FileRoutesById {
   '/_authenticated/lancamentos': typeof AuthenticatedLancamentosRoute
   '/_authenticated/operacao': typeof AuthenticatedOperacaoRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/sistema': typeof AuthenticatedSistemaRouteWithChildren
   '/_authenticated/stone': typeof AuthenticatedStoneRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -348,6 +365,7 @@ export interface FileRoutesById {
   '/_authenticated/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
   '/_authenticated/financeiro/': typeof AuthenticatedFinanceiroIndexRoute
+  '/_authenticated/sistema/': typeof AuthenticatedSistemaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -366,6 +384,7 @@ export interface FileRouteTypes {
     | '/lancamentos'
     | '/operacao'
     | '/relatorios'
+    | '/sistema'
     | '/stone'
     | '/usuarios'
     | '/documentos/por-tipo'
@@ -386,6 +405,7 @@ export interface FileRouteTypes {
     | '/documentos/'
     | '/empresas/'
     | '/financeiro/'
+    | '/sistema/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -421,6 +441,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/empresas'
     | '/financeiro'
+    | '/sistema'
   id:
     | '__root__'
     | '/_authenticated'
@@ -437,6 +458,7 @@ export interface FileRouteTypes {
     | '/_authenticated/lancamentos'
     | '/_authenticated/operacao'
     | '/_authenticated/relatorios'
+    | '/_authenticated/sistema'
     | '/_authenticated/stone'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -458,6 +480,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documentos/'
     | '/_authenticated/empresas/'
     | '/_authenticated/financeiro/'
+    | '/_authenticated/sistema/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -500,6 +523,13 @@ declare module '@tanstack/react-router' {
       path: '/stone'
       fullPath: '/stone'
       preLoaderRoute: typeof AuthenticatedStoneRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/sistema': {
+      id: '/_authenticated/sistema'
+      path: '/sistema'
+      fullPath: '/sistema'
+      preLoaderRoute: typeof AuthenticatedSistemaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/relatorios': {
@@ -586,6 +616,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedARevisarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sistema/': {
+      id: '/_authenticated/sistema/'
+      path: '/'
+      fullPath: '/sistema/'
+      preLoaderRoute: typeof AuthenticatedSistemaIndexRouteImport
+      parentRoute: typeof AuthenticatedSistemaRoute
+    }
     '/_authenticated/financeiro/': {
       id: '/_authenticated/financeiro/'
       path: '/'
@@ -609,31 +646,31 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/sistema/templates': {
       id: '/_authenticated/sistema/templates'
-      path: '/sistema/templates'
+      path: '/templates'
       fullPath: '/sistema/templates'
       preLoaderRoute: typeof AuthenticatedSistemaTemplatesRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedSistemaRoute
     }
     '/_authenticated/sistema/procedimentos': {
       id: '/_authenticated/sistema/procedimentos'
-      path: '/sistema/procedimentos'
+      path: '/procedimentos'
       fullPath: '/sistema/procedimentos'
       preLoaderRoute: typeof AuthenticatedSistemaProcedimentosRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedSistemaRoute
     }
     '/_authenticated/sistema/por-eixo': {
       id: '/_authenticated/sistema/por-eixo'
-      path: '/sistema/por-eixo'
+      path: '/por-eixo'
       fullPath: '/sistema/por-eixo'
       preLoaderRoute: typeof AuthenticatedSistemaPorEixoRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedSistemaRoute
     }
     '/_authenticated/sistema/execucoes': {
       id: '/_authenticated/sistema/execucoes'
-      path: '/sistema/execucoes'
+      path: '/execucoes'
       fullPath: '/sistema/execucoes'
       preLoaderRoute: typeof AuthenticatedSistemaExecucoesRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedSistemaRoute
     }
     '/_authenticated/open-finance/conectar': {
       id: '/_authenticated/open-finance/conectar'
@@ -735,6 +772,26 @@ const AuthenticatedFinanceiroRouteWithChildren =
     AuthenticatedFinanceiroRouteChildren,
   )
 
+interface AuthenticatedSistemaRouteChildren {
+  AuthenticatedSistemaExecucoesRoute: typeof AuthenticatedSistemaExecucoesRoute
+  AuthenticatedSistemaPorEixoRoute: typeof AuthenticatedSistemaPorEixoRoute
+  AuthenticatedSistemaProcedimentosRoute: typeof AuthenticatedSistemaProcedimentosRoute
+  AuthenticatedSistemaTemplatesRoute: typeof AuthenticatedSistemaTemplatesRoute
+  AuthenticatedSistemaIndexRoute: typeof AuthenticatedSistemaIndexRoute
+}
+
+const AuthenticatedSistemaRouteChildren: AuthenticatedSistemaRouteChildren = {
+  AuthenticatedSistemaExecucoesRoute: AuthenticatedSistemaExecucoesRoute,
+  AuthenticatedSistemaPorEixoRoute: AuthenticatedSistemaPorEixoRoute,
+  AuthenticatedSistemaProcedimentosRoute:
+    AuthenticatedSistemaProcedimentosRoute,
+  AuthenticatedSistemaTemplatesRoute: AuthenticatedSistemaTemplatesRoute,
+  AuthenticatedSistemaIndexRoute: AuthenticatedSistemaIndexRoute,
+}
+
+const AuthenticatedSistemaRouteWithChildren =
+  AuthenticatedSistemaRoute._addFileChildren(AuthenticatedSistemaRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
   AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
@@ -748,6 +805,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLancamentosRoute: typeof AuthenticatedLancamentosRoute
   AuthenticatedOperacaoRoute: typeof AuthenticatedOperacaoRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedSistemaRoute: typeof AuthenticatedSistemaRouteWithChildren
   AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -760,10 +818,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFiscalImportacoesRoute: typeof AuthenticatedFiscalImportacoesRoute
   AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
-  AuthenticatedSistemaExecucoesRoute: typeof AuthenticatedSistemaExecucoesRoute
-  AuthenticatedSistemaPorEixoRoute: typeof AuthenticatedSistemaPorEixoRoute
-  AuthenticatedSistemaProcedimentosRoute: typeof AuthenticatedSistemaProcedimentosRoute
-  AuthenticatedSistemaTemplatesRoute: typeof AuthenticatedSistemaTemplatesRoute
   AuthenticatedDocumentosIndexRoute: typeof AuthenticatedDocumentosIndexRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
 }
@@ -781,6 +835,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedLancamentosRoute: AuthenticatedLancamentosRoute,
   AuthenticatedOperacaoRoute: AuthenticatedOperacaoRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedSistemaRoute: AuthenticatedSistemaRouteWithChildren,
   AuthenticatedStoneRoute: AuthenticatedStoneRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
@@ -795,11 +850,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFiscalImportacoesRoute: AuthenticatedFiscalImportacoesRoute,
   AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
-  AuthenticatedSistemaExecucoesRoute: AuthenticatedSistemaExecucoesRoute,
-  AuthenticatedSistemaPorEixoRoute: AuthenticatedSistemaPorEixoRoute,
-  AuthenticatedSistemaProcedimentosRoute:
-    AuthenticatedSistemaProcedimentosRoute,
-  AuthenticatedSistemaTemplatesRoute: AuthenticatedSistemaTemplatesRoute,
   AuthenticatedDocumentosIndexRoute: AuthenticatedDocumentosIndexRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
 }
