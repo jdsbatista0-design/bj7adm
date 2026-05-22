@@ -255,7 +255,7 @@ function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => v
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Cockpit</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV.map((item) =>
