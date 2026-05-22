@@ -36,6 +36,7 @@ import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_auth
 import { Route as AuthenticatedFiscalCalendarioRouteImport } from './routes/_authenticated/fiscal.calendario'
 import { Route as AuthenticatedEmpresasIdRouteImport } from './routes/_authenticated/empresas.$id'
 import { Route as AuthenticatedDocumentosVencimentosRouteImport } from './routes/_authenticated/documentos.vencimentos'
+import { Route as AuthenticatedDocumentosPorTipoRouteImport } from './routes/_authenticated/documentos.por-tipo'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -183,6 +184,12 @@ const AuthenticatedDocumentosVencimentosRoute =
     path: '/documentos/vencimentos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedDocumentosPorTipoRoute =
+  AuthenticatedDocumentosPorTipoRouteImport.update({
+    id: '/documentos/por-tipo',
+    path: '/documentos/por-tipo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
@@ -229,6 +237,7 @@ export interface FileRoutesByTo {
   '/stone': typeof AuthenticatedStoneRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
+  '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
@@ -259,6 +268,7 @@ export interface FileRoutesById {
   '/_authenticated/stone': typeof AuthenticatedStoneRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/_authenticated/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/_authenticated/empresas/$id': typeof AuthenticatedEmpresasIdRoute
   '/_authenticated/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
@@ -289,6 +299,7 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/stone'
     | '/usuarios'
+    | '/documentos/por-tipo'
     | '/documentos/vencimentos'
     | '/empresas/$id'
     | '/fiscal/calendario'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/stone'
     | '/usuarios'
     | '/'
+    | '/documentos/por-tipo'
     | '/documentos/vencimentos'
     | '/empresas/$id'
     | '/fiscal/calendario'
@@ -346,6 +358,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stone'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
+    | '/_authenticated/documentos/por-tipo'
     | '/_authenticated/documentos/vencimentos'
     | '/_authenticated/empresas/$id'
     | '/_authenticated/fiscal/calendario'
@@ -554,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDocumentosVencimentosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/documentos/por-tipo': {
+      id: '/_authenticated/documentos/por-tipo'
+      path: '/documentos/por-tipo'
+      fullPath: '/documentos/por-tipo'
+      preLoaderRoute: typeof AuthenticatedDocumentosPorTipoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -573,6 +593,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedDocumentosPorTipoRoute: typeof AuthenticatedDocumentosPorTipoRoute
   AuthenticatedDocumentosVencimentosRoute: typeof AuthenticatedDocumentosVencimentosRoute
   AuthenticatedEmpresasIdRoute: typeof AuthenticatedEmpresasIdRoute
   AuthenticatedFiscalCalendarioRoute: typeof AuthenticatedFiscalCalendarioRoute
@@ -601,6 +622,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStoneRoute: AuthenticatedStoneRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedDocumentosPorTipoRoute: AuthenticatedDocumentosPorTipoRoute,
   AuthenticatedDocumentosVencimentosRoute:
     AuthenticatedDocumentosVencimentosRoute,
   AuthenticatedEmpresasIdRoute: AuthenticatedEmpresasIdRoute,
