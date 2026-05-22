@@ -112,18 +112,7 @@ const NAV: NavItem[] = [
     ],
   },
   { title: "Sistema (BJ7)", url: "/sistema", icon: Workflow },
-  {
-    title: "Pessoas",
-    icon: Users,
-    children: [
-      { title: "Dashboard", url: "/", icon: Eye, comingSoon: true },
-      { title: "Colaboradores", url: "/", icon: Users, comingSoon: true },
-      { title: "PDI", url: "/", icon: Target, comingSoon: true },
-      { title: "OKRs", url: "/", icon: Target, comingSoon: true },
-      { title: "1:1", url: "/", icon: Users, comingSoon: true },
-      { title: "Rotina de Rua", url: "/", icon: MapPin, comingSoon: true },
-    ],
-  },
+  { title: "Pessoas", url: "/pessoas", icon: Users },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
