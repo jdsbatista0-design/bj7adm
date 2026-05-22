@@ -1,18 +1,61 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { paginateAll } from "@/integrations/supabase/db";
 import { supabase } from "@/integrations/supabase/client";
 import type { AlertaRow, LancamentoRow, TarefaRow } from "@/integrations/supabase/database";
 import { useEmpresas } from "@/hooks/use-refs";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { PageShell } from "@/components/bj7/PageShell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatBRL, toLocalIsoDate } from "@/lib/format";
-import { Building2, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
+import { Building2, ArrowRight, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/empresas/")({
   component: EmpresasIndex,
 });
+
+const REGIMES = [
+  "SEM_REGIME",
+  "SIMPLES_ANEXO_I",
+  "SIMPLES_ANEXO_II",
+  "SIMPLES_ANEXO_III",
+  "SIMPLES_ANEXO_IV",
+  "SIMPLES_ANEXO_V",
+  "LUCRO_PRESUMIDO",
+  "LUCRO_REAL",
+  "RET_SPE",
+  "MEI",
+  "IMUNE_ISENTA",
+] as const;
+
+function maskCnpj(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 14);
+  return d
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+}
 
 function EmpresasIndex() {
   const empresas = useEmpresas();
