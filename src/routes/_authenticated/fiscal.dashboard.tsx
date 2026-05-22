@@ -271,6 +271,14 @@ function FiscalDashboardPage() {
             )}
           </CardContent>
         </Card>
+        <div className="flex justify-end">
+          <Link
+            to="/fiscal/calendario"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            Ver calendário completo <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </section>
 
       {(dashQ.error || simplesQ.error || calendarioQ.error) && (
