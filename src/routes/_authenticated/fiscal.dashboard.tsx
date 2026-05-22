@@ -1,9 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/bj7/PageShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -15,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, CheckCircle2, Clock, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/fiscal/dashboard")({
   component: FiscalDashboardPage,
@@ -74,6 +73,17 @@ function fmtDate(iso: string | null | undefined) {
   });
 }
 
+function fmtCompetencia(v: string | null | undefined) {
+  if (!v) return "—";
+  // Aceita "YYYY-MM" ou "YYYY-MM-DD"
+  const m = /^(\d{4})-(\d{2})/.exec(v);
+  if (!m) return v;
+  const ano = m[1];
+  const mes = Number(m[2]) - 1;
+  const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return `${meses[mes] ?? "?"}/${ano.slice(2)}`;
+}
+
 function FiscalDashboardPage() {
   const dashQ = useQuery({
     queryKey: ["fiscal", "v_dashboard"],
@@ -102,7 +112,7 @@ function FiscalDashboardPage() {
   });
 
   const calendarioQ = useQuery({
-    queryKey: ["fiscal", "v_calendario_proximo"],
+    queryKey: ["fiscal", "v_calendario_proximo", "dashboard-preview"],
     queryFn: async () => {
       const limite = new Date();
       limite.setDate(limite.getDate() + 30);
@@ -113,7 +123,8 @@ function FiscalDashboardPage() {
         .select("*")
         .neq("status", "CUMPRIDA")
         .lte("vencimento", limiteIso)
-        .order("vencimento", { ascending: true });
+        .order("vencimento", { ascending: true })
+        .limit(15);
       if (r.error) throw r.error;
       return (r.data ?? []) as CalendarioRow[];
     },
@@ -229,13 +240,22 @@ function FiscalDashboardPage() {
                         <TableCell className="font-medium">{row.empresa}</TableCell>
                         <TableCell>{row.obrigacao}</TableCell>
                         <TableCell className="text-muted-foreground tabular-nums">
-                          {row.competencia ?? "—"}
+                          {fmtCompetencia(row.competencia)}
                         </TableCell>
                         <TableCell className="tabular-nums">
                           {fmtDate(row.vencimento)}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.dias_para_vencer ?? "—"}
+                        <TableCell
+                          className={cn(
+                            "text-right tabular-nums",
+                            (row.dias_para_vencer ?? 0) < 0 && "text-destructive font-semibold",
+                          )}
+                        >
+                          {row.dias_para_vencer == null
+                            ? "—"
+                            : row.dias_para_vencer < 0
+                              ? `${Math.abs(row.dias_para_vencer)} dias atrasada`
+                              : row.dias_para_vencer}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {row.valor != null ? fmtBRL(row.valor) : "—"}
@@ -251,6 +271,14 @@ function FiscalDashboardPage() {
             )}
           </CardContent>
         </Card>
+        <div className="flex justify-end">
+          <Link
+            to="/fiscal/calendario"
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            Ver calendário completo <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </section>
 
       {(dashQ.error || simplesQ.error || calendarioQ.error) && (

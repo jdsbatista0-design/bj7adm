@@ -37,7 +37,7 @@ const HUBS: {
     accent: "from-violet-500/20 to-violet-500/0",
   },
   {
-    to: "/importacoes",
+    to: "/fiscal/importacoes",
     title: "Importações",
     desc: "Carga de planilhas e arquivos",
     icon: Upload,
