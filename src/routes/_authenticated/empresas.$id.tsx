@@ -251,12 +251,21 @@ function EmpresaDetalhe() {
   return (
     <PageShell
       title={empresa?.nome ?? empresaRef?.nome ?? `Empresa #${empresaId}`}
-      description={
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge status={status} />
-          {regime?.regime && <Badge variant="outline">{regime.regime}</Badge>}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/empresas">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Empresas
+            </Link>
+          </Button>
+          <AcoesMenu />
         </div>
       }
+    >
+      <div className="flex flex-wrap items-center gap-2 -mt-2">
+        <StatusBadge status={status} />
+        {regime?.regime && <Badge variant="outline">{regime.regime}</Badge>}
+      </div>
       actions={
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" size="sm">
