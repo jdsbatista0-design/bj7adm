@@ -24,6 +24,7 @@ import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/h
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
 import { Route as AuthenticatedComercialRouteImport } from './routes/_authenticated/comercial'
+import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
@@ -111,6 +112,11 @@ const AuthenticatedComercialRoute = AuthenticatedComercialRouteImport.update({
   path: '/comercial',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCalendarioRoute = AuthenticatedCalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedARevisarRoute = AuthenticatedARevisarRouteImport.update({
   id: '/a-revisar',
   path: '/a-revisar',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
   '/comercial': typeof AuthenticatedComercialRoute
   '/config': typeof AuthenticatedConfigRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
+  '/calendario': typeof AuthenticatedCalendarioRoute
   '/comercial': typeof AuthenticatedComercialRoute
   '/config': typeof AuthenticatedConfigRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
+  '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
   '/_authenticated/comercial': typeof AuthenticatedComercialRoute
   '/_authenticated/config': typeof AuthenticatedConfigRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/a-revisar'
+    | '/calendario'
     | '/comercial'
     | '/config'
     | '/financeiro'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/a-revisar'
+    | '/calendario'
     | '/comercial'
     | '/config'
     | '/financeiro'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/a-revisar'
+    | '/_authenticated/calendario'
     | '/_authenticated/comercial'
     | '/_authenticated/config'
     | '/_authenticated/financeiro'
@@ -432,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedComercialRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/calendario': {
+      id: '/_authenticated/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof AuthenticatedCalendarioRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/a-revisar': {
       id: '/_authenticated/a-revisar'
       path: '/a-revisar'
@@ -500,6 +519,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
+  AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
   AuthenticatedComercialRoute: typeof AuthenticatedComercialRoute
   AuthenticatedConfigRoute: typeof AuthenticatedConfigRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
@@ -525,6 +545,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedARevisarRoute: AuthenticatedARevisarRoute,
+  AuthenticatedCalendarioRoute: AuthenticatedCalendarioRoute,
   AuthenticatedComercialRoute: AuthenticatedComercialRoute,
   AuthenticatedConfigRoute: AuthenticatedConfigRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
@@ -560,13 +581,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
