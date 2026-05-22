@@ -9,11 +9,8 @@ import { LancamentosView } from "@/components/financeiro/LancamentosView";
 const AnaliseView = lazy(() =>
   import("@/components/financeiro/AnaliseView").then((m) => ({ default: m.AnaliseView })),
 );
-const RelatoriosView = lazy(() =>
-  import("@/components/financeiro/RelatoriosView").then((m) => ({ default: m.RelatoriosView })),
-);
 
-const TABS = ["lancamentos", "analise", "relatorios"] as const;
+const TABS = ["lancamentos", "analise"] as const;
 type TabKey = (typeof TABS)[number];
 
 const search = z.object({
@@ -38,7 +35,6 @@ export const Route = createFileRoute("/_authenticated/financeiro/")({
 const TAB_LABELS: Record<TabKey, string> = {
   lancamentos: "Lançamentos",
   analise: "Análise",
-  relatorios: "Relatórios",
 };
 
 function FinanceiroPage() {
