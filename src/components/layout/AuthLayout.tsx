@@ -128,10 +128,10 @@ const NAV: NavItem[] = [
     title: "Sistema (BJ7)",
     icon: Workflow,
     children: [
-      { title: "Procedimentos", url: "/", icon: ListTodo, comingSoon: true },
-      { title: "Em Execução", url: "/", icon: Eye, comingSoon: true },
-      { title: "Por Eixo BJ7", url: "/", icon: Target, comingSoon: true },
-      { title: "Templates", url: "/", icon: FileText, comingSoon: true },
+      { title: "Procedimentos", url: "/sistema/procedimentos", icon: ListTodo },
+      { title: "Em Execução", url: "/sistema/execucoes", icon: Eye },
+      { title: "Por Eixo BJ7", url: "/sistema/por-eixo", icon: Target },
+      { title: "Templates", url: "/sistema/templates", icon: FileText },
     ],
   },
   {

@@ -28,6 +28,7 @@ import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authentic
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedDocumentosIndexRouteImport } from './routes/_authenticated/documentos.index'
+import { Route as AuthenticatedSistemaTemplatesRouteImport } from './routes/_authenticated/sistema.templates'
 import { Route as AuthenticatedSistemaProcedimentosRouteImport } from './routes/_authenticated/sistema.procedimentos'
 import { Route as AuthenticatedSistemaPorEixoRouteImport } from './routes/_authenticated/sistema.por-eixo'
 import { Route as AuthenticatedSistemaExecucoesRouteImport } from './routes/_authenticated/sistema.execucoes'
@@ -140,6 +141,12 @@ const AuthenticatedDocumentosIndexRoute =
     path: '/documentos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSistemaTemplatesRoute =
+  AuthenticatedSistemaTemplatesRouteImport.update({
+    id: '/sistema/templates',
+    path: '/sistema/templates',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSistemaProcedimentosRoute =
   AuthenticatedSistemaProcedimentosRouteImport.update({
     id: '/sistema/procedimentos',
@@ -241,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
   '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
+  '/sistema/templates': typeof AuthenticatedSistemaTemplatesRoute
   '/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
@@ -273,6 +281,7 @@ export interface FileRoutesByTo {
   '/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
   '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
+  '/sistema/templates': typeof AuthenticatedSistemaTemplatesRoute
   '/documentos': typeof AuthenticatedDocumentosIndexRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
 }
@@ -307,6 +316,7 @@ export interface FileRoutesById {
   '/_authenticated/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
   '/_authenticated/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/_authenticated/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
+  '/_authenticated/sistema/templates': typeof AuthenticatedSistemaTemplatesRoute
   '/_authenticated/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
 }
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/sistema/execucoes'
     | '/sistema/por-eixo'
     | '/sistema/procedimentos'
+    | '/sistema/templates'
     | '/documentos/'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/sistema/execucoes'
     | '/sistema/por-eixo'
     | '/sistema/procedimentos'
+    | '/sistema/templates'
     | '/documentos'
     | '/empresas'
   id:
@@ -406,6 +418,7 @@ export interface FileRouteTypes {
     | '/_authenticated/sistema/execucoes'
     | '/_authenticated/sistema/por-eixo'
     | '/_authenticated/sistema/procedimentos'
+    | '/_authenticated/sistema/templates'
     | '/_authenticated/documentos/'
     | '/_authenticated/empresas/'
   fileRoutesById: FileRoutesById
@@ -550,6 +563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDocumentosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sistema/templates': {
+      id: '/_authenticated/sistema/templates'
+      path: '/sistema/templates'
+      fullPath: '/sistema/templates'
+      preLoaderRoute: typeof AuthenticatedSistemaTemplatesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sistema/procedimentos': {
       id: '/_authenticated/sistema/procedimentos'
       path: '/sistema/procedimentos'
@@ -665,6 +685,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSistemaExecucoesRoute: typeof AuthenticatedSistemaExecucoesRoute
   AuthenticatedSistemaPorEixoRoute: typeof AuthenticatedSistemaPorEixoRoute
   AuthenticatedSistemaProcedimentosRoute: typeof AuthenticatedSistemaProcedimentosRoute
+  AuthenticatedSistemaTemplatesRoute: typeof AuthenticatedSistemaTemplatesRoute
   AuthenticatedDocumentosIndexRoute: typeof AuthenticatedDocumentosIndexRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
 }
@@ -700,6 +721,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSistemaPorEixoRoute: AuthenticatedSistemaPorEixoRoute,
   AuthenticatedSistemaProcedimentosRoute:
     AuthenticatedSistemaProcedimentosRoute,
+  AuthenticatedSistemaTemplatesRoute: AuthenticatedSistemaTemplatesRoute,
   AuthenticatedDocumentosIndexRoute: AuthenticatedDocumentosIndexRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
 }
