@@ -240,13 +240,22 @@ function FiscalDashboardPage() {
                         <TableCell className="font-medium">{row.empresa}</TableCell>
                         <TableCell>{row.obrigacao}</TableCell>
                         <TableCell className="text-muted-foreground tabular-nums">
-                          {row.competencia ?? "—"}
+                          {fmtCompetencia(row.competencia)}
                         </TableCell>
                         <TableCell className="tabular-nums">
                           {fmtDate(row.vencimento)}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.dias_para_vencer ?? "—"}
+                        <TableCell
+                          className={cn(
+                            "text-right tabular-nums",
+                            (row.dias_para_vencer ?? 0) < 0 && "text-destructive font-semibold",
+                          )}
+                        >
+                          {row.dias_para_vencer == null
+                            ? "—"
+                            : row.dias_para_vencer < 0
+                              ? `${Math.abs(row.dias_para_vencer)} dias atrasada`
+                              : row.dias_para_vencer}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {row.valor != null ? fmtBRL(row.valor) : "—"}
