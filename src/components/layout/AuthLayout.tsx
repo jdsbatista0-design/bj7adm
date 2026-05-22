@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import {
   Sidebar,
@@ -10,12 +10,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -24,33 +28,73 @@ import {
   Upload,
   Settings,
   LogOut,
-  KanbanSquare,
+  ListTodo,
   Landmark,
   Receipt,
+  FileText,
+  Banknote,
+  DollarSign,
+  Calendar,
+  Percent,
+  AlertCircle,
+  Inbox,
+  ChevronRight,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
 
-const NAV: {
+type LeafItem = {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   search?: Record<string, string>;
-}[] = [
+};
+
+type GroupItem = {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children: (LeafItem | GroupItem)[];
+};
+
+type NavItem = LeafItem | GroupItem;
+
+const isGroup = (i: NavItem): i is GroupItem => "children" in i;
+
+const NAV: NavItem[] = [
   { title: "Início", url: "/", icon: Home },
   { title: "Empresas", url: "/empresas", icon: Building2 },
-  { title: "Financeiro", url: "/financeiro", icon: Wallet, search: { tab: "lancamentos" } },
-  { title: "Fiscal · Dashboard", url: "/fiscal/dashboard", icon: Receipt },
-  { title: "Fiscal · Calendário", url: "/fiscal/calendario", icon: Receipt },
-  { title: "Fiscal · Pendências Contábeis", url: "/fiscal/pendencias", icon: Receipt },
-  { title: "Fiscal · Faturamento Simples", url: "/fiscal/faturamento-simples", icon: Receipt },
-  { title: "Open Finance", url: "/open-finance/conectar", icon: Landmark },
-  { title: "Itens", url: "/itens", icon: KanbanSquare },
-  { title: "Importações", url: "/importacoes", icon: Upload },
+  {
+    title: "Financeiro",
+    icon: Wallet,
+    children: [
+      { title: "Lançamentos", url: "/financeiro/lancamentos", icon: FileText },
+      { title: "DRE Consolidado", url: "/financeiro/dre", icon: DollarSign },
+      { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
+      {
+        title: "Open Finance",
+        icon: Landmark,
+        children: [
+          { title: "Conectar Contas", url: "/open-finance/conectar", icon: Landmark },
+          { title: "Caixa de Entrada", url: "/open-finance/caixa-entrada", icon: Inbox },
+          { title: "Tesouraria", url: "/financeiro/tesouraria", icon: Banknote },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Fiscal",
+    icon: Receipt,
+    children: [
+      { title: "Dashboard", url: "/fiscal/dashboard", icon: Receipt },
+      { title: "Calendário", url: "/fiscal/calendario", icon: Calendar },
+      { title: "Faturamento (Simples)", url: "/fiscal/faturamento-simples", icon: Percent },
+      { title: "Pendências Contábeis", url: "/fiscal/pendencias", icon: AlertCircle },
+      { title: "Importações Fiscais", url: "/fiscal/importacoes", icon: Upload },
+    ],
+  },
+  { title: "Itens", url: "/itens", icon: ListTodo },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
-
-
 
 export function AuthLayout() {
   const { state, signOut } = useAuth();
@@ -125,13 +169,20 @@ function TopBar({ user }: { user: CurrentUser }) {
   );
 }
 
+function pathMatches(url: string, path: string) {
+  return url === "/" ? path === "/" : path === url || path.startsWith(url + "/");
+}
+
+function groupHasActive(item: GroupItem, path: string): boolean {
+  return item.children.some((c) =>
+    isGroup(c) ? groupHasActive(c, path) : pathMatches(c.url, path),
+  );
+}
+
 function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => void }) {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-
-  const isActive = (url: string) =>
-    url === "/" ? path === "/" : path === url || path.startsWith(url + "/");
 
   return (
     <Sidebar collapsible="icon">
@@ -154,17 +205,13 @@ function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => v
           <SidebarGroupLabel>Cockpit</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} search={item.search as never} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {NAV.map((item) =>
+                isGroup(item) ? (
+                  <NavGroup key={item.title} item={item} path={path} collapsed={collapsed} />
+                ) : (
+                  <NavLeaf key={item.url} item={item} path={path} />
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -181,5 +228,126 @@ function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => v
         </Button>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function NavLeaf({ item, path }: { item: LeafItem; path: string }) {
+  const active = pathMatches(item.url, path);
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={active}
+        tooltip={item.title}
+        className={active ? "bg-primary/15 text-primary hover:bg-primary/20 data-[active=true]:bg-primary/15 data-[active=true]:text-primary" : ""}
+      >
+        <Link to={item.url as never} search={item.search as never} className="flex items-center gap-2">
+          <item.icon className="h-4 w-4" />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function NavGroup({ item, path, collapsed }: { item: GroupItem; path: string; collapsed: boolean }) {
+  const hasActive = groupHasActive(item, path);
+  const [open, setOpen] = useState(hasActive);
+
+  useEffect(() => {
+    if (hasActive) setOpen(true);
+  }, [hasActive]);
+
+  if (collapsed) {
+    // In collapsed sidebar, show as a single icon button (no expand UI)
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton tooltip={item.title}>
+          <item.icon className="h-4 w-4" />
+          <span>{item.title}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} asChild>
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton tooltip={item.title} className="group/collapsible">
+            <item.icon className="h-4 w-4" />
+            <span className="flex-1 text-left">{item.title}</span>
+            <ChevronRight
+              className={`h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
+            />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.children.map((child) =>
+              isGroup(child) ? (
+                <NavSubGroup key={child.title} item={child} path={path} />
+              ) : (
+                <NavSubLeaf key={child.url} item={child} path={path} />
+              ),
+            )}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+function NavSubLeaf({ item, path }: { item: LeafItem; path: string }) {
+  const active = pathMatches(item.url, path);
+  return (
+    <SidebarMenuSubItem>
+      <SidebarMenuSubButton
+        asChild
+        isActive={active}
+        className={active ? "bg-primary/15 text-primary hover:bg-primary/20 data-[active=true]:bg-primary/15 data-[active=true]:text-primary" : ""}
+      >
+        <Link to={item.url as never} search={item.search as never} className="flex items-center gap-2">
+          <item.icon className="h-3.5 w-3.5" />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuSubButton>
+    </SidebarMenuSubItem>
+  );
+}
+
+function NavSubGroup({ item, path }: { item: GroupItem; path: string }) {
+  const hasActive = groupHasActive(item, path);
+  const [open, setOpen] = useState(hasActive);
+
+  useEffect(() => {
+    if (hasActive) setOpen(true);
+  }, [hasActive]);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} asChild>
+      <SidebarMenuSubItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuSubButton className="cursor-pointer">
+            <item.icon className="h-3.5 w-3.5" />
+            <span className="flex-1 text-left">{item.title}</span>
+            <ChevronRight
+              className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-90" : ""}`}
+            />
+          </SidebarMenuSubButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.children.map((child) =>
+              isGroup(child) ? (
+                <NavSubGroup key={child.title} item={child} path={path} />
+              ) : (
+                <NavSubLeaf key={child.url} item={child} path={path} />
+              ),
+            )}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuSubItem>
+    </Collapsible>
   );
 }
