@@ -266,17 +266,6 @@ function EmpresaDetalhe() {
         <StatusBadge status={status} />
         {regime?.regime && <Badge variant="outline">{regime.regime}</Badge>}
       </div>
-      actions={
-        <div className="flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/empresas">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Empresas
-            </Link>
-          </Button>
-          <AcoesMenu />
-        </div>
-      }
-    >
       <Tabs defaultValue="visao" className="w-full">
         <div className="overflow-x-auto -mx-1 px-1">
           <TabsList className="inline-flex">
