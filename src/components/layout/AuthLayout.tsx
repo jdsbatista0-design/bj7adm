@@ -68,22 +68,16 @@ type NavItem = LeafItem | GroupItem;
 
 const isGroup = (i: NavItem): i is GroupItem => "children" in i;
 
-// URLs ajustadas para apontar para as rotas que REALMENTE existem em src/routes/_authenticated/
-// Rotas marcadas como `comingSoon: true` ainda não existem - mostram "em breve" e navegam para placeholder
 const NAV: NavItem[] = [
   { title: "Início", url: "/", icon: Home },
   { title: "Empresas", url: "/empresas", icon: Building2 },
+  { title: "Calendário", url: "/calendario", icon: Calendar },
   {
     title: "Financeiro",
     icon: Wallet,
     children: [
-      // Lançamentos existe como /lancamentos (rota no _authenticated/lancamentos.tsx)
-      { title: "Lançamentos", url: "/lancamentos", icon: FileText },
-      // Visão Financeira (DRE/Análise) está em /financeiro
       { title: "Visão Financeira", url: "/financeiro", icon: DollarSign },
-      // Relatórios também existe como rota separada
       { title: "Relatórios", url: "/relatorios", icon: FileText },
-      // DRE Consolidado, Categorias, Tesouraria ainda não existem
       { title: "DRE Consolidado", url: "/financeiro", icon: DollarSign, comingSoon: true },
       { title: "Categorias", url: "/financeiro", icon: Percent, comingSoon: true },
       {
@@ -106,6 +100,19 @@ const NAV: NavItem[] = [
       { title: "Faturamento (Simples)", url: "/fiscal/faturamento-simples", icon: Percent },
       { title: "Pendências Contábeis", url: "/fiscal/pendencias", icon: AlertCircle },
       { title: "Importações Fiscais", url: "/fiscal/importacoes", icon: Upload },
+    ],
+  },
+  {
+    title: "Cockpit",
+    icon: ListTodo,
+    children: [
+      { title: "Visão Geral", url: "/itens", icon: Eye },
+      { title: "Tarefas", url: "/itens", icon: ListTodo, search: { tipo: "TAREFA" } },
+      { title: "Decisões", url: "/itens", icon: Target, search: { tipo: "DECISAO" } },
+      { title: "Reuniões", url: "/itens", icon: Users, search: { tipo: "REUNIAO" } },
+      { title: "Projetos", url: "/itens", icon: Workflow, search: { tipo: "PROJETO" } },
+      { title: "Ideias", url: "/itens", icon: AlertCircle, search: { tipo: "IDEIA" } },
+      { title: "Notas", url: "/itens", icon: FileText, search: { tipo: "NOTA" } },
     ],
   },
   {
@@ -139,7 +146,6 @@ const NAV: NavItem[] = [
       { title: "Rotina de Rua", url: "/", icon: MapPin, comingSoon: true },
     ],
   },
-  { title: "Itens", url: "/itens", icon: ListTodo },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
