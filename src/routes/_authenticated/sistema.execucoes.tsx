@@ -131,7 +131,7 @@ function ExecDetail({ execId, onClose, onChange }: { execId: number; onClose: ()
         .order("etapa_id");
       if (r.error) throw r.error;
       const rows = (r.data ?? []) as EtapaExec[];
-      return rows.sort((a, b) => (a.etapas?.ordem ?? 0) - (b.etapas?.ordem ?? 0));
+      return rows.sort((a, b) => (getEtapa(a)?.ordem ?? 0) - (getEtapa(b)?.ordem ?? 0));
     },
   });
 
@@ -160,8 +160,8 @@ function ExecDetail({ execId, onClose, onChange }: { execId: number; onClose: ()
               <div key={e.id} className="flex items-center gap-3 border border-border rounded-md p-3">
                 {e.status === "CONCLUIDA" ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <Circle className="h-5 w-5 text-muted-foreground" />}
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium">{e.etapas?.titulo ?? `Etapa ${e.etapa_id}`}</div>
-                  {e.etapas?.obrigatoria && <Badge variant="outline" className="mt-1 text-[10px]">OBRIGATÓRIA</Badge>}
+                  <div className="font-medium">{getEtapa(e)?.titulo ?? `Etapa ${e.etapa_id}`}</div>
+                  {getEtapa(e)?.obrigatoria && <Badge variant="outline" className="mt-1 text-[10px]">OBRIGATÓRIA</Badge>}
                 </div>
                 <Badge variant={e.status === "CONCLUIDA" ? "default" : "outline"}>{e.status}</Badge>
                 {e.status !== "CONCLUIDA" && (
