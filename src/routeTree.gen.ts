@@ -28,6 +28,7 @@ import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
 import { Route as AuthenticatedFiscalPendenciasRouteImport } from './routes/_authenticated/fiscal.pendencias'
+import { Route as AuthenticatedFiscalImportacoesRouteImport } from './routes/_authenticated/fiscal.importacoes'
 import { Route as AuthenticatedFiscalFaturamentoSimplesRouteImport } from './routes/_authenticated/fiscal.faturamento-simples'
 import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_authenticated/fiscal.dashboard'
 import { Route as AuthenticatedFiscalCalendarioRouteImport } from './routes/_authenticated/fiscal.calendario'
@@ -133,6 +134,12 @@ const AuthenticatedFiscalPendenciasRoute =
     path: '/fiscal/pendencias',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFiscalImportacoesRoute =
+  AuthenticatedFiscalImportacoesRouteImport.update({
+    id: '/fiscal/importacoes',
+    path: '/fiscal/importacoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFiscalFaturamentoSimplesRoute =
   AuthenticatedFiscalFaturamentoSimplesRouteImport.update({
     id: '/fiscal/faturamento-simples',
@@ -177,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -201,6 +209,7 @@ export interface FileRoutesByTo {
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
@@ -227,6 +236,7 @@ export interface FileRoutesById {
   '/_authenticated/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/_authenticated/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/_authenticated/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  '/_authenticated/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/_authenticated/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
     | '/fiscal/faturamento-simples'
+    | '/fiscal/importacoes'
     | '/fiscal/pendencias'
     | '/open-finance/conectar'
     | '/empresas/'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
     | '/fiscal/faturamento-simples'
+    | '/fiscal/importacoes'
     | '/fiscal/pendencias'
     | '/open-finance/conectar'
     | '/empresas'
@@ -302,6 +314,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fiscal/calendario'
     | '/_authenticated/fiscal/dashboard'
     | '/_authenticated/fiscal/faturamento-simples'
+    | '/_authenticated/fiscal/importacoes'
     | '/_authenticated/fiscal/pendencias'
     | '/_authenticated/open-finance/conectar'
     | '/_authenticated/empresas/'
@@ -447,6 +460,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFiscalPendenciasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/fiscal/importacoes': {
+      id: '/_authenticated/fiscal/importacoes'
+      path: '/fiscal/importacoes'
+      fullPath: '/fiscal/importacoes'
+      preLoaderRoute: typeof AuthenticatedFiscalImportacoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/fiscal/faturamento-simples': {
       id: '/_authenticated/fiscal/faturamento-simples'
       path: '/fiscal/faturamento-simples'
@@ -497,6 +517,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFiscalCalendarioRoute: typeof AuthenticatedFiscalCalendarioRoute
   AuthenticatedFiscalDashboardRoute: typeof AuthenticatedFiscalDashboardRoute
   AuthenticatedFiscalFaturamentoSimplesRoute: typeof AuthenticatedFiscalFaturamentoSimplesRoute
+  AuthenticatedFiscalImportacoesRoute: typeof AuthenticatedFiscalImportacoesRoute
   AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
@@ -522,6 +543,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFiscalDashboardRoute: AuthenticatedFiscalDashboardRoute,
   AuthenticatedFiscalFaturamentoSimplesRoute:
     AuthenticatedFiscalFaturamentoSimplesRoute,
+  AuthenticatedFiscalImportacoesRoute: AuthenticatedFiscalImportacoesRoute,
   AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
@@ -538,3 +560,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
