@@ -29,6 +29,7 @@ import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedDocumentosIndexRouteImport } from './routes/_authenticated/documentos.index'
 import { Route as AuthenticatedSistemaProcedimentosRouteImport } from './routes/_authenticated/sistema.procedimentos'
+import { Route as AuthenticatedSistemaPorEixoRouteImport } from './routes/_authenticated/sistema.por-eixo'
 import { Route as AuthenticatedSistemaExecucoesRouteImport } from './routes/_authenticated/sistema.execucoes'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
 import { Route as AuthenticatedFiscalPendenciasRouteImport } from './routes/_authenticated/fiscal.pendencias'
@@ -145,6 +146,12 @@ const AuthenticatedSistemaProcedimentosRoute =
     path: '/sistema/procedimentos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSistemaPorEixoRoute =
+  AuthenticatedSistemaPorEixoRouteImport.update({
+    id: '/sistema/por-eixo',
+    path: '/sistema/por-eixo',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSistemaExecucoesRoute =
   AuthenticatedSistemaExecucoesRouteImport.update({
     id: '/sistema/execucoes',
@@ -232,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
+  '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
   '/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -263,6 +271,7 @@ export interface FileRoutesByTo {
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
+  '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
   '/documentos': typeof AuthenticatedDocumentosIndexRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
@@ -296,6 +305,7 @@ export interface FileRoutesById {
   '/_authenticated/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/_authenticated/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
+  '/_authenticated/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/_authenticated/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
   '/_authenticated/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/fiscal/pendencias'
     | '/open-finance/conectar'
     | '/sistema/execucoes'
+    | '/sistema/por-eixo'
     | '/sistema/procedimentos'
     | '/documentos/'
     | '/empresas/'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/fiscal/pendencias'
     | '/open-finance/conectar'
     | '/sistema/execucoes'
+    | '/sistema/por-eixo'
     | '/sistema/procedimentos'
     | '/documentos'
     | '/empresas'
@@ -392,6 +404,7 @@ export interface FileRouteTypes {
     | '/_authenticated/fiscal/pendencias'
     | '/_authenticated/open-finance/conectar'
     | '/_authenticated/sistema/execucoes'
+    | '/_authenticated/sistema/por-eixo'
     | '/_authenticated/sistema/procedimentos'
     | '/_authenticated/documentos/'
     | '/_authenticated/empresas/'
@@ -544,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSistemaProcedimentosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/sistema/por-eixo': {
+      id: '/_authenticated/sistema/por-eixo'
+      path: '/sistema/por-eixo'
+      fullPath: '/sistema/por-eixo'
+      preLoaderRoute: typeof AuthenticatedSistemaPorEixoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/sistema/execucoes': {
       id: '/_authenticated/sistema/execucoes'
       path: '/sistema/execucoes'
@@ -643,6 +663,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
   AuthenticatedSistemaExecucoesRoute: typeof AuthenticatedSistemaExecucoesRoute
+  AuthenticatedSistemaPorEixoRoute: typeof AuthenticatedSistemaPorEixoRoute
   AuthenticatedSistemaProcedimentosRoute: typeof AuthenticatedSistemaProcedimentosRoute
   AuthenticatedDocumentosIndexRoute: typeof AuthenticatedDocumentosIndexRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
@@ -676,6 +697,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
   AuthenticatedSistemaExecucoesRoute: AuthenticatedSistemaExecucoesRoute,
+  AuthenticatedSistemaPorEixoRoute: AuthenticatedSistemaPorEixoRoute,
   AuthenticatedSistemaProcedimentosRoute:
     AuthenticatedSistemaProcedimentosRoute,
   AuthenticatedDocumentosIndexRoute: AuthenticatedDocumentosIndexRoute,
@@ -693,3 +715,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
