@@ -89,11 +89,6 @@ function FinanceiroPage() {
             {tab === "analise" && <AnaliseView />}
           </Suspense>
         </TabsContent>
-        <TabsContent value="relatorios" className="mt-4">
-          <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Carregando relatórios…</div>}>
-            {tab === "relatorios" && <RelatoriosView />}
-          </Suspense>
-        </TabsContent>
       </Tabs>
     </div>
   );
