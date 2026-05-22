@@ -132,7 +132,11 @@ function EmpresasIndex() {
   }, [lancQ.data, alertasQ.data, tarefasQ.data]);
 
   return (
-    <PageShell title="Empresas" description="Saúde, receita e items abertos por empresa do grupo">
+    <PageShell
+      title="Empresas"
+      description="Saúde, receita e items abertos por empresa do grupo"
+      actions={<NovaEmpresaDialog />}
+    >
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {(empresas.data ?? []).map((e) => {
           const a = por.get(e.id) ?? { rec: 0, desp: 0, alertas: 0, tarefas: 0 };
@@ -163,6 +167,97 @@ function EmpresasIndex() {
         })}
       </div>
     </PageShell>
+  );
+}
+
+function NovaEmpresaDialog() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [nome, setNome] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [regime, setRegime] = useState<string>("SEM_REGIME");
+
+  const reset = () => { setNome(""); setCnpj(""); setRegime("SEM_REGIME"); };
+
+  const m = useMutation({
+    mutationFn: async () => {
+      const nomeT = nome.trim();
+      if (!nomeT) throw new Error("Nome é obrigatório");
+      const ins = await supabase
+        .from("empresas")
+        .insert({ nome: nomeT, cnpj: cnpj.trim() || null } as never)
+        .select("id")
+        .single();
+      if (ins.error) throw ins.error;
+      const empresaId = (ins.data as { id: number }).id;
+
+      if (regime && regime !== "SEM_REGIME") {
+        const r = await supabase
+          .schema("fiscal")
+          .from("regimes_empresas")
+          .insert({
+            empresa_id: empresaId,
+            regime,
+            data_inicio: new Date().toISOString().slice(0, 10),
+          } as never);
+        if (r.error) throw r.error;
+      }
+      return empresaId;
+    },
+    onSuccess: () => {
+      toast.success("Empresa criada");
+      qc.invalidateQueries({ queryKey: ["empresas"] });
+      qc.invalidateQueries({ queryKey: ["empresas-list"] });
+      reset();
+      setOpen(false);
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Erro ao criar empresa"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+      <DialogTrigger asChild>
+        <Button size="sm"><Plus className="h-4 w-4 mr-1" /> Nova empresa</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nova empresa</DialogTitle>
+          <DialogDescription>
+            Cadastre uma empresa do grupo. Regime tributário é opcional.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label htmlFor="ne-nome">Nome*</Label>
+            <Input id="ne-nome" value={nome} onChange={(e) => setNome(e.target.value)} maxLength={120} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ne-cnpj">CNPJ</Label>
+            <Input
+              id="ne-cnpj"
+              value={cnpj}
+              onChange={(e) => setCnpj(maskCnpj(e.target.value))}
+              placeholder="00.000.000/0000-00"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="ne-regime">Regime tributário</Label>
+            <Select value={regime} onValueChange={setRegime}>
+              <SelectTrigger id="ne-regime"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {REGIMES.map((r) => (<SelectItem key={r} value={r}>{r.replaceAll("_", " ")}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={() => m.mutate()} disabled={m.isPending}>
+            {m.isPending ? "Criando..." : "Criar empresa"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
