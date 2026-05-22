@@ -45,6 +45,7 @@ import {
   Target,
   Eye,
   MapPin,
+  Construction,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import type { CurrentUser } from "@/lib/permissions";
@@ -54,6 +55,7 @@ type LeafItem = {
   url: string;
   icon: React.ComponentType<{ className?: string }>;
   search?: Record<string, string>;
+  comingSoon?: boolean;
 };
 
 type GroupItem = {
@@ -66,6 +68,8 @@ type NavItem = LeafItem | GroupItem;
 
 const isGroup = (i: NavItem): i is GroupItem => "children" in i;
 
+// URLs ajustadas para apontar para as rotas que REALMENTE existem em src/routes/_authenticated/
+// Rotas marcadas como `comingSoon: true` ainda não existem - mostram "em breve" e navegam para placeholder
 const NAV: NavItem[] = [
   { title: "Início", url: "/", icon: Home },
   { title: "Empresas", url: "/empresas", icon: Building2 },
@@ -73,16 +77,22 @@ const NAV: NavItem[] = [
     title: "Financeiro",
     icon: Wallet,
     children: [
-      { title: "Lançamentos", url: "/financeiro/lancamentos", icon: FileText },
-      { title: "DRE Consolidado", url: "/financeiro/dre", icon: DollarSign },
-      { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
+      // Lançamentos existe como /lancamentos (rota no _authenticated/lancamentos.tsx)
+      { title: "Lançamentos", url: "/lancamentos", icon: FileText },
+      // Visão Financeira (DRE/Análise) está em /financeiro
+      { title: "Visão Financeira", url: "/financeiro", icon: DollarSign },
+      // Relatórios também existe como rota separada
+      { title: "Relatórios", url: "/relatorios", icon: FileText },
+      // DRE Consolidado, Categorias, Tesouraria ainda não existem
+      { title: "DRE Consolidado", url: "/financeiro", icon: DollarSign, comingSoon: true },
+      { title: "Categorias", url: "/financeiro", icon: Percent, comingSoon: true },
       {
         title: "Open Finance",
         icon: Landmark,
         children: [
           { title: "Conectar Contas", url: "/open-finance/conectar", icon: Landmark },
-          { title: "Caixa de Entrada", url: "/open-finance/caixa-entrada", icon: Inbox },
-          { title: "Tesouraria", url: "/financeiro/tesouraria", icon: Banknote },
+          { title: "Caixa de Entrada", url: "/open-finance/conectar", icon: Inbox, comingSoon: true },
+          { title: "Tesouraria", url: "/open-finance/conectar", icon: Banknote, comingSoon: true },
         ],
       },
     ],
@@ -102,31 +112,31 @@ const NAV: NavItem[] = [
     title: "Documentos",
     icon: FolderOpen,
     children: [
-      { title: "Repositório", url: "/documentos", icon: FolderOpen },
-      { title: "Vencimentos", url: "/documentos/vencimentos", icon: AlertCircle },
-      { title: "Por Tipo", url: "/documentos/por-tipo", icon: ListTodo },
+      { title: "Repositório", url: "/", icon: FolderOpen, comingSoon: true },
+      { title: "Vencimentos", url: "/", icon: AlertCircle, comingSoon: true },
+      { title: "Por Tipo", url: "/", icon: ListTodo, comingSoon: true },
     ],
   },
   {
     title: "Sistema (BJ7)",
     icon: Workflow,
     children: [
-      { title: "Procedimentos", url: "/sistema/procedimentos", icon: ListTodo },
-      { title: "Em Execução", url: "/sistema/execucoes", icon: Eye },
-      { title: "Por Eixo BJ7", url: "/sistema/por-eixo", icon: Target },
-      { title: "Templates", url: "/sistema/templates", icon: FileText },
+      { title: "Procedimentos", url: "/", icon: ListTodo, comingSoon: true },
+      { title: "Em Execução", url: "/", icon: Eye, comingSoon: true },
+      { title: "Por Eixo BJ7", url: "/", icon: Target, comingSoon: true },
+      { title: "Templates", url: "/", icon: FileText, comingSoon: true },
     ],
   },
   {
     title: "Pessoas",
     icon: Users,
     children: [
-      { title: "Dashboard", url: "/pessoas", icon: Eye },
-      { title: "Colaboradores", url: "/pessoas/colaboradores", icon: Users },
-      { title: "PDI", url: "/pessoas/pdi", icon: Target },
-      { title: "OKRs", url: "/pessoas/okrs", icon: Target },
-      { title: "1:1", url: "/pessoas/one-on-ones", icon: Users },
-      { title: "Rotina de Rua", url: "/pessoas/rotina-rua", icon: MapPin },
+      { title: "Dashboard", url: "/", icon: Eye, comingSoon: true },
+      { title: "Colaboradores", url: "/", icon: Users, comingSoon: true },
+      { title: "PDI", url: "/", icon: Target, comingSoon: true },
+      { title: "OKRs", url: "/", icon: Target, comingSoon: true },
+      { title: "1:1", url: "/", icon: Users, comingSoon: true },
+      { title: "Rotina de Rua", url: "/", icon: MapPin, comingSoon: true },
     ],
   },
   { title: "Itens", url: "/itens", icon: ListTodo },
@@ -269,18 +279,27 @@ function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => v
 }
 
 function NavLeaf({ item, path }: { item: LeafItem; path: string }) {
-  const active = pathMatches(item.url, path);
+  const active = pathMatches(item.url, path) && !item.comingSoon;
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
         isActive={active}
-        tooltip={item.title}
-        className={active ? "bg-primary/15 text-primary hover:bg-primary/20 data-[active=true]:bg-primary/15 data-[active=true]:text-primary" : ""}
+        tooltip={item.comingSoon ? `${item.title} (em breve)` : item.title}
+        className={
+          item.comingSoon
+            ? "opacity-60"
+            : active
+              ? "bg-primary/15 text-primary hover:bg-primary/20 data-[active=true]:bg-primary/15 data-[active=true]:text-primary"
+              : ""
+        }
       >
         <Link to={item.url as never} search={item.search as never} className="flex items-center gap-2">
           <item.icon className="h-4 w-4" />
-          <span>{item.title}</span>
+          <span className="flex-1">{item.title}</span>
+          {item.comingSoon && (
+            <Construction className="h-3 w-3 text-muted-foreground" />
+          )}
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -296,7 +315,6 @@ function NavGroup({ item, path, collapsed }: { item: GroupItem; path: string; co
   }, [hasActive]);
 
   if (collapsed) {
-    // In collapsed sidebar, show as a single icon button (no expand UI)
     return (
       <SidebarMenuItem>
         <SidebarMenuButton tooltip={item.title}>
@@ -325,7 +343,7 @@ function NavGroup({ item, path, collapsed }: { item: GroupItem; path: string; co
               isGroup(child) ? (
                 <NavSubGroup key={child.title} item={child} path={path} />
               ) : (
-                <NavSubLeaf key={child.url} item={child} path={path} />
+                <NavSubLeaf key={child.url + child.title} item={child} path={path} />
               ),
             )}
           </SidebarMenuSub>
@@ -336,17 +354,26 @@ function NavGroup({ item, path, collapsed }: { item: GroupItem; path: string; co
 }
 
 function NavSubLeaf({ item, path }: { item: LeafItem; path: string }) {
-  const active = pathMatches(item.url, path);
+  const active = pathMatches(item.url, path) && !item.comingSoon;
   return (
     <SidebarMenuSubItem>
       <SidebarMenuSubButton
         asChild
         isActive={active}
-        className={active ? "bg-primary/15 text-primary hover:bg-primary/20 data-[active=true]:bg-primary/15 data-[active=true]:text-primary" : ""}
+        className={
+          item.comingSoon
+            ? "opacity-60"
+            : active
+              ? "bg-primary/15 text-primary hover:bg-primary/20 data-[active=true]:bg-primary/15 data-[active=true]:text-primary"
+              : ""
+        }
       >
         <Link to={item.url as never} search={item.search as never} className="flex items-center gap-2">
           <item.icon className="h-3.5 w-3.5" />
-          <span>{item.title}</span>
+          <span className="flex-1">{item.title}</span>
+          {item.comingSoon && (
+            <Construction className="h-3 w-3 text-muted-foreground" />
+          )}
         </Link>
       </SidebarMenuSubButton>
     </SidebarMenuSubItem>
@@ -379,7 +406,7 @@ function NavSubGroup({ item, path }: { item: GroupItem; path: string }) {
               isGroup(child) ? (
                 <NavSubGroup key={child.title} item={child} path={path} />
               ) : (
-                <NavSubLeaf key={child.url} item={child} path={path} />
+                <NavSubLeaf key={child.url + child.title} item={child} path={path} />
               ),
             )}
           </SidebarMenuSub>
