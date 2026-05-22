@@ -39,6 +39,8 @@ import { Route as AuthenticatedFiscalImportacoesRouteImport } from './routes/_au
 import { Route as AuthenticatedFiscalFaturamentoSimplesRouteImport } from './routes/_authenticated/fiscal.faturamento-simples'
 import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_authenticated/fiscal.dashboard'
 import { Route as AuthenticatedFiscalCalendarioRouteImport } from './routes/_authenticated/fiscal.calendario'
+import { Route as AuthenticatedFinanceiroDreConsolidadoRouteImport } from './routes/_authenticated/financeiro.dre-consolidado'
+import { Route as AuthenticatedFinanceiroCategoriasRouteImport } from './routes/_authenticated/financeiro.categorias'
 import { Route as AuthenticatedEmpresasIdRouteImport } from './routes/_authenticated/empresas.$id'
 import { Route as AuthenticatedDocumentosVencimentosRouteImport } from './routes/_authenticated/documentos.vencimentos'
 import { Route as AuthenticatedDocumentosPorTipoRouteImport } from './routes/_authenticated/documentos.por-tipo'
@@ -208,6 +210,18 @@ const AuthenticatedFiscalCalendarioRoute =
     path: '/fiscal/calendario',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedFinanceiroDreConsolidadoRoute =
+  AuthenticatedFinanceiroDreConsolidadoRouteImport.update({
+    id: '/dre-consolidado',
+    path: '/dre-consolidado',
+    getParentRoute: () => AuthenticatedFinanceiroRoute,
+  } as any)
+const AuthenticatedFinanceiroCategoriasRoute =
+  AuthenticatedFinanceiroCategoriasRouteImport.update({
+    id: '/categorias',
+    path: '/categorias',
+    getParentRoute: () => AuthenticatedFinanceiroRoute,
+  } as any)
 const AuthenticatedEmpresasIdRoute = AuthenticatedEmpresasIdRouteImport.update({
   id: '/empresas/$id',
   path: '/empresas/$id',
@@ -246,6 +260,8 @@ export interface FileRoutesByFullPath {
   '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/financeiro/categorias': typeof AuthenticatedFinanceiroCategoriasRoute
+  '/financeiro/dre-consolidado': typeof AuthenticatedFinanceiroDreConsolidadoRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
@@ -279,6 +295,8 @@ export interface FileRoutesByTo {
   '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/financeiro/categorias': typeof AuthenticatedFinanceiroCategoriasRoute
+  '/financeiro/dre-consolidado': typeof AuthenticatedFinanceiroDreConsolidadoRoute
   '/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
@@ -315,6 +333,8 @@ export interface FileRoutesById {
   '/_authenticated/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/_authenticated/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
   '/_authenticated/empresas/$id': typeof AuthenticatedEmpresasIdRoute
+  '/_authenticated/financeiro/categorias': typeof AuthenticatedFinanceiroCategoriasRoute
+  '/_authenticated/financeiro/dre-consolidado': typeof AuthenticatedFinanceiroDreConsolidadoRoute
   '/_authenticated/fiscal/calendario': typeof AuthenticatedFiscalCalendarioRoute
   '/_authenticated/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/_authenticated/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
@@ -351,6 +371,8 @@ export interface FileRouteTypes {
     | '/documentos/por-tipo'
     | '/documentos/vencimentos'
     | '/empresas/$id'
+    | '/financeiro/categorias'
+    | '/financeiro/dre-consolidado'
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
     | '/fiscal/faturamento-simples'
@@ -384,6 +406,8 @@ export interface FileRouteTypes {
     | '/documentos/por-tipo'
     | '/documentos/vencimentos'
     | '/empresas/$id'
+    | '/financeiro/categorias'
+    | '/financeiro/dre-consolidado'
     | '/fiscal/calendario'
     | '/fiscal/dashboard'
     | '/fiscal/faturamento-simples'
@@ -419,6 +443,8 @@ export interface FileRouteTypes {
     | '/_authenticated/documentos/por-tipo'
     | '/_authenticated/documentos/vencimentos'
     | '/_authenticated/empresas/$id'
+    | '/_authenticated/financeiro/categorias'
+    | '/_authenticated/financeiro/dre-consolidado'
     | '/_authenticated/fiscal/calendario'
     | '/_authenticated/fiscal/dashboard'
     | '/_authenticated/fiscal/faturamento-simples'
@@ -651,6 +677,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFiscalCalendarioRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/financeiro/dre-consolidado': {
+      id: '/_authenticated/financeiro/dre-consolidado'
+      path: '/dre-consolidado'
+      fullPath: '/financeiro/dre-consolidado'
+      preLoaderRoute: typeof AuthenticatedFinanceiroDreConsolidadoRouteImport
+      parentRoute: typeof AuthenticatedFinanceiroRoute
+    }
+    '/_authenticated/financeiro/categorias': {
+      id: '/_authenticated/financeiro/categorias'
+      path: '/categorias'
+      fullPath: '/financeiro/categorias'
+      preLoaderRoute: typeof AuthenticatedFinanceiroCategoriasRouteImport
+      parentRoute: typeof AuthenticatedFinanceiroRoute
+    }
     '/_authenticated/empresas/$id': {
       id: '/_authenticated/empresas/$id'
       path: '/empresas/$id'
@@ -676,11 +716,17 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedFinanceiroRouteChildren {
+  AuthenticatedFinanceiroCategoriasRoute: typeof AuthenticatedFinanceiroCategoriasRoute
+  AuthenticatedFinanceiroDreConsolidadoRoute: typeof AuthenticatedFinanceiroDreConsolidadoRoute
   AuthenticatedFinanceiroIndexRoute: typeof AuthenticatedFinanceiroIndexRoute
 }
 
 const AuthenticatedFinanceiroRouteChildren: AuthenticatedFinanceiroRouteChildren =
   {
+    AuthenticatedFinanceiroCategoriasRoute:
+      AuthenticatedFinanceiroCategoriasRoute,
+    AuthenticatedFinanceiroDreConsolidadoRoute:
+      AuthenticatedFinanceiroDreConsolidadoRoute,
     AuthenticatedFinanceiroIndexRoute: AuthenticatedFinanceiroIndexRoute,
   }
 
