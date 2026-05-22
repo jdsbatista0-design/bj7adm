@@ -535,7 +535,7 @@ function DecisoesView({ itens, onClick, onDelete }: { itens: Item[]; onClick: (i
                   {i.decisao_tomada && <Badge variant="outline" className="bg-green-500/15 text-green-300 border-green-500/30">Decidida</Badge>}
                 </div>
                 {i.descricao && <p className="text-sm text-muted-foreground mt-1">{i.descricao}</p>}
-                {i.opcoes_decisao && (
+                {!!i.opcoes_decisao && (
                   <div className="mt-2 text-xs">
                     <div className="font-medium mb-1">Opções:</div>
                     <pre className="bg-muted p-2 rounded text-[11px] overflow-x-auto">{JSON.stringify(i.opcoes_decisao, null, 2)}</pre>
