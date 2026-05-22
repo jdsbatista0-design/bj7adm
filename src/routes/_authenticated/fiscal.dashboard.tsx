@@ -1,9 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell } from "@/components/bj7/PageShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -15,7 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, CheckCircle2, Clock, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Clock, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/fiscal/dashboard")({
   component: FiscalDashboardPage,
