@@ -26,25 +26,25 @@ A tela `/open-finance/conectar` chama 3 Edge Functions que precisam existir no S
 
 ## O que falta fazer
 
-- [ ] Criar a pasta `supabase/functions/` com o código das 3 funções
-- [ ] Criar tabela `pluggy_items` (ou similar) para armazenar conexões por empresa
-- [ ] Adicionar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` como secrets no Supabase
-- [ ] Documentar a estrutura esperada da tabela de conexões
+- [x] Criar a pasta `supabase/functions/` com o código das 3 funções
+- [x] Criar tabela `openfinance_connections` — ver `supabase/openfinance_connections.sql`
+- [ ] Rodar `supabase/openfinance_connections.sql` no SQL Editor do Supabase
+- [ ] Adicionar `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` como secrets no Supabase:
+  ```bash
+  supabase secrets set PLUGGY_CLIENT_ID=... PLUGGY_CLIENT_SECRET=... --project-ref fcalhtuolxxeijxnquqj
+  ```
+- [ ] Deploy das 3 funções:
+  ```bash
+  supabase functions deploy pluggy-auth --project-ref fcalhtuolxxeijxnquqj
+  supabase functions deploy pluggy-sync --project-ref fcalhtuolxxeijxnquqj
+  supabase functions deploy pluggy-register-item --project-ref fcalhtuolxxeijxnquqj
+  ```
 
-### Estrutura sugerida para `pluggy_items`
+### Tabela real: `openfinance_connections`
 
-```sql
-CREATE TABLE pluggy_items (
-  id           BIGSERIAL PRIMARY KEY,
-  empresa_id   INTEGER REFERENCES empresas(id),
-  item_id      TEXT NOT NULL,          -- ID do item no Pluggy
-  connector_id INTEGER,                -- ID do banco/instituição
-  connector_name TEXT,                 -- Nome legível (ex: "Nubank")
-  status       TEXT DEFAULT 'UPDATED', -- UPDATED | UPDATING | ERROR | OUTDATED | WAITING_USER_INPUT
-  last_updated_at TIMESTAMPTZ,
-  created_at   TIMESTAMPTZ DEFAULT NOW()
-);
-```
+O frontend usa `openfinance_connections` (não `pluggy_items`). Schema em `supabase/openfinance_connections.sql`.
+
+Coluna `pluggy_item_id` é a chave única — o upsert do `pluggy-register-item` usa ela como `onConflict`, então reconectar uma conta existente apenas atualiza o registro.
 
 ## Schemas adicionais (`documentos` e `fiscal`)
 
