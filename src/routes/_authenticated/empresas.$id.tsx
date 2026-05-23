@@ -813,17 +813,17 @@ function FinanceiroTab({ empresaId }: { empresaId: number }) {
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={evolucao} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false}
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 70%)" opacity={0.3} />
+                  <XAxis dataKey="mes" tick={{ fill: "hsl(220 9% 46%)", fontSize: 11 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: "hsl(220 9% 46%)", fontSize: 11 }} tickLine={false} axisLine={false}
                     tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v as number)} />
                   <Tooltip
-                    contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12, color: "hsl(var(--popover-foreground))" }}
-                    labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
-                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    contentStyle={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(220 13% 70%)", borderRadius: 8, fontSize: 12, color: "hsl(220 13% 18%)" }}
+                    labelStyle={{ color: "hsl(220 13% 18%)", fontWeight: 600 }}
+                    itemStyle={{ color: "hsl(220 13% 18%)" }}
                     formatter={(v: number) => formatBRL(v)}
                   />
-                  <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--foreground))" }} />
+                  <Legend wrapperStyle={{ fontSize: 12, color: "hsl(220 13% 18%)" }} />
                   <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(142 71% 55%)" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="despesa" name="Despesa" stroke="hsl(0 84% 65%)" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="lucro" name="Lucro" stroke="hsl(217 91% 65%)" strokeWidth={2.5} dot={false} />

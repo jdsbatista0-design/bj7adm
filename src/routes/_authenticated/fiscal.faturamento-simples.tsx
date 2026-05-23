@@ -192,10 +192,10 @@ function EmpresaCard({
               <YAxis fontSize={11} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
               <RTooltip
                 formatter={(v: number) => [fmtBRL(v), "Receita bruta"]}
-                contentStyle={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border))" }}
+                contentStyle={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(220 13% 70%)" }}
               />
-              <ReferenceLine y={LIMITE_SIMPLES / 12} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: "Média mensal do limite", fontSize: 10, fill: "hsl(var(--destructive))" }} />
-              <Bar dataKey="receita" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <ReferenceLine y={LIMITE_SIMPLES / 12} stroke="hsl(0 84% 60%)" strokeDasharray="4 4" label={{ value: "Média mensal do limite", fontSize: 10, fill: "hsl(0 84% 60%)" }} />
+              <Bar dataKey="receita" fill="hsl(217 91% 55%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -394,15 +394,15 @@ function LancamentosPage() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={resumo.categorias} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} horizontal={false} />
-                    <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false}
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 70%)" opacity={0.3} horizontal={false} />
+                    <XAxis type="number" tick={{ fill: "hsl(220 9% 46%)", fontSize: 11 }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v as number)} />
-                    <YAxis type="category" dataKey="nome" width={140} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    <YAxis type="category" dataKey="nome" width={140} tick={{ fill: "hsl(220 9% 46%)", fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(220 13% 70%)", borderRadius: 8, fontSize: 12 }}
                       formatter={(value: number) => formatBRL(value)} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="receita" name="Receita" stackId="a" fill="hsl(var(--success))" />
-                    <Bar dataKey="despesa" name="Despesa" stackId="a" fill="hsl(var(--destructive))" />
+                    <Bar dataKey="receita" name="Receita" stackId="a" fill="hsl(142 71% 45%)" />
+                    <Bar dataKey="despesa" name="Despesa" stackId="a" fill="hsl(0 84% 60%)" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -425,15 +425,15 @@ function LancamentosPage() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={resumo.meses} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                    <XAxis dataKey="mes" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickLine={false} axisLine={false}
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 70%)" opacity={0.3} />
+                    <XAxis dataKey="mes" tick={{ fill: "hsl(220 9% 46%)", fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fill: "hsl(220 9% 46%)", fontSize: 11 }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v as number)} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
+                    <Tooltip contentStyle={{ background: "hsl(0 0% 100%)", border: "1px solid hsl(220 13% 70%)", borderRadius: 8, fontSize: 12 }}
                       formatter={(value: number) => formatBRL(value)} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(var(--success))" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="despesa" name="Despesa" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="receita" name="Receita" stroke="hsl(142 71% 45%)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="despesa" name="Despesa" stroke="hsl(0 84% 60%)" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="saldo" name="Saldo" stroke="hsl(217 91% 60%)" strokeWidth={2.5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
