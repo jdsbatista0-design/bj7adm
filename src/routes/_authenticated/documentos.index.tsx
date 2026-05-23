@@ -114,6 +114,23 @@ export default function DocumentosIndex() {
     queryKey: ["documentos", "list", { search, tipoFilter, empresaFilter, statusFilter, page }],
     placeholderData: keepPreviousData,
     queryFn: async () => {
+      // Se filtro de empresa ativo: buscar IDs vinculados no banco antes de paginar.
+      // Isso garante count e paginação corretos (filtro no servidor, não no frontend).
+      let allowedIds: number[] | null = null;
+      if (empresaFilter !== "all") {
+        const empId = Number(empresaFilter);
+        const idsRes = await supabase
+          .schema("documentos" as never)
+          .from("documento_empresas")
+          .select("documento_id")
+          .eq("empresa_id", empId);
+        if (idsRes.error) throw idsRes.error;
+        allowedIds = (idsRes.data ?? []).map(
+          (r: { documento_id: number }) => r.documento_id,
+        );
+        if (allowedIds.length === 0) return { rows: [], count: 0 };
+      }
+
       let q = supabase.schema("documentos" as never)
         .from("documentos")
         .select("*", { count: "exact" })
@@ -125,6 +142,7 @@ export default function DocumentosIndex() {
       }
       if (tipoFilter !== "all") q = q.eq("tipo_id", Number(tipoFilter));
       if (statusFilter !== "all") q = q.eq("status", statusFilter);
+      if (allowedIds !== null) q = q.in("id", allowedIds);
       const r = await q;
       if (r.error) throw r.error;
       return { rows: (r.data ?? []) as DocRow[], count: r.count ?? 0 };
@@ -169,15 +187,7 @@ export default function DocumentosIndex() {
     return m;
   }, [empresasLinksQ.data, empresasById]);
 
-  const filteredRows = useMemo(() => {
-    const rows = docsQ.data?.rows ?? [];
-    if (empresaFilter === "all") return rows;
-    const empId = Number(empresaFilter);
-    return rows.filter((r) => {
-      const links = (empresasLinksQ.data ?? []).filter(l => l.documento_id === r.id);
-      return links.some(l => l.empresa_id === empId);
-    });
-  }, [docsQ.data, empresaFilter, empresasLinksQ.data]);
+  const filteredRows = docsQ.data?.rows ?? [];
 
   const deleteMut = useMutation({
     mutationFn: async (id: number) => {

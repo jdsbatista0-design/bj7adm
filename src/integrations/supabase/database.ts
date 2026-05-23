@@ -199,7 +199,74 @@ export interface RegraRow {
   criado_em: string;
 }
 
+export interface InteracaoRow {
+  id: number;
+  entidade_tipo: string;
+  entidade_id: string;
+  tipo: "nota" | "whatsapp" | "email" | "sistema" | "ligacao" | "visita";
+  conteudo: string;
+  autor_id: number | null;
+  payload: Record<string, unknown> | null;
+  criada_em: string;
+}
+
+export interface CategoriaSugestaoRow {
+  id: number;
+  hash_descricao: string;
+  categoria_id: number | null;
+  score: number | null;
+  hits: number | null;
+  origem: string | null;
+  atualizado_em: string | null;
+}
+
+export type ItemTipo = "TAREFA" | "DECISAO" | "IDEIA" | "PROJETO" | "REUNIAO" | "LEMBRETE" | "NOTA";
+export type ItemEstado = "BACKLOG" | "SEMANA" | "HOJE" | "EM_ANDAMENTO" | "BLOQUEADO" | "CONCLUIDO" | "ARQUIVADO";
+export type ItemEixo = "VISAO" | "SISTEMA" | "PESSOAS" | "RESULTADOS" | "CULTURA_SER";
+export type ItemEnergia = "ALTA" | "MEDIA" | "BAIXA";
+
+export interface ItemRow {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  tipo: ItemTipo | null;
+  eixo_bj7: ItemEixo | null;
+  empresa_id: number | null;
+  importante: boolean | null;
+  urgente: boolean | null;
+  energia: ItemEnergia | null;
+  contexto: string | null;
+  estado: ItemEstado | null;
+  prazo: string | null;
+  data_reuniao: string | null;
+  duracao_min: number | null;
+  participantes: string[] | null;
+  local_reuniao: string | null;
+  opcoes_decisao: unknown;
+  decisao_tomada: string | null;
+  decisao_em: string | null;
+  item_pai_id: number | null;
+  tags: string[] | null;
+  notas: string | null;
+  concluido_em: string | null;
+  recorrencia: string | null;
+  criado_em: string | null;
+}
+
 // ===== Views =====
+
+export interface VExecucaoRow {
+  id: number;
+  procedimento_id: number | null;
+  titulo: string | null;
+  codigo: string | null;
+  eixo_bj7: string | null;
+  empresa_id: number | null;
+  referencia: string | null;
+  iniciada_em: string | null;
+  etapas_concluidas: number | null;
+  total_etapas: number | null;
+}
 
 export interface VResumoDreRow {
   empresa_id: number;
@@ -265,13 +332,26 @@ export interface Database {
         Partial<UsuarioEmpresaRow>
       >;
       importacoes: Tbl<ImportacaoRow>;
+      regras: Tbl<RegraRow>;
+      alertas: Tbl<AlertaRow>;
+      tarefas: Tbl<TarefaRow>;
+      interacoes: Tbl<InteracaoRow>;
+      categoria_sugestoes: Tbl<CategoriaSugestaoRow>;
+      itens: Tbl<ItemRow>;
     };
     Views: {
       v_resumo_dre: { Row: VResumoDreRow };
       dre_consolidada: { Row: DreConsolidadaRow };
       dre_operacional: { Row: DreOperacionalRow };
+      v_execucoes_em_andamento: { Row: VExecucaoRow };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      executar_regras: { Args: Record<never, never>; Returns: void };
+      ack_alerta: { Args: { alerta_id: number }; Returns: void };
+      resolver_alerta: { Args: { alerta_id: number }; Returns: void };
+      snooze_alerta: { Args: { alerta_id: number; horas: number }; Returns: void };
+      concluir_tarefa: { Args: { tarefa_id: number }; Returns: void };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
