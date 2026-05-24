@@ -120,10 +120,15 @@ function CockpitPage() {
   const itensQ = useQuery({
     queryKey: ["cockpit", "itens"],
     placeholderData: keepPreviousData,
-    staleTime: 30_000,
+    staleTime: 60_000,
     gcTime: 5 * 60_000,
     queryFn: async () => {
-      const r = await supabase.from("itens").select("*").order("id", { ascending: false }).limit(5000);
+      const r = await supabase
+        .from("itens")
+        .select("id,titulo,descricao,tipo,eixo_bj7,empresa_id,importante,urgente,energia,contexto,estado,prazo,data_reuniao,duracao_min,participantes,local_reuniao,opcoes_decisao,decisao_tomada,decisao_em,item_pai_id,tags,notas,concluido_em,recorrencia")
+        .neq("estado", "ARQUIVADO")
+        .order("id", { ascending: false })
+        .limit(800);
       if (r.error) throw r.error;
       return (r.data ?? []) as Item[];
     },
