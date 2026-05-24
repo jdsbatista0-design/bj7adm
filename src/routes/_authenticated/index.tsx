@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -80,48 +81,21 @@ function HomeHub() {
     },
   });
 
-  // Itens do cockpit — 3 queries de COUNT separadas (sem fetch de linhas)
-  const itensHojeQ = useQuery({
-    queryKey: ["home", "itens-hoje", todayStr],
-    staleTime: 2 * 60_000,
+  // Itens ativos do cockpit
+  const itensQ = useQuery({
+    queryKey: ["home", "itens"],
+    staleTime: 60_000,
     queryFn: async () => {
       const r = await supabase
         .from("itens")
-        .select("id", { count: "exact", head: true })
+        .select("id, titulo, tipo, estado, prazo, decisao_tomada")
         .not("estado", "in", "(CONCLUIDO,ARQUIVADO)")
-        .or(`estado.eq.HOJE,prazo.eq.${todayStr}`);
+        .limit(500);
       if (r.error) throw r.error;
-      return r.count ?? 0;
-    },
-  });
-
-  const atrasadosQ = useQuery({
-    queryKey: ["home", "atrasados", todayStr],
-    staleTime: 2 * 60_000,
-    queryFn: async () => {
-      const r = await supabase
-        .from("itens")
-        .select("id", { count: "exact", head: true })
-        .not("estado", "in", "(CONCLUIDO,ARQUIVADO)")
-        .not("prazo", "is", null)
-        .lt("prazo", todayStr);
-      if (r.error) throw r.error;
-      return r.count ?? 0;
-    },
-  });
-
-  const decisoesQ = useQuery({
-    queryKey: ["home", "decisoes"],
-    staleTime: 2 * 60_000,
-    queryFn: async () => {
-      const r = await supabase
-        .from("itens")
-        .select("id", { count: "exact", head: true })
-        .eq("tipo", "DECISAO")
-        .is("decisao_tomada", null)
-        .not("estado", "in", "(CONCLUIDO,ARQUIVADO)");
-      if (r.error) throw r.error;
-      return r.count ?? 0;
+      return (r.data ?? []) as {
+        id: number; titulo: string; tipo: string | null;
+        estado: string | null; prazo: string | null; decisao_tomada: string | null;
+      }[];
     },
   });
 
@@ -140,6 +114,15 @@ function HomeHub() {
       };
     },
   });
+
+  const { decisoes, itensHoje, atrasados } = useMemo(() => {
+    const all = itensQ.data ?? [];
+    return {
+      decisoes: all.filter(i => i.tipo === "DECISAO" && !i.decisao_tomada),
+      itensHoje: all.filter(i => i.estado === "HOJE" || i.prazo === todayStr),
+      atrasados: all.filter(i => i.prazo && i.prazo < todayStr),
+    };
+  }, [itensQ.data, todayStr]);
 
   const dre = dreQ.data;
   const margem = dre && dre.receita > 0 ? Math.round((dre.ebitda / dre.receita) * 100) : null;
@@ -238,31 +221,32 @@ function HomeHub() {
             </CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-1">
-            <>
-              <CockpitRow label="Para hoje" count={itensHojeQ.data ?? 0} to="/hoje"
-                tone={(itensHojeQ.data ?? 0) > 0 ? "warning" : "ok"}
-                loading={itensHojeQ.isLoading} />
-              <CockpitRow label="Atrasados" count={atrasadosQ.data ?? 0} to="/hoje"
-                tone={(atrasadosQ.data ?? 0) > 0 ? "danger" : "ok"}
-                loading={atrasadosQ.isLoading} />
-              <CockpitRow label="Decisões pendentes" count={decisoesQ.data ?? 0} to="/itens"
-                tone={(decisoesQ.data ?? 0) > 3 ? "warning" : "ok"}
-                loading={decisoesQ.isLoading} />
-              <CockpitRow
-                label="Documentos vencendo (30d)"
-                count={docsQ.data?.vencendo_30d ?? 0}
-                to="/documentos"
-                tone={(docsQ.data?.vencendo_30d ?? 0) > 0 ? "warning" : "ok"}
-                loading={docsQ.isLoading}
-              />
-              <CockpitRow
-                label="Documentos vencidos"
-                count={docsQ.data?.docs_vencidos ?? 0}
-                to="/documentos"
-                tone={(docsQ.data?.docs_vencidos ?? 0) > 0 ? "danger" : "ok"}
-                loading={docsQ.isLoading}
-              />
-            </>
+            {itensQ.isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)
+            ) : (
+              <>
+                <CockpitRow label="Para hoje" count={itensHoje.length} to="/hoje"
+                  tone={itensHoje.length > 0 ? "warning" : "ok"} />
+                <CockpitRow label="Atrasados" count={atrasados.length} to="/hoje"
+                  tone={atrasados.length > 0 ? "danger" : "ok"} />
+                <CockpitRow label="Decisões pendentes" count={decisoes.length} to="/itens"
+                  tone={decisoes.length > 3 ? "warning" : "ok"} />
+                <CockpitRow
+                  label="Documentos vencendo (30d)"
+                  count={docsQ.data?.vencendo_30d ?? 0}
+                  to="/documentos"
+                  tone={(docsQ.data?.vencendo_30d ?? 0) > 0 ? "warning" : "ok"}
+                  loading={docsQ.isLoading}
+                />
+                <CockpitRow
+                  label="Documentos vencidos"
+                  count={docsQ.data?.docs_vencidos ?? 0}
+                  to="/documentos"
+                  tone={(docsQ.data?.docs_vencidos ?? 0) > 0 ? "danger" : "ok"}
+                  loading={docsQ.isLoading}
+                />
+              </>
+            )}
           </CardContent>
         </Card>
 
