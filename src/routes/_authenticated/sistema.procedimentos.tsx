@@ -15,13 +15,17 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Play, Search, Workflow, Pencil } from "lucide-react";
+import { Plus, Play, Search, Workflow, Pencil, Eye, Trash2, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/sistema/procedimentos")({
   component: SistemaProcedimentos,
@@ -52,6 +56,8 @@ export default function SistemaProcedimentos() {
   const [statusF, setStatusF] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Proc | null>(null);
+  const [viewing, setViewing] = useState<Proc | null>(null);
+  const [deleting, setDeleting] = useState<Proc | null>(null);
 
   const dashQ = useQuery({
     queryKey: ["sistema:proc-dashboard"],
@@ -103,13 +109,26 @@ export default function SistemaProcedimentos() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteM = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await sb().from("procedimentos").delete().eq("id", id);
+      if (r.error) throw r.error;
+    },
+    onSuccess: () => {
+      toast.success("Procedimento excluído");
+      setDeleting(null);
+      qc.invalidateQueries({ queryKey: ["sistema:proc-dashboard"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <PageShell
-      title="Procedimentos (BJ7)"
-      description="Catálogo de procedimentos operacionais por eixo"
+      title="Normativo BJ7 — Procedimentos"
+      description="Biblioteca de processos e normas das empresas do grupo (estilo normativo)"
       actions={
         <Button onClick={() => { setEditing(null); setOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Novo
+          <Plus className="h-4 w-4 mr-2" /> Novo procedimento
         </Button>
       }
     >
@@ -172,15 +191,25 @@ export default function SistemaProcedimentos() {
                     <TableCell className="text-center">{d.execucoes_concluidas ?? 0}</TableCell>
                     <TableCell><Badge variant={d.status === "ATIVO" ? "default" : "outline"}>{d.status ?? "—"}</Badge></TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => startM.mutate(d.id)} disabled={startM.isPending}>
+                      <Button size="sm" variant="ghost" title="Ler normativo" onClick={async () => {
+                        const r = await sb().from("procedimentos").select("*").eq("id", d.id).single();
+                        if (r.error) { toast.error(r.error.message); return; }
+                        setViewing(r.data as Proc);
+                      }}>
+                        <BookOpen className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" title="Iniciar execução" onClick={() => startM.mutate(d.id)} disabled={startM.isPending}>
                         <Play className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={async () => {
+                      <Button size="sm" variant="ghost" title="Editar" onClick={async () => {
                         const r = await sb().from("procedimentos").select("*").eq("id", d.id).single();
                         if (r.error) { toast.error(r.error.message); return; }
                         setEditing(r.data as Proc); setOpen(true);
                       }}>
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" title="Excluir" onClick={() => setDeleting({ id: d.id, titulo: d.titulo } as Proc)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -199,6 +228,53 @@ export default function SistemaProcedimentos() {
         onSubmit={(p) => saveM.mutate(p)}
         saving={saveM.isPending}
       />
+
+      {/* Visualizar como normativo */}
+      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              {viewing?.codigo && <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{viewing.codigo}</span>}
+              {viewing?.titulo}
+            </DialogTitle>
+            <DialogDescription className="flex flex-wrap gap-2 pt-1">
+              {viewing?.eixo_bj7 && <Badge variant="secondary">{viewing.eixo_bj7}</Badge>}
+              {viewing?.categoria && <Badge variant="outline">{viewing.categoria}</Badge>}
+              {viewing?.status && <Badge variant={viewing.status === "ATIVO" ? "default" : "outline"}>{viewing.status}</Badge>}
+            </DialogDescription>
+          </DialogHeader>
+          {viewing?.descricao && (
+            <p className="text-sm text-muted-foreground italic border-l-2 border-primary/40 pl-3">{viewing.descricao}</p>
+          )}
+          <div className="rounded-lg bg-muted/30 p-4 text-sm whitespace-pre-wrap font-serif leading-relaxed">
+            {viewing?.conteudo?.trim() || (
+              <span className="text-muted-foreground italic">Sem conteúdo cadastrado. Edite este procedimento para descrever como ele é executado.</span>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { if (viewing) { setEditing(viewing); setOpen(true); setViewing(null); } }}>
+              <Pencil className="h-4 w-4 mr-1" /> Editar
+            </Button>
+            <Button onClick={() => setViewing(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir procedimento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{deleting?.titulo}" será removido permanentemente, junto com etapas e execuções relacionadas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleting && deleteM.mutate(deleting.id)}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }
