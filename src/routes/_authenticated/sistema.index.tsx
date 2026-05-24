@@ -10,16 +10,14 @@ import {
 const Procedimentos = lazy(() => import("./sistema.procedimentos"));
 const Execucoes = lazy(() => import("./sistema.execucoes"));
 const PorEixo = lazy(() => import("./sistema.por-eixo"));
-const Templates = lazy(() => import("./sistema.templates"));
 
-const TABS = ["procedimentos", "execucoes", "por-eixo", "templates"] as const;
+const TABS = ["procedimentos", "execucoes", "por-eixo"] as const;
 type TabKey = (typeof TABS)[number];
 
 const TAB_LABELS: Record<TabKey, string> = {
-  procedimentos: "Procedimentos",
+  procedimentos: "Normativo",
   execucoes: "Em Execução",
   "por-eixo": "Por Eixo BJ7",
-  templates: "Templates",
 };
 
 const search = z.object({
@@ -83,11 +81,6 @@ function SistemaPage() {
         <TabsContent value="por-eixo" className="mt-4">
           <Suspense fallback={fallbackUI}>
             {tab === "por-eixo" && <PorEixo />}
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="templates" className="mt-4">
-          <Suspense fallback={fallbackUI}>
-            {tab === "templates" && <Templates />}
           </Suspense>
         </TabsContent>
       </Tabs>
