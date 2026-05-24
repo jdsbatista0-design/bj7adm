@@ -89,6 +89,7 @@ export default function DocumentosIndex() {
   const [editing, setEditing] = useState<DocRow | null>(null);
   const [versoesDoc, setVersoesDoc] = useState<DocRow | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; name: string; mime: string | null } | null>(null);
 
   const dashQ = useQuery<Dashboard>({
     queryKey: ["documentos", "dashboard"],
@@ -202,13 +203,17 @@ export default function DocumentosIndex() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const openPreview = async (d: DocRow) => {
+    if (!d.arquivo_path) { toast.error("Sem arquivo"); return; }
+    const { data, error } = await supabase.storage.from("documentos-bj7").createSignedUrl(d.arquivo_path, 300);
+    if (error) { toast.error(error.message); return; }
+    setPreviewDoc({ url: data.signedUrl, name: d.arquivo_nome ?? d.titulo, mime: d.arquivo_mime });
+  };
   const downloadDoc = async (path: string | null, name: string | null) => {
     if (!path) { toast.error("Sem arquivo"); return; }
-    const { data, error } = await supabase.storage.from("documentos-bj7").createSignedUrl(path, 60);
+    const { data, error } = await supabase.storage.from("documentos-bj7").createSignedUrl(path, 60, { download: name ?? true });
     if (error) { toast.error(error.message); return; }
-    const a = document.createElement("a");
-    a.href = data.signedUrl; a.download = name ?? "documento"; a.target = "_blank";
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   const totalPages = Math.ceil((docsQ.data?.count ?? 0) / pageSize);
@@ -316,9 +321,14 @@ export default function DocumentosIndex() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           {d.arquivo_path && (
-                            <Button variant="ghost" size="icon" onClick={() => downloadDoc(d.arquivo_path, d.arquivo_nome)} title="Baixar">
-                              <Download className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button variant="ghost" size="icon" onClick={() => openPreview(d)} title="Visualizar">
+                                <FileText className="h-4 w-4 text-primary" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={() => downloadDoc(d.arquivo_path, d.arquivo_nome)} title="Baixar">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </>
                           )}
                           <Button variant="ghost" size="icon" onClick={() => { setEditing(d); setOpenCreate(true); }} title="Editar">
                             <Pencil className="h-4 w-4" />
@@ -382,6 +392,29 @@ export default function DocumentosIndex() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Preview de arquivo */}
+      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-4 py-3 border-b">
+            <DialogTitle className="text-sm truncate">{previewDoc?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden bg-muted">
+            {previewDoc && (
+              previewDoc.mime?.startsWith("image/") ? (
+                <img src={previewDoc.url} alt={previewDoc.name} className="w-full h-full object-contain" />
+              ) : (
+                <iframe src={previewDoc.url} className="w-full h-full" title={previewDoc.name} />
+              )
+            )}
+          </div>
+          <div className="px-4 py-2 border-t flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => previewDoc && window.open(previewDoc.url, "_blank", "noopener,noreferrer")}>
+              Abrir em nova aba
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

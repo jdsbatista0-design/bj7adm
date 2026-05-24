@@ -67,6 +67,7 @@ const isGroup = (i: NavItem): i is GroupItem => "children" in i;
 
 const NAV: NavItem[] = [
   { title: "Início", url: "/", icon: Home },
+  { title: "Cockpit", url: "/itens", icon: ListTodo },
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Calendário", url: "/calendario", icon: Calendar },
   {
@@ -98,7 +99,6 @@ const NAV: NavItem[] = [
       { title: "Importações Fiscais", url: "/fiscal/importacoes", icon: Upload },
     ],
   },
-  { title: "Cockpit", url: "/itens", icon: ListTodo },
   {
     title: "Documentos",
     icon: FolderOpen,
