@@ -38,12 +38,12 @@ type Evento = {
 };
 
 const ORIGEM_META: Record<Origem, { label: string; cls: string; dot: string }> = {
-  FISCAL:     { label: "Fiscal",     cls: "bg-purple-500/15 text-purple-300 border-purple-500/30", dot: "bg-purple-500" },
-  COCKPIT:    { label: "Cockpit",    cls: "bg-blue-500/15 text-blue-300 border-blue-500/30",       dot: "bg-blue-500" },
-  REUNIAO:    { label: "Reunião",    cls: "bg-green-500/15 text-green-300 border-green-500/30",   dot: "bg-green-500" },
-  RUA:        { label: "Rua",        cls: "bg-orange-500/15 text-orange-300 border-orange-500/30", dot: "bg-orange-500" },
-  DOCUMENTO:  { label: "Documento",  cls: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30", dot: "bg-yellow-500" },
-  ONE_ON_ONE: { label: "1:1",        cls: "bg-pink-500/15 text-pink-300 border-pink-500/30",       dot: "bg-pink-500" },
+  FISCAL:     { label: "Fiscal",     cls: "bg-purple-600/30 text-purple-50 border-purple-400/70", dot: "bg-purple-400" },
+  COCKPIT:    { label: "Cockpit",    cls: "bg-blue-600/30 text-blue-50 border-blue-400/70",       dot: "bg-blue-400" },
+  REUNIAO:    { label: "Reunião",    cls: "bg-emerald-600/30 text-emerald-50 border-emerald-400/70", dot: "bg-emerald-400" },
+  RUA:        { label: "Rua",        cls: "bg-orange-600/30 text-orange-50 border-orange-400/70", dot: "bg-orange-400" },
+  DOCUMENTO:  { label: "Documento",  cls: "bg-amber-500/30 text-amber-50 border-amber-300/70",    dot: "bg-amber-400" },
+  ONE_ON_ONE: { label: "1:1",        cls: "bg-pink-600/30 text-pink-50 border-pink-400/70",       dot: "bg-pink-400" },
 };
 
 const ALL_ORIGENS: Origem[] = ["FISCAL", "COCKPIT", "REUNIAO", "RUA", "DOCUMENTO", "ONE_ON_ONE"];
