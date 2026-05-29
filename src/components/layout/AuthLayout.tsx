@@ -110,6 +110,7 @@ const NAV: NavItem[] = [
   },
   { title: "Sistema (BJ7)", url: "/sistema", icon: Workflow },
   { title: "Pessoas", url: "/pessoas", icon: Users },
+  { title: "Clientes Stone", url: "/clientes-stone", icon: Banknote },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
