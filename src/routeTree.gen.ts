@@ -26,6 +26,7 @@ import { Route as AuthenticatedHojeRouteImport } from './routes/_authenticated/h
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedConfigRouteImport } from './routes/_authenticated/config'
 import { Route as AuthenticatedComercialRouteImport } from './routes/_authenticated/comercial'
+import { Route as AuthenticatedClientesStoneRouteImport } from './routes/_authenticated/clientes-stone'
 import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
 import { Route as AuthenticatedSistemaIndexRouteImport } from './routes/_authenticated/sistema.index'
@@ -135,6 +136,12 @@ const AuthenticatedComercialRoute = AuthenticatedComercialRouteImport.update({
   path: '/comercial',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedClientesStoneRoute =
+  AuthenticatedClientesStoneRouteImport.update({
+    id: '/clientes-stone',
+    path: '/clientes-stone',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCalendarioRoute = AuthenticatedCalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
@@ -264,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
   '/calendario': typeof AuthenticatedCalendarioRoute
+  '/clientes-stone': typeof AuthenticatedClientesStoneRoute
   '/comercial': typeof AuthenticatedComercialRoute
   '/config': typeof AuthenticatedConfigRoute
   '/financeiro': typeof AuthenticatedFinanceiroRouteWithChildren
@@ -302,6 +310,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
   '/calendario': typeof AuthenticatedCalendarioRoute
+  '/clientes-stone': typeof AuthenticatedClientesStoneRoute
   '/comercial': typeof AuthenticatedComercialRoute
   '/config': typeof AuthenticatedConfigRoute
   '/hoje': typeof AuthenticatedHojeRoute
@@ -341,6 +350,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
   '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
+  '/_authenticated/clientes-stone': typeof AuthenticatedClientesStoneRoute
   '/_authenticated/comercial': typeof AuthenticatedComercialRoute
   '/_authenticated/config': typeof AuthenticatedConfigRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRouteWithChildren
@@ -383,6 +393,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/a-revisar'
     | '/calendario'
+    | '/clientes-stone'
     | '/comercial'
     | '/config'
     | '/financeiro'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/a-revisar'
     | '/calendario'
+    | '/clientes-stone'
     | '/comercial'
     | '/config'
     | '/hoje'
@@ -459,6 +471,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/a-revisar'
     | '/_authenticated/calendario'
+    | '/_authenticated/clientes-stone'
     | '/_authenticated/comercial'
     | '/_authenticated/config'
     | '/_authenticated/financeiro'
@@ -619,6 +632,13 @@ declare module '@tanstack/react-router' {
       path: '/comercial'
       fullPath: '/comercial'
       preLoaderRoute: typeof AuthenticatedComercialRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clientes-stone': {
+      id: '/_authenticated/clientes-stone'
+      path: '/clientes-stone'
+      fullPath: '/clientes-stone'
+      preLoaderRoute: typeof AuthenticatedClientesStoneRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/calendario': {
@@ -814,6 +834,7 @@ const AuthenticatedSistemaRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
   AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
+  AuthenticatedClientesStoneRoute: typeof AuthenticatedClientesStoneRoute
   AuthenticatedComercialRoute: typeof AuthenticatedComercialRoute
   AuthenticatedConfigRoute: typeof AuthenticatedConfigRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRouteWithChildren
@@ -845,6 +866,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedARevisarRoute: AuthenticatedARevisarRoute,
   AuthenticatedCalendarioRoute: AuthenticatedCalendarioRoute,
+  AuthenticatedClientesStoneRoute: AuthenticatedClientesStoneRoute,
   AuthenticatedComercialRoute: AuthenticatedComercialRoute,
   AuthenticatedConfigRoute: AuthenticatedConfigRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRouteWithChildren,
