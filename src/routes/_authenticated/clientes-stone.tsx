@@ -99,21 +99,15 @@ function useKpis() {
       const erros = [clientesAtivosQ, lucro12mQ, lucroTotalQ].find((q) => q.error);
       if (erros && (erros as { error: unknown }).error) throw (erros as { error: Error }).error;
 
-      // Para evitar carregar 100k stonecodes, busca distinct via consulta separada
+      // Distinct stonecodes via paginação leve (uma coluna)
       let clientesAtivos = 0;
       if (ativos3mInicio) {
-        const ativosDistQ = await supabase.rpc("count_clientes_ativos_stone", {
-          desde: ativos3mInicio,
-        });
-        if (!ativosDistQ.error && typeof ativosDistQ.data === "number") {
-          clientesAtivos = ativosDistQ.data;
-        } else {
-          // Fallback: aproximação via paginação
-          const pageQ = await supabase
-            .from("rebate_clientes_stone")
-            .select("stonecode")
-            .gte("mes_referencia", ativos3mInicio)
-            .limit(50000);
+        const pageQ = await supabase
+          .from("rebate_clientes_stone")
+          .select("stonecode")
+          .gte("mes_referencia", ativos3mInicio)
+          .limit(50000);
+        if (!pageQ.error) {
           const set = new Set<string>();
           for (const r of (pageQ.data ?? []) as Array<{ stonecode: string }>) {
             set.add(r.stonecode);
@@ -121,6 +115,7 @@ function useKpis() {
           clientesAtivos = set.size;
         }
       }
+
 
       const rows12 = (lucro12mQ.data ?? []) as VEvolucaoMensalRow[];
       const lucro12m = rows12.reduce(
