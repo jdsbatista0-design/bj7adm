@@ -306,6 +306,72 @@ export interface DreOperacionalRow {
   valor_total: number;
 }
 
+// ===== Stone (rebate) =====
+export interface RebateClienteStoneRow {
+  empresa_id: number | null;
+  mes_referencia: string;
+  stonecode: string;
+  nome_fantasia: string | null;
+  cidade: string | null;
+  vendedor: string | null;
+  polo: string | null;
+  status: string | null;
+  canal_venda: string | null;
+  data_credenciamento: string | null;
+  tpv_estimado: number | null;
+  tpv_m0: number | null;
+  rec_mdr: number | null;
+  rec_rav: number | null;
+  rec_banking: number | null;
+  rec_adesao: number | null;
+  lucro_bruto: number | null;
+  vendedor_canonico: string | null;
+  tipo_vendedor: string | null;
+  formato: string | null;
+}
+
+export interface VClienteLifetimeRow {
+  stonecode: string;
+  nome_fantasia: string | null;
+  cidade: string | null;
+  vendedor_atual: string | null;
+  meses_ativo: number | null;
+  desde: string | null;
+  ultimo_mes: string | null;
+  lucro_total: number | null;
+  total_mdr: number | null;
+  total_rav: number | null;
+  total_banking: number | null;
+  total_adesao: number | null;
+  tpv_total: number | null;
+  lucro_medio_mes: number | null;
+  provavel_churn: boolean | null;
+}
+
+export interface VRankingVendedorRow {
+  vendedor_canonico: string;
+  tipo_vendedor: string | null;
+  clientes_unicos: number | null;
+  meses_total: number | null;
+  lucro_total: number | null;
+  lucro_ult_6m: number | null;
+}
+
+export interface VEvolucaoMensalRow {
+  mes_referencia: string;
+  clientes_ativos: number | null;
+  vendedores_bj7_ativos: number | null;
+  lucro_bruto: number | null;
+  rec_mdr: number | null;
+  rec_rav: number | null;
+  rec_banking: number | null;
+  rec_adesao: number | null;
+  tpv_m0: number | null;
+  lucro_bj7: number | null;
+  lucro_stone_matriz: number | null;
+}
+
+
 type Tbl<Row, Insert = Partial<Row> & { id?: number }, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
