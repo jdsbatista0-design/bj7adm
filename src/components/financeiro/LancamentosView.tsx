@@ -166,7 +166,7 @@ function LancamentosPage() {
   const aggSuportado = !params.categoria && !params.q;
 
   const aggQ = useQuery({
-    queryKey: ["lanc-agg-dre", params.ano, params.mes, params.tipo, params.empresa, user.id, aggSuportado],
+    queryKey: ["lanc-agg-dre", params.ano, params.mes, params.data_de, params.data_ate, params.tipo, params.empresa, user.id, aggSuportado],
     enabled: aggSuportado,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -181,7 +181,18 @@ function LancamentosPage() {
       }
       if (params.empresa) q = q.eq("empresa_id", params.empresa);
       if (params.tipo) q = q.eq("tipo", params.tipo);
-      if (params.ano && params.mes) {
+      const hasRange = !!(params.data_de || params.data_ate);
+      if (hasRange) {
+        if (params.data_de) {
+          const s = params.data_de.slice(0, 7) + "-01";
+          q = q.gte("mes_ref", s);
+        }
+        if (params.data_ate) {
+          const [yy, mm] = params.data_ate.slice(0, 7).split("-").map(Number);
+          const next = new Date(yy, mm, 1); // next month start
+          q = q.lt("mes_ref", `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`);
+        }
+      } else if (params.ano && params.mes) {
         const start = `${params.ano}-${String(params.mes).padStart(2, "0")}-01`;
         q = q.eq("mes_ref", start);
       } else if (params.ano) {
