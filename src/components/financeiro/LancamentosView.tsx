@@ -40,6 +40,33 @@ import { toast } from "sonner";
 const PAGE_SIZE = 50;
 const ANOS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function isoDate(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function presetToRange(p: string): { data_de: string; data_ate: string } | null {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (p === "mes") {
+    return { data_de: isoDate(new Date(y, m, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "3m") {
+    return { data_de: isoDate(new Date(y, m - 2, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "6m") {
+    return { data_de: isoDate(new Date(y, m - 5, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "12m") {
+    return { data_de: isoDate(new Date(y, m - 11, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "ano") {
+    return { data_de: `${y}-01-01`, data_ate: `${y}-12-31` };
+  }
+  if (p === "tudo") {
+    return { data_de: "", data_ate: "" };
+  }
+  return null;
+}
+
 type Tipo = "" | "Receita" | "Despesa" | "Retirada" | "Empréstimo";
 type Revisado = "" | "sim" | "nao";
 type PeriodoPreset = "" | "mes" | "3m" | "6m" | "12m" | "ano" | "tudo" | "custom";
