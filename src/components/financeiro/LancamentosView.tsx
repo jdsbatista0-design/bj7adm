@@ -64,6 +64,8 @@ function LancamentosPage() {
     empresa: all.empresa ?? 0, unidade: all.unidade ?? 0,
     categoria: all.categoria ?? 0, q: all.q ?? "",
     revisado: (all.revisado ?? "") as Revisado, page: all.page ?? 1,
+    data_de: all.data_de ?? "", data_ate: all.data_ate ?? "",
+    periodo: (all.periodo ?? "") as PeriodoPreset,
   };
   const navigate = useNavigate();
   const empresas = useEmpresas();
