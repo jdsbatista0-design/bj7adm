@@ -124,8 +124,14 @@ function LancamentosPage() {
         }
         q = q.in("empresa_id", user.empresas_ids);
       }
-      if (params.ano) q = q.eq("ano", params.ano);
-      if (params.mes) q = q.eq("mes", params.mes);
+      const hasRange = !!(params.data_de || params.data_ate);
+      if (hasRange) {
+        if (params.data_de) q = q.gte("data", params.data_de);
+        if (params.data_ate) q = q.lte("data", params.data_ate);
+      } else {
+        if (params.ano) q = q.eq("ano", params.ano);
+        if (params.mes) q = q.eq("mes", params.mes);
+      }
       if (params.tipo) q = q.eq("tipo", params.tipo);
       if (params.empresa) q = q.eq("empresa_id", params.empresa);
       if (params.unidade) q = q.eq("unidade_id", params.unidade);
