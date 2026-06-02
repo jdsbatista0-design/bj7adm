@@ -378,20 +378,6 @@ function LancamentosPage() {
               </Select>
             </>
           )}
-            <SelectContent>
-              <SelectItem value="0">Todos os anos</SelectItem>
-              {ANOS.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={String(params.mes)} onValueChange={(v) => update({ mes: Number(v) })}>
-            <SelectTrigger><SelectValue placeholder="Mês" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Todos meses</SelectItem>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <Select value={params.tipo || "all"} onValueChange={(v) => update({ tipo: (v === "all" ? "" : v) as typeof params.tipo })}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
