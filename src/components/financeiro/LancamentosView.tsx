@@ -429,7 +429,7 @@ function LancamentosPage() {
             }}
             className="lg:col-span-2"
           />
-          <Button variant="ghost" onClick={() => nav((prev) => ({ tab: prev.tab, ano: 0, mes: 0, tipo: "", empresa: 0, unidade: 0, categoria: 0, q: "", revisado: "", page: 1 }))}>
+          <Button variant="ghost" onClick={() => nav((prev) => ({ tab: prev.tab, ano: 0, mes: 0, tipo: "", empresa: 0, unidade: 0, categoria: 0, q: "", revisado: "", page: 1, data_de: "", data_ate: "", periodo: "" }))}>
             Limpar
           </Button>
 
