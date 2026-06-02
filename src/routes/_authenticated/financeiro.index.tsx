@@ -22,6 +22,10 @@ const search = z.object({
   // Filtros de lançamentos preservados na URL — default = mês atual
   ano: fallback(z.number().int(), _curYear).default(_curYear),
   mes: fallback(z.number().int().min(0).max(12), _curMonth).default(_curMonth),
+  // Período customizado (ISO yyyy-mm-dd) — quando preenchido, sobrepõe ano/mes
+  data_de: fallback(z.string(), "").default(""),
+  data_ate: fallback(z.string(), "").default(""),
+  periodo: fallback(z.enum(["", "mes", "3m", "6m", "12m", "ano", "tudo", "custom"]), "").default(""),
   tipo: fallback(z.enum(["", "Receita", "Despesa", "Retirada", "Empréstimo"]), "").default(""),
   empresa: fallback(z.number().int(), 0).default(0),
   unidade: fallback(z.number().int(), 0).default(0),
