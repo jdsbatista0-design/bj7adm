@@ -13,11 +13,15 @@ const AnaliseView = lazy(() =>
 const TABS = ["lancamentos", "analise"] as const;
 type TabKey = (typeof TABS)[number];
 
+const _now = new Date();
+const _curYear = _now.getFullYear();
+const _curMonth = _now.getMonth() + 1;
+
 const search = z.object({
   tab: fallback(z.enum(TABS), "lancamentos").default("lancamentos"),
-  // Filtros de lançamentos preservados na URL
-  ano: fallback(z.number().int(), 0).default(0),
-  mes: fallback(z.number().int().min(0).max(12), 0).default(0),
+  // Filtros de lançamentos preservados na URL — default = mês atual
+  ano: fallback(z.number().int(), _curYear).default(_curYear),
+  mes: fallback(z.number().int().min(0).max(12), _curMonth).default(_curMonth),
   tipo: fallback(z.enum(["", "Receita", "Despesa", "Retirada", "Empréstimo"]), "").default(""),
   empresa: fallback(z.number().int(), 0).default(0),
   unidade: fallback(z.number().int(), 0).default(0),
