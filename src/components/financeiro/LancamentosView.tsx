@@ -40,12 +40,41 @@ import { toast } from "sonner";
 const PAGE_SIZE = 50;
 const ANOS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function isoDate(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function presetToRange(p: string): { data_de: string; data_ate: string } | null {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (p === "mes") {
+    return { data_de: isoDate(new Date(y, m, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "3m") {
+    return { data_de: isoDate(new Date(y, m - 2, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "6m") {
+    return { data_de: isoDate(new Date(y, m - 5, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "12m") {
+    return { data_de: isoDate(new Date(y, m - 11, 1)), data_ate: isoDate(new Date(y, m + 1, 0)) };
+  }
+  if (p === "ano") {
+    return { data_de: `${y}-01-01`, data_ate: `${y}-12-31` };
+  }
+  if (p === "tudo") {
+    return { data_de: "", data_ate: "" };
+  }
+  return null;
+}
+
 type Tipo = "" | "Receita" | "Despesa" | "Retirada" | "Empréstimo";
 type Revisado = "" | "sim" | "nao";
+type PeriodoPreset = "" | "mes" | "3m" | "6m" | "12m" | "ano" | "tudo" | "custom";
 type LancSearch = {
   ano: number; mes: number; tipo: Tipo; empresa: number;
   unidade: number; categoria: number; q: string;
   revisado: Revisado; page: number;
+  data_de: string; data_ate: string; periodo: PeriodoPreset;
 };
 
 const financeiroRoute = getRouteApi("/_authenticated/financeiro");
@@ -62,6 +91,8 @@ function LancamentosPage() {
     empresa: all.empresa ?? 0, unidade: all.unidade ?? 0,
     categoria: all.categoria ?? 0, q: all.q ?? "",
     revisado: (all.revisado ?? "") as Revisado, page: all.page ?? 1,
+    data_de: all.data_de ?? "", data_ate: all.data_ate ?? "",
+    periodo: (all.periodo ?? "") as PeriodoPreset,
   };
   const navigate = useNavigate();
   const empresas = useEmpresas();
@@ -93,8 +124,14 @@ function LancamentosPage() {
         }
         q = q.in("empresa_id", user.empresas_ids);
       }
-      if (params.ano) q = q.eq("ano", params.ano);
-      if (params.mes) q = q.eq("mes", params.mes);
+      const hasRange = !!(params.data_de || params.data_ate);
+      if (hasRange) {
+        if (params.data_de) q = q.gte("data", params.data_de);
+        if (params.data_ate) q = q.lte("data", params.data_ate);
+      } else {
+        if (params.ano) q = q.eq("ano", params.ano);
+        if (params.mes) q = q.eq("mes", params.mes);
+      }
       if (params.tipo) q = q.eq("tipo", params.tipo);
       if (params.empresa) q = q.eq("empresa_id", params.empresa);
       if (params.unidade) q = q.eq("unidade_id", params.unidade);
@@ -129,7 +166,7 @@ function LancamentosPage() {
   const aggSuportado = !params.categoria && !params.q;
 
   const aggQ = useQuery({
-    queryKey: ["lanc-agg-dre", params.ano, params.mes, params.tipo, params.empresa, user.id, aggSuportado],
+    queryKey: ["lanc-agg-dre", params.ano, params.mes, params.data_de, params.data_ate, params.tipo, params.empresa, user.id, aggSuportado],
     enabled: aggSuportado,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -144,7 +181,18 @@ function LancamentosPage() {
       }
       if (params.empresa) q = q.eq("empresa_id", params.empresa);
       if (params.tipo) q = q.eq("tipo", params.tipo);
-      if (params.ano && params.mes) {
+      const hasRange = !!(params.data_de || params.data_ate);
+      if (hasRange) {
+        if (params.data_de) {
+          const s = params.data_de.slice(0, 7) + "-01";
+          q = q.gte("mes_ref", s);
+        }
+        if (params.data_ate) {
+          const [yy, mm] = params.data_ate.slice(0, 7).split("-").map(Number);
+          const next = new Date(yy, mm, 1); // next month start
+          q = q.lt("mes_ref", `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`);
+        }
+      } else if (params.ano && params.mes) {
         const start = `${params.ano}-${String(params.mes).padStart(2, "0")}-01`;
         q = q.eq("mes_ref", start);
       } else if (params.ano) {
@@ -255,6 +303,18 @@ function LancamentosPage() {
   function update(patch: Partial<typeof params>) {
     nav((prev) => ({ ...prev, ...patch, page: 1 }));
   }
+  function applyPeriodo(p: PeriodoPreset) {
+    if (p === "custom") {
+      update({ periodo: "custom" });
+      return;
+    }
+    const r = presetToRange(p);
+    if (r) {
+      update({ periodo: p, data_de: r.data_de, data_ate: r.data_ate, ano: 0, mes: 0 });
+    } else {
+      update({ periodo: "", data_de: "", data_ate: "" });
+    }
+  }
 
 
   return (
@@ -280,22 +340,44 @@ function LancamentosPage() {
       <Card>
         <CardHeader><CardTitle className="text-sm">Filtros</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-          <Select value={String(params.ano)} onValueChange={(v) => update({ ano: Number(v) })}>
-            <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+          <Select value={params.periodo || "none"} onValueChange={(v) => applyPeriodo((v === "none" ? "" : v) as PeriodoPreset)}>
+            <SelectTrigger><SelectValue placeholder="Período" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Todos os anos</SelectItem>
-              {ANOS.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+              <SelectItem value="none">Período (ano/mês)</SelectItem>
+              <SelectItem value="mes">Mês atual</SelectItem>
+              <SelectItem value="3m">Últimos 3 meses</SelectItem>
+              <SelectItem value="6m">Últimos 6 meses</SelectItem>
+              <SelectItem value="12m">Últimos 12 meses</SelectItem>
+              <SelectItem value="ano">Ano atual</SelectItem>
+              <SelectItem value="tudo">Tudo</SelectItem>
+              <SelectItem value="custom">Personalizado…</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={String(params.mes)} onValueChange={(v) => update({ mes: Number(v) })}>
-            <SelectTrigger><SelectValue placeholder="Mês" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Todos meses</SelectItem>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {params.periodo === "custom" ? (
+            <>
+              <Input type="date" value={params.data_de} onChange={(e) => update({ data_de: e.target.value })} />
+              <Input type="date" value={params.data_ate} onChange={(e) => update({ data_ate: e.target.value })} />
+            </>
+          ) : (
+            <>
+              <Select value={String(params.ano)} onValueChange={(v) => update({ ano: Number(v), periodo: "", data_de: "", data_ate: "" })}>
+                <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Todos os anos</SelectItem>
+                  {ANOS.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={String(params.mes)} onValueChange={(v) => update({ mes: Number(v), periodo: "", data_de: "", data_ate: "" })}>
+                <SelectTrigger><SelectValue placeholder="Mês" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Todos meses</SelectItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
           <Select value={params.tipo || "all"} onValueChange={(v) => update({ tipo: (v === "all" ? "" : v) as typeof params.tipo })}>
             <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
             <SelectContent>
@@ -347,7 +429,7 @@ function LancamentosPage() {
             }}
             className="lg:col-span-2"
           />
-          <Button variant="ghost" onClick={() => nav((prev) => ({ tab: prev.tab, ano: 0, mes: 0, tipo: "", empresa: 0, unidade: 0, categoria: 0, q: "", revisado: "", page: 1 }))}>
+          <Button variant="ghost" onClick={() => nav((prev) => ({ tab: prev.tab, ano: 0, mes: 0, tipo: "", empresa: 0, unidade: 0, categoria: 0, q: "", revisado: "", page: 1, data_de: "", data_ate: "", periodo: "" }))}>
             Limpar
           </Button>
 
