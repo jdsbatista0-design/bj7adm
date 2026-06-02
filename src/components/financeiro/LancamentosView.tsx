@@ -42,10 +42,12 @@ const ANOS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
 
 type Tipo = "" | "Receita" | "Despesa" | "Retirada" | "Empréstimo";
 type Revisado = "" | "sim" | "nao";
+type PeriodoPreset = "" | "mes" | "3m" | "6m" | "12m" | "ano" | "tudo" | "custom";
 type LancSearch = {
   ano: number; mes: number; tipo: Tipo; empresa: number;
   unidade: number; categoria: number; q: string;
   revisado: Revisado; page: number;
+  data_de: string; data_ate: string; periodo: PeriodoPreset;
 };
 
 const financeiroRoute = getRouteApi("/_authenticated/financeiro");
