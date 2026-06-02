@@ -340,8 +340,44 @@ function LancamentosPage() {
       <Card>
         <CardHeader><CardTitle className="text-sm">Filtros</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-          <Select value={String(params.ano)} onValueChange={(v) => update({ ano: Number(v) })}>
-            <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+          <Select value={params.periodo || "none"} onValueChange={(v) => applyPeriodo((v === "none" ? "" : v) as PeriodoPreset)}>
+            <SelectTrigger><SelectValue placeholder="Período" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Período (ano/mês)</SelectItem>
+              <SelectItem value="mes">Mês atual</SelectItem>
+              <SelectItem value="3m">Últimos 3 meses</SelectItem>
+              <SelectItem value="6m">Últimos 6 meses</SelectItem>
+              <SelectItem value="12m">Últimos 12 meses</SelectItem>
+              <SelectItem value="ano">Ano atual</SelectItem>
+              <SelectItem value="tudo">Tudo</SelectItem>
+              <SelectItem value="custom">Personalizado…</SelectItem>
+            </SelectContent>
+          </Select>
+          {params.periodo === "custom" ? (
+            <>
+              <Input type="date" value={params.data_de} onChange={(e) => update({ data_de: e.target.value })} />
+              <Input type="date" value={params.data_ate} onChange={(e) => update({ data_ate: e.target.value })} />
+            </>
+          ) : (
+            <>
+              <Select value={String(params.ano)} onValueChange={(v) => update({ ano: Number(v), periodo: "", data_de: "", data_ate: "" })}>
+                <SelectTrigger><SelectValue placeholder="Ano" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Todos os anos</SelectItem>
+                  {ANOS.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={String(params.mes)} onValueChange={(v) => update({ mes: Number(v), periodo: "", data_de: "", data_ate: "" })}>
+                <SelectTrigger><SelectValue placeholder="Mês" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Todos meses</SelectItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                    <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
             <SelectContent>
               <SelectItem value="0">Todos os anos</SelectItem>
               {ANOS.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
