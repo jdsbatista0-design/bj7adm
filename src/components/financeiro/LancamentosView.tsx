@@ -303,6 +303,18 @@ function LancamentosPage() {
   function update(patch: Partial<typeof params>) {
     nav((prev) => ({ ...prev, ...patch, page: 1 }));
   }
+  function applyPeriodo(p: PeriodoPreset) {
+    if (p === "custom") {
+      update({ periodo: "custom" });
+      return;
+    }
+    const r = presetToRange(p);
+    if (r) {
+      update({ periodo: p, data_de: r.data_de, data_ate: r.data_ate, ano: 0, mes: 0 });
+    } else {
+      update({ periodo: "", data_de: "", data_ate: "" });
+    }
+  }
 
 
   return (
