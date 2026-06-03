@@ -357,7 +357,10 @@ export interface VRankingVendedorRow {
   tipo_vendedor: string | null;
   clientes_unicos: number | null;
   meses_total: number | null;
+  desde: string | null;
+  ate: string | null;
   lucro_total: number | null;
+  lucro_medio_por_cliente_mes: number | null;
   lucro_ult_6m: number | null;
 }
 
