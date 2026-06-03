@@ -8,6 +8,7 @@ export interface EmpresaRow {
   nome: string;
   descricao: string | null;
   criado_em: string | null;
+  ativa: boolean | null;
 }
 export interface UnidadeRow {
   id: number;
@@ -51,6 +52,9 @@ export interface LancamentoRow {
   atualizado_em: string | null;
   fonte_caminho: string | null;
   competencia: string | null;
+  auditado_por_banco: boolean | null;
+  auditado_em: string | null;
+  pluggy_transaction_id: string | null;
 }
 export interface NotaFiscalRow {
   id: number;
@@ -353,7 +357,10 @@ export interface VRankingVendedorRow {
   tipo_vendedor: string | null;
   clientes_unicos: number | null;
   meses_total: number | null;
+  desde: string | null;
+  ate: string | null;
   lucro_total: number | null;
+  lucro_medio_por_cliente_mes: number | null;
   lucro_ult_6m: number | null;
 }
 

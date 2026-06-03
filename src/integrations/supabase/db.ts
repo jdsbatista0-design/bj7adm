@@ -17,6 +17,13 @@ import type {
   UsuarioRow,
   UsuarioEmpresaRow,
   ImportacaoRow,
+  RebateClienteStoneRow,
+  VClienteLifetimeRow,
+  VRankingVendedorRow,
+  VEvolucaoMensalRow,
+  VResumoDreRow,
+  DreConsolidadaRow,
+  DreOperacionalRow,
 } from "./database";
 
 type RowMap = {
@@ -32,6 +39,13 @@ type RowMap = {
   usuarios: UsuarioRow;
   usuario_empresas: UsuarioEmpresaRow;
   importacoes: ImportacaoRow;
+  rebate_clientes_stone: RebateClienteStoneRow;
+  v_cliente_lifetime: VClienteLifetimeRow;
+  v_ranking_vendedor: VRankingVendedorRow;
+  v_evolucao_mensal: VEvolucaoMensalRow;
+  v_resumo_dre: VResumoDreRow;
+  dre_consolidada: DreConsolidadaRow;
+  dre_operacional: DreOperacionalRow;
 };
 
 /** Strongly-typed `from()` — returns the raw query builder, you cast results. */
