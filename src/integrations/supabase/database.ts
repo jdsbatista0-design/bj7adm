@@ -52,6 +52,9 @@ export interface LancamentoRow {
   atualizado_em: string | null;
   fonte_caminho: string | null;
   competencia: string | null;
+  auditado_por_banco: boolean | null;
+  auditado_em: string | null;
+  pluggy_transaction_id: string | null;
 }
 export interface NotaFiscalRow {
   id: number;
