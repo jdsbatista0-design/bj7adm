@@ -8,6 +8,7 @@ export interface EmpresaRow {
   nome: string;
   descricao: string | null;
   criado_em: string | null;
+  ativa: boolean | null;
 }
 export interface UnidadeRow {
   id: number;
