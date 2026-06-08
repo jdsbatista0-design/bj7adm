@@ -195,7 +195,6 @@ export function ContaAPagarDialog({
   const erros: string[] = [];
   if (open) {
     if (!descricao.trim()) erros.push("Informe a descrição");
-    if (!valorNum) errosstops: void 0;
     if (!valorNum) erros.push("Informe o valor");
     if (!vencimento) erros.push("Informe o vencimento");
   }
