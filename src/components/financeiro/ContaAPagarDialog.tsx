@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 import { useEmpresas, useCategorias } from "@/hooks/use-refs";
 import { toast } from "sonner";
-import { pagarConta, estornarPagamento, sincronizarLancamentoDeConta } from "@/lib/contas-a-pagar";
+import { pagarConta, estornarPagamento, sincronizarLancamentoDeConta, parseTipoFromObs, type TipoLancContaPagar } from "@/lib/contas-a-pagar";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
