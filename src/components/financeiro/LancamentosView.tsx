@@ -11,7 +11,6 @@ import {
   tiposVisiveis,
   podeEditarLancamento,
   podeMarcarRevisado,
-  podeLancar,
 } from "@/lib/permissions";
 import { formatBRL, formatDate, MESES_PT } from "@/lib/format";
 import { Button } from "@/components/ui/button";
