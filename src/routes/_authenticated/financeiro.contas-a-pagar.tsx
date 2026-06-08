@@ -459,50 +459,54 @@ function ContasAPagarPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {q.isLoading ? (
+            {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell colSpan={7}><Skeleton className="h-6" /></TableCell>
                 </TableRow>
               ))
-            ) : (q.data?.length ?? 0) === 0 ? (
+            ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
                   Nenhuma conta no período
                 </TableCell>
               </TableRow>
             ) : (
-              q.data!.map(c => {
-                const atrasada = !c.pago && c.vencimento < todayIso;
+              rows.map(r => {
+                const isLanc = r.source === "lanc";
+                const c = r.conta;
                 return (
-                  <TableRow key={c.id}>
-                    <TableCell className={cn("tabular", atrasada && "text-destructive font-medium")}>
-                      {atrasada && <AlertTriangle className="h-3 w-3 inline mr-1" />}
-                      {formatDate(c.vencimento)}
+                  <TableRow key={r.key}>
+                    <TableCell className={cn("tabular", r.atrasada && "text-destructive font-medium")}>
+                      {r.atrasada && <AlertTriangle className="h-3 w-3 inline mr-1" />}
+                      {formatDate(r.data)}
                     </TableCell>
                     <TableCell className="max-w-[280px] truncate">
                       <div className="flex items-center gap-2">
-                        <span className="truncate">{c.descricao}</span>
-                        {c.lancamento_id && (
+                        <span className="truncate">{r.descricao}</span>
+                        {r.lancamento_id && (
                           <Link
                             to="/financeiro"
                             search={{ tab: "lancamentos" as never } as never}
-                            title={`Lançamento #${c.lancamento_id}`}
+                            title={`Lançamento #${r.lancamento_id}`}
                           >
                             <Badge className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20 text-[10px] py-0 h-4 gap-0.5">
                               DRE <ExternalLink className="h-2.5 w-2.5" />
                             </Badge>
                           </Link>
                         )}
+                        {isLanc && (
+                          <Badge variant="outline" className="text-[10px] py-0 h-4">histórico</Badge>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{empresaNome(c.empresa_id)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{categoriaNome(c.categoria_id)}</TableCell>
-                    <TableCell className="text-right tabular">{brl(Number(c.valor))}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{empresaNome(r.empresa_id)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{categoriaNome(r.categoria_id)}</TableCell>
+                    <TableCell className="text-right tabular">{brl(r.valor_pago ?? r.valor)}</TableCell>
                     <TableCell>
-                      {c.pago ? (
+                      {r.pago ? (
                         <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30">Pago</Badge>
-                      ) : atrasada ? (
+                      ) : r.atrasada ? (
                         <Badge className="bg-destructive/15 text-destructive border-destructive/30">Atrasada</Badge>
                       ) : (
                         <Badge variant="outline">A vencer</Badge>
@@ -510,27 +514,33 @@ function ContasAPagarPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {!c.pago ? (
-                          <MarcarPagoPopover
-                            conta={c}
-                            onConfirm={async (input) => { await pagar.mutateAsync({ conta: c, input }); }}
-                            trigger={
-                              <Button size="sm" variant="ghost" title="Marcar como paga e lançar">
-                                <CheckCircle2 className="h-4 w-4" />
-                              </Button>
-                            }
-                          />
+                        {isLanc || !c ? (
+                          <span className="text-[10px] text-muted-foreground pr-2">só leitura</span>
                         ) : (
-                          <Button size="sm" variant="ghost" onClick={() => estornar.mutate(c)} title="Estornar pagamento">
-                            <Undo2 className="h-4 w-4" />
-                          </Button>
+                          <>
+                            {!c.pago ? (
+                              <MarcarPagoPopover
+                                conta={c}
+                                onConfirm={async (input) => { await pagar.mutateAsync({ conta: c, input }); }}
+                                trigger={
+                                  <Button size="sm" variant="ghost" title="Marcar como paga e lançar">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
+                            ) : (
+                              <Button size="sm" variant="ghost" onClick={() => estornar.mutate(c)} title="Estornar pagamento">
+                                <Undo2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button size="sm" variant="ghost" onClick={() => { setEditing(c); setDialogOpen(true); }}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setDelTarget(c)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </>
                         )}
-                        <Button size="sm" variant="ghost" onClick={() => { setEditing(c); setDialogOpen(true); }}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setDelTarget(c)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
