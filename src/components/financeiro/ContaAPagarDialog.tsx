@@ -223,11 +223,12 @@ export function ContaAPagarDialog({
         throw new Error("Preencha descrição, valor e vencimento");
       }
       if (jaPago && empresaId === "0") {
-        throw new Error("Para marcar como paga é preciso informar a empresa (vai virar Lançamento)");
+        throw new Error("Para confirmar é preciso informar a empresa (vai virar Lançamento)");
       }
 
       const obsExtra = [
-        fornecedor.trim() && `Fornecedor: ${fornecedor.trim()}`,
+        `Tipo: ${tipo}`,
+        fornecedor.trim() && `${tipo === "Receita" ? "Pagador" : "Fornecedor"}: ${fornecedor.trim()}`,
         formaPgto && `Pgto: ${formaPgto}`,
         observacao.trim(),
       ].filter(Boolean).join(" | ");
