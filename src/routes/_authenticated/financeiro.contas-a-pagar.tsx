@@ -5,7 +5,7 @@ import { from, asRows } from "@/integrations/supabase/db";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 import { useEmpresas, useCategorias } from "@/hooks/use-refs";
-import { useCurrentUser } from "@/contexts/auth-context";
+
 import { PageShell } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ function formatDate(iso: string | null | undefined) {
 
 function ContasAPagarPage() {
   const qc = useQueryClient();
-  const user = useCurrentUser();
+  
   const empresas = useEmpresas();
   const categorias = useCategorias();
 
