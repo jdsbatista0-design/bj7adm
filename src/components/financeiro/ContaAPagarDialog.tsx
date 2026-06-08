@@ -155,16 +155,24 @@ export function ContaAPagarDialog({
     }
   }, [open, editing]);
 
-  // Categorias de despesa primeiro
+  // Ordena categorias coerentes com o tipo selecionado primeiro
   const categoriasOrdenadas = useMemo(() => {
     const list = categorias.data ?? [];
+    const match = (tp: string | null) => {
+      const t = (tp ?? "").toLowerCase();
+      if (tipo === "Despesa") return t.includes("desp");
+      if (tipo === "Receita") return t.includes("rec");
+      if (tipo === "Retirada") return t.includes("retir");
+      if (tipo === "Empréstimo") return t.includes("empr");
+      return false;
+    };
     return [...list].sort((a, b) => {
-      const da = (a.tipo_predominante ?? "").toLowerCase().includes("desp") ? 0 : 1;
-      const db = (b.tipo_predominante ?? "").toLowerCase().includes("desp") ? 0 : 1;
+      const da = match(a.tipo_predominante) ? 0 : 1;
+      const db = match(b.tipo_predominante) ? 0 : 1;
       if (da !== db) return da - db;
       return a.nome.localeCompare(b.nome);
     });
-  }, [categorias.data]);
+  }, [categorias.data, tipo]);
 
   // Gera as datas das parcelas (preview)
   const parcelasGeradas = useMemo(() => {
