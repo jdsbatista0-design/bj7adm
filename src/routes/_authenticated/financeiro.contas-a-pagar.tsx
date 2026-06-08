@@ -344,7 +344,7 @@ function ContaDialog({
           recorrencia,
           pago: false,
           grupo_id: grupoId,
-          criado_por: userId,
+          criado_por: null,
         };
       });
       const r = await supabase.from("contas_a_pagar").insert(rows);
