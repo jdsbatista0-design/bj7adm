@@ -103,8 +103,9 @@ function ContasAPagarPage() {
     return { dataDe: ini, dataAte: fim, titulo: "12 meses" };
   }, [periodo, ano, mes]);
 
-  const q = useQuery({
-    queryKey: ["contas_a_pagar", { dataDe, dataAte, status, empresaId }],
+  // === Contas a pagar do período ===
+  const qContas = useQuery({
+    queryKey: ["contas_a_pagar", { dataDe, dataAte, empresaId }],
     queryFn: async () => {
       let qb = from("contas_a_pagar")
         .select("*")
@@ -113,67 +114,175 @@ function ContasAPagarPage() {
         .order("vencimento", { ascending: true })
         .limit(5000);
       if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
-      if (status === "vencer") qb = qb.eq("pago", false).gte("vencimento", todayIso);
-      else if (status === "atrasadas") qb = qb.eq("pago", false).lt("vencimento", todayIso);
-      else if (status === "pagas") qb = qb.eq("pago", true);
       const r = await qb;
       if (r.error) throw r.error;
       return asRows("contas_a_pagar", r.data);
     },
   });
 
-  // Timeline fixa: 6 meses atrás → 6 à frente, independe do recorte ativo
+  // === Despesas históricas (lançamentos) — mesmas fontes do DRE ===
+  const qLanc = useQuery({
+    queryKey: ["lancamentos", "despesas", { dataDe, dataAte, empresaId }],
+    queryFn: async () => {
+      let qb = from("lancamentos")
+        .select("id, data, descricao, empresa_id, categoria_id, valor, tipo, origem_classificacao")
+        .eq("tipo", "Despesa")
+        .gte("data", dataDe)
+        .lte("data", dataAte)
+        .order("data", { ascending: true })
+        .limit(10000);
+      if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
+      const r = await qb;
+      if (r.error) throw r.error;
+      return (r.data ?? []) as Array<{
+        id: number; data: string; descricao: string | null;
+        empresa_id: number; categoria_id: number | null;
+        valor: number; tipo: string; origem_classificacao: string | null;
+      }>;
+    },
+  });
+
+  // === Unifica em linhas únicas ===
+  type UnifiedRow = {
+    key: string;
+    source: "conta" | "lanc";
+    data: string;
+    descricao: string;
+    empresa_id: number | null;
+    categoria_id: number | null;
+    valor: number;
+    valor_pago: number | null;
+    pago: boolean;
+    atrasada: boolean;
+    lancamento_id: number | null;
+    conta?: ContaAPagarRow;
+  };
+
+  const unified = useMemo<UnifiedRow[]>(() => {
+    const out: UnifiedRow[] = [];
+    const linkedLancIds = new Set<number>();
+    for (const c of qContas.data ?? []) {
+      if (c.lancamento_id) linkedLancIds.add(c.lancamento_id);
+      const atrasada = !c.pago && c.vencimento < todayIso;
+      out.push({
+        key: `c-${c.id}`,
+        source: "conta",
+        data: c.pago && c.data_pagamento ? c.data_pagamento.slice(0, 10) : c.vencimento,
+        descricao: c.descricao || "",
+        empresa_id: c.empresa_id,
+        categoria_id: c.categoria_id,
+        valor: Number(c.valor || 0),
+        valor_pago: c.valor_pago == null ? null : Number(c.valor_pago),
+        pago: !!c.pago,
+        atrasada,
+        lancamento_id: c.lancamento_id ?? null,
+        conta: c,
+      });
+    }
+    for (const l of qLanc.data ?? []) {
+      if (linkedLancIds.has(l.id)) continue;
+      out.push({
+        key: `l-${l.id}`,
+        source: "lanc",
+        data: l.data.slice(0, 10),
+        descricao: l.descricao || "Despesa",
+        empresa_id: l.empresa_id,
+        categoria_id: l.categoria_id,
+        valor: Number(l.valor || 0),
+        valor_pago: Number(l.valor || 0),
+        pago: true,
+        atrasada: false,
+        lancamento_id: l.id,
+      });
+    }
+    out.sort((a, b) => a.data.localeCompare(b.data));
+    return out;
+  }, [qContas.data, qLanc.data, todayIso]);
+
+  const rows = useMemo(() => {
+    if (status === "todos") return unified;
+    if (status === "vencer") return unified.filter(r => !r.pago && !r.atrasada);
+    if (status === "atrasadas") return unified.filter(r => r.atrasada);
+    return unified.filter(r => r.pago);
+  }, [unified, status]);
+
+  const isLoading = qContas.isLoading || qLanc.isLoading;
+
+  // === Timeline (12 meses fixos) — contas + lançamentos despesa ===
   const timelineRange = useMemo(() => {
     const ini = startOfMonth(now.getFullYear(), now.getMonth() - 5);
     const fim = endOfMonth(now.getFullYear(), now.getMonth() + 6);
     return { ini, fim };
   }, []);
 
-  const timelineQ = useQuery({
+  const tlContasQ = useQuery({
     queryKey: ["contas_a_pagar", "timeline", empresaId, timelineRange.ini, timelineRange.fim],
     queryFn: async () => {
       let qb = from("contas_a_pagar")
-        .select("vencimento, valor, valor_pago, pago, data_pagamento")
+        .select("vencimento, valor, valor_pago, pago, data_pagamento, lancamento_id")
         .gte("vencimento", timelineRange.ini)
         .lte("vencimento", timelineRange.fim)
         .limit(10000);
       if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
       const r = await qb;
       if (r.error) throw r.error;
-      return r.data as Array<{ vencimento: string; valor: number; valor_pago: number | null; pago: boolean; data_pagamento: string | null }>;
+      return r.data as Array<{ vencimento: string; valor: number; valor_pago: number | null; pago: boolean; data_pagamento: string | null; lancamento_id: number | null }>;
+    },
+  });
+
+  const tlLancQ = useQuery({
+    queryKey: ["lancamentos", "timeline-despesas", empresaId, timelineRange.ini, timelineRange.fim],
+    queryFn: async () => {
+      let qb = from("lancamentos")
+        .select("id, data, valor")
+        .eq("tipo", "Despesa")
+        .gte("data", timelineRange.ini)
+        .lte("data", timelineRange.fim)
+        .limit(20000);
+      if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
+      const r = await qb;
+      if (r.error) throw r.error;
+      return (r.data ?? []) as Array<{ id: number; data: string; valor: number }>;
     },
   });
 
   const timelineData = useMemo(() => {
     const buckets: Record<string, { key: string; ano: number; mes: number; label: string; aVencer: number; atrasadas: number; pagas: number; total: number }> = {};
-    // gerar 12 meses
     for (let i = -5; i <= 6; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
       const y = d.getFullYear(); const m = d.getMonth();
       const key = `${y}-${pad(m + 1)}`;
       buckets[key] = { key, ano: y, mes: m, label: `${MESES_PT[m]}/${String(y).slice(-2)}`, aVencer: 0, atrasadas: 0, pagas: 0, total: 0 };
     }
-    for (const r of timelineQ.data ?? []) {
+    const linked = new Set<number>();
+    for (const r of tlContasQ.data ?? []) {
       const key = r.vencimento.slice(0, 7);
-      const b = buckets[key];
-      if (!b) continue;
+      const b = buckets[key]; if (!b) continue;
       const v = Number(r.valor || 0);
+      if (r.lancamento_id) linked.add(r.lancamento_id);
       if (r.pago) b.pagas += Number(r.valor_pago ?? r.valor ?? 0);
       else if (r.vencimento < todayIso) b.atrasadas += v;
       else b.aVencer += v;
       b.total += v;
     }
+    for (const l of tlLancQ.data ?? []) {
+      if (linked.has(l.id)) continue;
+      const key = l.data.slice(0, 7);
+      const b = buckets[key]; if (!b) continue;
+      const v = Number(l.valor || 0);
+      b.pagas += v;
+      b.total += v;
+    }
     return Object.values(buckets);
-  }, [timelineQ.data]);
+  }, [tlContasQ.data, tlLancQ.data, todayIso]);
 
-  // KPIs do recorte atual
+  // KPIs (sobre unified)
   const kpis = useMemo(() => {
-    const rows = q.data ?? [];
-    const aVencer = rows.filter(r => !r.pago && r.vencimento >= todayIso).reduce((a, b) => a + Number(b.valor || 0), 0);
-    const atrasadas = rows.filter(r => !r.pago && r.vencimento < todayIso).reduce((a, b) => a + Number(b.valor || 0), 0);
-    const pagas = rows.filter(r => r.pago).reduce((a, b) => a + Number(b.valor_pago ?? b.valor ?? 0), 0);
+    const aVencer = unified.filter(r => !r.pago && !r.atrasada).reduce((a, b) => a + b.valor, 0);
+    const atrasadas = unified.filter(r => r.atrasada).reduce((a, b) => a + b.valor, 0);
+    const pagas = unified.filter(r => r.pago).reduce((a, b) => a + (b.valor_pago ?? b.valor), 0);
     return { aVencer, atrasadas, pagas, saldo: aVencer + atrasadas };
-  }, [q.data]);
+  }, [unified]);
 
   const empresaNome = (id: number | null) =>
     id ? empresas.data?.find(e => e.id === id)?.nome ?? `#${id}` : "—";
