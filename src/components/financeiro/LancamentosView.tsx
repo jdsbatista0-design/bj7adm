@@ -327,11 +327,6 @@ function LancamentosPage() {
           <Button size="sm" variant="outline" onClick={() => setCatMgrOpen(true)}>
             <Tags className="h-4 w-4 mr-1" /> Categorias
           </Button>
-          {podeLancar(user) && (
-            <Button size="sm" onClick={dlg.openNew}>
-              <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
-            </Button>
-          )}
         </div>
       </div>
       <CategoriasManagerDialog open={catMgrOpen} onOpenChange={setCatMgrOpen} />
