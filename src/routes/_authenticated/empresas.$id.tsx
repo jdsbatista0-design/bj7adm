@@ -286,7 +286,7 @@ function EmpresaDetalhe() {
         </TabsContent>
 
         <TabsContent value="fiscal" className="mt-4">
-          <StubTab title="Fiscal" />
+          <FiscalTab empresaId={empresaId} />
         </TabsContent>
 
         <TabsContent value="financeiro" className="mt-4">
@@ -294,7 +294,7 @@ function EmpresaDetalhe() {
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
-          <StubTab title="Histórico" />
+          <HistoricoTab empresaId={empresaId} />
         </TabsContent>
       </Tabs>
     </PageShell>
