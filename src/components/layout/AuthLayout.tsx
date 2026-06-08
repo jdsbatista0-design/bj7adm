@@ -45,6 +45,8 @@ import {
   Construction,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
+import { Fab } from "@/components/bj7/Fab";
+import { BottomNav } from "@/components/layout/BottomNav";
 import type { CurrentUser } from "@/lib/permissions";
 
 type LeafItem = {
@@ -75,6 +77,7 @@ const NAV: NavItem[] = [
     icon: Wallet,
     children: [
       { title: "Visão Financeira", url: "/financeiro", icon: DollarSign },
+      { title: "Contas a Pagar", url: "/financeiro/contas-a-pagar", icon: Banknote },
       { title: "DRE Consolidado", url: "/financeiro/dre-consolidado", icon: FileText },
       { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
       {
@@ -93,6 +96,7 @@ const NAV: NavItem[] = [
     icon: Receipt,
     children: [
       { title: "Dashboard", url: "/fiscal/dashboard", icon: Receipt },
+      { title: "Obrigações", url: "/fiscal/obrigacoes", icon: AlertCircle },
       { title: "Calendário", url: "/fiscal/calendario", icon: Calendar },
       { title: "Faturamento (Simples)", url: "/fiscal/faturamento-simples", icon: Percent },
       { title: "Pendências Contábeis", url: "/fiscal/pendencias", icon: AlertCircle },
@@ -154,11 +158,13 @@ export function AuthLayout() {
           <AppSidebar user={user} onSignOut={() => signOut()} />
           <div className="flex-1 flex flex-col min-w-0">
             <TopBar user={user} />
-            <main className="flex-1">
+            <main className="flex-1 pb-16 md:pb-0">
               <Outlet />
             </main>
+            <BottomNav />
           </div>
         </div>
+        <Fab />
       </SidebarProvider>
     </ItemDrawerProvider>
   );
