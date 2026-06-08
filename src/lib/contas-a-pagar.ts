@@ -1,17 +1,32 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 
+export type TipoLancContaPagar = "Despesa" | "Receita" | "Retirada" | "Empréstimo";
+
 export type PagarContaInput = {
   dataPagamento: string; // yyyy-mm-dd
   valorPago: number;
   empresaId?: number | null;
   categoriaId?: number | null;
+  tipo?: TipoLancContaPagar;
 };
 
 function parseObservacaoForma(obs: string | null): string | null {
   if (!obs) return null;
   const m = obs.match(/Pgto:\s*([^\n|]+)/i);
   return m ? m[1].trim() : null;
+}
+
+/** Lê o tipo do lançamento (Despesa/Receita/...) embutido na observação. */
+export function parseTipoFromObs(obs: string | null): TipoLancContaPagar {
+  if (!obs) return "Despesa";
+  const m = obs.match(/Tipo:\s*(Despesa|Receita|Retirada|Empréstimo|Emprestimo)/i);
+  if (!m) return "Despesa";
+  const raw = m[1].toLowerCase();
+  if (raw === "receita") return "Receita";
+  if (raw === "retirada") return "Retirada";
+  if (raw.startsWith("empr")) return "Empréstimo";
+  return "Despesa";
 }
 
 function descricaoEnriquecida(conta: ContaAPagarRow): string {
