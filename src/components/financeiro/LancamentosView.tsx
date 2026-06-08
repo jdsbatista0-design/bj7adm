@@ -33,7 +33,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { LancamentoDialog, useLancamentoDialog } from "@/components/lancamento/LancamentoDialog";
+
 import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
