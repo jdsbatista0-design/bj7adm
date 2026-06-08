@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 import { useEmpresas, useCategorias } from "@/hooks/use-refs";
 import { toast } from "sonner";
+import { pagarConta, estornarPagamento, sincronizarLancamentoDeConta } from "@/lib/contas-a-pagar";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -204,6 +205,9 @@ export function ContaAPagarDialog({
       if (!descricao.trim() || !valorNum || !vencimento) {
         throw new Error("Preencha descrição, valor e vencimento");
       }
+      if (jaPago && empresaId === "0") {
+        throw new Error("Para marcar como paga é preciso informar a empresa (vai virar Lançamento)");
+      }
 
       const obsExtra = [
         fornecedor.trim() && `Fornecedor: ${fornecedor.trim()}`,
@@ -219,19 +223,50 @@ export function ContaAPagarDialog({
       };
 
       if (isEdit && editing) {
+        // 1) atualiza campos básicos da conta
         const r = await supabase.from("contas_a_pagar").update({
           ...base,
           valor: valorNum,
           vencimento,
           recorrencia: freq,
-          pago: jaPago,
-          data_pagamento: jaPago ? dataPgto : null,
-          valor_pago: jaPago ? valorNum : null,
         }).eq("id", editing.id);
         if (r.error) throw r.error;
+
+        // 2) sincroniza status de pagamento
+        const eraPago = editing.pago;
+        if (jaPago && !eraPago) {
+          // virou paga agora → cria lançamento
+          await pagarConta({ ...editing, ...base, valor: valorNum, vencimento } as ContaAPagarRow, {
+            dataPagamento: dataPgto,
+            valorPago: valorNum,
+            empresaId: Number(empresaId),
+            categoriaId: categoriaId !== "0" ? Number(categoriaId) : null,
+          });
+        } else if (!jaPago && eraPago) {
+          // estornou
+          await estornarPagamento(editing);
+        } else if (jaPago && eraPago) {
+          // continua paga → sincroniza espelho
+          const atualizada: ContaAPagarRow = {
+            ...editing, ...base,
+            valor: valorNum,
+            vencimento,
+            pago: true,
+            data_pagamento: dataPgto,
+            valor_pago: valorNum,
+          } as ContaAPagarRow;
+          // atualiza também data_pagamento/valor_pago no banco
+          const upd = await supabase.from("contas_a_pagar").update({
+            data_pagamento: dataPgto,
+            valor_pago: valorNum,
+          }).eq("id", editing.id);
+          if (upd.error) throw upd.error;
+          await sincronizarLancamentoDeConta(atualizada);
+        }
         return;
       }
 
+      // CRIAÇÃO de parcelas
       const grupoId = parcelasGeradas.length > 1 ? crypto.randomUUID() : null;
       const totalParcelas = parcelasGeradas.length;
 
@@ -244,15 +279,26 @@ export function ContaAPagarDialog({
           vencimento: iso,
           recorrencia: freq,
           grupo_id: grupoId,
-          pago: jaPago && i === 0,
-          data_pagamento: jaPago && i === 0 ? dataPgto : null,
-          valor_pago: jaPago && i === 0 ? valorPorParcela : null,
+          pago: false,
+          data_pagamento: null,
+          valor_pago: null,
           criado_por: null,
         };
       });
 
-      const r = await supabase.from("contas_a_pagar").insert(rows);
-      if (r.error) throw r.error;
+      const ins = await supabase.from("contas_a_pagar").insert(rows).select("*");
+      if (ins.error) throw ins.error;
+
+      // Se marcou "já paga" → pagar a 1ª parcela (cria lançamento)
+      if (jaPago && ins.data && ins.data.length > 0) {
+        const primeira = ins.data[0] as ContaAPagarRow;
+        await pagarConta(primeira, {
+          dataPagamento: dataPgto,
+          valorPago: valorPorParcela,
+          empresaId: Number(empresaId),
+          categoriaId: categoriaId !== "0" ? Number(categoriaId) : null,
+        });
+      }
     },
     onSuccess: () => {
       toast.success(isEdit ? "Atualizada" : parcelasGeradas.length > 1 ? `${parcelasGeradas.length} parcelas criadas` : "Conta criada");
