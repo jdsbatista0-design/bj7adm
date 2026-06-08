@@ -139,6 +139,7 @@ export async function sincronizarLancamentoDeConta(conta: ContaAPagarRow) {
       mes: m,
       empresa_id: empresaId,
       categoria_id: conta.categoria_id,
+      tipo: parseTipoFromObs(conta.observacao),
       descricao: descricaoEnriquecida(conta),
       valor: Number(conta.valor_pago ?? conta.valor),
     })
