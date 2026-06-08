@@ -97,7 +97,7 @@ function LancamentosPage() {
   const empresas = useEmpresas();
   const unidades = useUnidades();
   const categorias = useCategorias();
-  const dlg = useLancamentoDialog();
+  // dialog de novo lançamento removido — usar "Nova conta" em Contas a Pagar/Receber
   const qc = useQueryClient();
   const [catMgrOpen, setCatMgrOpen] = useState(false);
 
