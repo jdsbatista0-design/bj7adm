@@ -316,6 +316,7 @@ export function ContaAPagarDialog({
           valorPago: valorPorParcela,
           empresaId: Number(empresaId),
           categoriaId: categoriaId !== "0" ? Number(categoriaId) : null,
+          tipo,
         });
       }
     },
