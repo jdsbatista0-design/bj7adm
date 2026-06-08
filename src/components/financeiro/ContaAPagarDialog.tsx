@@ -334,17 +334,43 @@ export function ContaAPagarDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar conta" : "Nova conta a pagar"}</DialogTitle>
+          <DialogTitle>
+            {isEdit
+              ? "Editar lançamento"
+              : tipo === "Receita"
+              ? "Novo lançamento — a receber"
+              : tipo === "Despesa"
+              ? "Novo lançamento — a pagar"
+              : `Novo lançamento — ${tipo}`}
+          </DialogTitle>
           <DialogDescription className="text-xs">
-            Use recorrência personalizada para parcelar ou repetir cobranças automaticamente.
+            Cadastre uma conta a pagar/receber. Ao marcar como concluída, vira um Lançamento no DRE automaticamente.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
+          {/* === Tipo === */}
+          <ToggleGroup
+            type="single"
+            value={tipo}
+            onValueChange={(v) => v && setTipo(v as TipoLancContaPagar)}
+            className="flex flex-wrap justify-start gap-1"
+          >
+            {(["Despesa", "Receita", "Retirada", "Empréstimo"] as TipoLancContaPagar[]).map((t) => (
+              <ToggleGroupItem
+                key={t}
+                value={t}
+                className="h-8 px-3 text-xs data-[state=on]:bg-primary/15 data-[state=on]:text-primary data-[state=on]:border-primary/30"
+              >
+                {t === "Despesa" ? "A pagar" : t === "Receita" ? "A receber" : t}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+
           {/* === Bloco 1: O quê === */}
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              <Wallet className="h-3.5 w-3.5" /> O que pagar
+              <Wallet className="h-3.5 w-3.5" /> {tipo === "Receita" ? "O que receber" : "O que pagar"}
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
@@ -352,16 +378,16 @@ export function ContaAPagarDialog({
                 <Input
                   value={descricao}
                   onChange={e => setDescricao(e.target.value)}
-                  placeholder="Ex.: Aluguel sala comercial"
+                  placeholder={tipo === "Receita" ? "Ex.: Mensalidade cliente X" : "Ex.: Aluguel sala comercial"}
                   autoFocus={!isEdit}
                 />
               </div>
               <div>
-                <Label className="text-xs">Fornecedor / Beneficiário</Label>
+                <Label className="text-xs">{tipo === "Receita" ? "Pagador / Cliente" : "Fornecedor / Beneficiário"}</Label>
                 <Input
                   value={fornecedor}
                   onChange={e => setFornecedor(e.target.value)}
-                  placeholder="Ex.: Imobiliária X"
+                  placeholder={tipo === "Receita" ? "Ex.: Cliente Y" : "Ex.: Imobiliária X"}
                 />
               </div>
               <div>
