@@ -43,6 +43,8 @@ import {
   Workflow,
   Users,
   Construction,
+  Scale,
+  Megaphone,
 } from "lucide-react";
 import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import { Fab } from "@/components/bj7/Fab";
@@ -112,6 +114,8 @@ const NAV: NavItem[] = [
       { title: "Por Tipo", url: "/documentos/por-tipo", icon: ListTodo },
     ],
   },
+  { title: "Jurídico", url: "/juridico/processos", icon: Scale },
+  { title: "Marketing", url: "/marketing/campanhas", icon: Megaphone },
   { title: "Sistema (BJ7)", url: "/sistema", icon: Workflow },
   { title: "Pessoas", url: "/pessoas", icon: Users },
   { title: "Clientes Stone", url: "/clientes-stone", icon: Banknote },

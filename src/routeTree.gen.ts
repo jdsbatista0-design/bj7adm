@@ -38,6 +38,8 @@ import { Route as AuthenticatedSistemaProcedimentosRouteImport } from './routes/
 import { Route as AuthenticatedSistemaPorEixoRouteImport } from './routes/_authenticated/sistema.por-eixo'
 import { Route as AuthenticatedSistemaExecucoesRouteImport } from './routes/_authenticated/sistema.execucoes'
 import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_authenticated/open-finance.conectar'
+import { Route as AuthenticatedMarketingCampanhasRouteImport } from './routes/_authenticated/marketing.campanhas'
+import { Route as AuthenticatedJuridicoProcessosRouteImport } from './routes/_authenticated/juridico.processos'
 import { Route as AuthenticatedFiscalPendenciasRouteImport } from './routes/_authenticated/fiscal.pendencias'
 import { Route as AuthenticatedFiscalObrigacoesRouteImport } from './routes/_authenticated/fiscal.obrigacoes'
 import { Route as AuthenticatedFiscalImportacoesRouteImport } from './routes/_authenticated/fiscal.importacoes'
@@ -208,6 +210,18 @@ const AuthenticatedOpenFinanceConectarRoute =
     path: '/open-finance/conectar',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedMarketingCampanhasRoute =
+  AuthenticatedMarketingCampanhasRouteImport.update({
+    id: '/marketing/campanhas',
+    path: '/marketing/campanhas',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedJuridicoProcessosRoute =
+  AuthenticatedJuridicoProcessosRouteImport.update({
+    id: '/juridico/processos',
+    path: '/juridico/processos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFiscalPendenciasRoute =
   AuthenticatedFiscalPendenciasRouteImport.update({
     id: '/fiscal/pendencias',
@@ -312,6 +326,8 @@ export interface FileRoutesByFullPath {
   '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/fiscal/obrigacoes': typeof AuthenticatedFiscalObrigacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
+  '/juridico/processos': typeof AuthenticatedJuridicoProcessosRoute
+  '/marketing/campanhas': typeof AuthenticatedMarketingCampanhasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
   '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
@@ -352,6 +368,8 @@ export interface FileRoutesByTo {
   '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/fiscal/obrigacoes': typeof AuthenticatedFiscalObrigacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
+  '/juridico/processos': typeof AuthenticatedJuridicoProcessosRoute
+  '/marketing/campanhas': typeof AuthenticatedMarketingCampanhasRoute
   '/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
   '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
@@ -396,6 +414,8 @@ export interface FileRoutesById {
   '/_authenticated/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
   '/_authenticated/fiscal/obrigacoes': typeof AuthenticatedFiscalObrigacoesRoute
   '/_authenticated/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
+  '/_authenticated/juridico/processos': typeof AuthenticatedJuridicoProcessosRoute
+  '/_authenticated/marketing/campanhas': typeof AuthenticatedMarketingCampanhasRoute
   '/_authenticated/open-finance/conectar': typeof AuthenticatedOpenFinanceConectarRoute
   '/_authenticated/sistema/execucoes': typeof AuthenticatedSistemaExecucoesRoute
   '/_authenticated/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
@@ -440,6 +460,8 @@ export interface FileRouteTypes {
     | '/fiscal/importacoes'
     | '/fiscal/obrigacoes'
     | '/fiscal/pendencias'
+    | '/juridico/processos'
+    | '/marketing/campanhas'
     | '/open-finance/conectar'
     | '/sistema/execucoes'
     | '/sistema/por-eixo'
@@ -480,6 +502,8 @@ export interface FileRouteTypes {
     | '/fiscal/importacoes'
     | '/fiscal/obrigacoes'
     | '/fiscal/pendencias'
+    | '/juridico/processos'
+    | '/marketing/campanhas'
     | '/open-finance/conectar'
     | '/sistema/execucoes'
     | '/sistema/por-eixo'
@@ -523,6 +547,8 @@ export interface FileRouteTypes {
     | '/_authenticated/fiscal/importacoes'
     | '/_authenticated/fiscal/obrigacoes'
     | '/_authenticated/fiscal/pendencias'
+    | '/_authenticated/juridico/processos'
+    | '/_authenticated/marketing/campanhas'
     | '/_authenticated/open-finance/conectar'
     | '/_authenticated/sistema/execucoes'
     | '/_authenticated/sistema/por-eixo'
@@ -744,6 +770,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOpenFinanceConectarRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/marketing/campanhas': {
+      id: '/_authenticated/marketing/campanhas'
+      path: '/marketing/campanhas'
+      fullPath: '/marketing/campanhas'
+      preLoaderRoute: typeof AuthenticatedMarketingCampanhasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/juridico/processos': {
+      id: '/_authenticated/juridico/processos'
+      path: '/juridico/processos'
+      fullPath: '/juridico/processos'
+      preLoaderRoute: typeof AuthenticatedJuridicoProcessosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/fiscal/pendencias': {
       id: '/_authenticated/fiscal/pendencias'
       path: '/fiscal/pendencias'
@@ -902,6 +942,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFiscalImportacoesRoute: typeof AuthenticatedFiscalImportacoesRoute
   AuthenticatedFiscalObrigacoesRoute: typeof AuthenticatedFiscalObrigacoesRoute
   AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
+  AuthenticatedJuridicoProcessosRoute: typeof AuthenticatedJuridicoProcessosRoute
+  AuthenticatedMarketingCampanhasRoute: typeof AuthenticatedMarketingCampanhasRoute
   AuthenticatedOpenFinanceConectarRoute: typeof AuthenticatedOpenFinanceConectarRoute
   AuthenticatedDocumentosIndexRoute: typeof AuthenticatedDocumentosIndexRoute
   AuthenticatedEmpresasIndexRoute: typeof AuthenticatedEmpresasIndexRoute
@@ -937,6 +979,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFiscalImportacoesRoute: AuthenticatedFiscalImportacoesRoute,
   AuthenticatedFiscalObrigacoesRoute: AuthenticatedFiscalObrigacoesRoute,
   AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
+  AuthenticatedJuridicoProcessosRoute: AuthenticatedJuridicoProcessosRoute,
+  AuthenticatedMarketingCampanhasRoute: AuthenticatedMarketingCampanhasRoute,
   AuthenticatedOpenFinanceConectarRoute: AuthenticatedOpenFinanceConectarRoute,
   AuthenticatedDocumentosIndexRoute: AuthenticatedDocumentosIndexRoute,
   AuthenticatedEmpresasIndexRoute: AuthenticatedEmpresasIndexRoute,
