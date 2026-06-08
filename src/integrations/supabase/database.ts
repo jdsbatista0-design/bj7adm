@@ -257,6 +257,96 @@ export interface ItemRow {
   criado_em: string | null;
 }
 
+export interface ContaAPagarRow {
+  id: number;
+  grupo_id: string | null;
+  descricao: string;
+  valor: number;
+  vencimento: string;
+  empresa_id: number | null;
+  categoria_id: number | null;
+  recorrencia: string;
+  pago: boolean;
+  data_pagamento: string | null;
+  valor_pago: number | null;
+  observacao: string | null;
+  lancamento_id: number | null;
+  criado_por: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface ObrigacaoFiscalRow {
+  id: number;
+  empresa_id: number | null;
+  tipo: string;
+  descricao: string | null;
+  competencia: string;
+  vencimento: string;
+  valor: number | null;
+  status: string;
+  data_pagamento: string | null;
+  valor_pago: number | null;
+  guia_url: string | null;
+  observacao: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface NotaRapidaRow {
+  id: number;
+  conteudo: string;
+  tipo: string;
+  empresa_id: number | null;
+  fixada: boolean;
+  arquivada: boolean;
+  criado_por: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface JuridicoProcessoRow {
+  id: number;
+  empresa_id: number | null;
+  numero: string | null;
+  tipo: string;
+  descricao: string | null;
+  contraparte: string | null;
+  advogado: string | null;
+  vara: string | null;
+  status: string;
+  polo: string | null;
+  valor_causa: number | null;
+  valor_provisao: number | null;
+  proxima_audiencia: string | null;
+  data_inicio: string | null;
+  data_encerramento: string | null;
+  resultado: string | null;
+  observacao: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
+export interface MktCampanhaRow {
+  id: number;
+  empresa_id: number | null;
+  nome: string;
+  canal: string;
+  status: string;
+  objetivo: string | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  orcamento: number | null;
+  gasto_realizado: number | null;
+  leads_gerados: number | null;
+  conversoes: number | null;
+  resultado: string | null;
+  observacao: string | null;
+  criado_por: string | null;
+  criado_em: string;
+  atualizado_em: string;
+}
+
 // ===== Views =====
 
 export interface VExecucaoRow {
@@ -411,6 +501,11 @@ export interface Database {
       interacoes: Tbl<InteracaoRow>;
       categoria_sugestoes: Tbl<CategoriaSugestaoRow>;
       itens: Tbl<ItemRow>;
+      contas_a_pagar: Tbl<ContaAPagarRow>;
+      obrigacoes_fiscais: Tbl<ObrigacaoFiscalRow>;
+      notas_rapidas: Tbl<NotaRapidaRow>;
+      juridico_processos: Tbl<JuridicoProcessoRow>;
+      mkt_campanhas: Tbl<MktCampanhaRow>;
     };
     Views: {
       v_resumo_dre: { Row: VResumoDreRow };
