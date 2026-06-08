@@ -145,9 +145,9 @@ function ContasAPagarPage() {
       }
     >
       <div className="grid gap-3 sm:grid-cols-3">
-        <KpiCard label="A vencer (mês)" value={brl(kpiQ.data?.aVencer)} loading={kpiQ.isLoading} />
-        <KpiCard label="Atrasadas (mês)" value={brl(kpiQ.data?.atrasadas)} loading={kpiQ.isLoading} tone={(kpiQ.data?.atrasadas ?? 0) > 0 ? "danger" : undefined} />
-        <KpiCard label="Pagas (mês)" value={brl(kpiQ.data?.pagas)} loading={kpiQ.isLoading} tone="success" />
+        <KpiCard label="A vencer (mês)" value={kpiQ.isLoading ? "..." : brl(kpiQ.data?.aVencer)} />
+        <KpiCard label="Atrasadas (mês)" value={kpiQ.isLoading ? "..." : brl(kpiQ.data?.atrasadas)} status={(kpiQ.data?.atrasadas ?? 0) > 0 ? "critico" : "neutral"} />
+        <KpiCard label="Pagas (mês)" value={kpiQ.isLoading ? "..." : brl(kpiQ.data?.pagas)} status="ok" />
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -246,7 +246,6 @@ function ContasAPagarPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editing={editing}
-        userId={user.auth_uid ?? null}
         onSaved={() => qc.invalidateQueries({ queryKey: ["contas_a_pagar"] })}
       />
 
@@ -271,12 +270,11 @@ function ContasAPagarPage() {
 }
 
 function ContaDialog({
-  open, onOpenChange, editing, userId, onSaved,
+  open, onOpenChange, editing, onSaved,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   editing: ContaAPagarRow | null;
-  userId: string | null;
   onSaved: () => void;
 }) {
   const empresas = useEmpresas();
