@@ -614,7 +614,7 @@ function LancamentosPage() {
         </div>
       </div>
 
-      <LancamentoDialog open={dlg.open} onOpenChange={dlg.setOpen} lancamento={dlg.editing} />
+      
     </div>
   );
 }
