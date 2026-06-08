@@ -76,6 +76,7 @@ function ContasAPagarPage() {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [status, setStatus] = useState<Status>("todos");
   const [empresaId, setEmpresaId] = useState<string>("0");
+  const [categoriaId, setCategoriaId] = useState<string>("0");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ContaAPagarRow | null>(null);
   const [delTarget, setDelTarget] = useState<ContaAPagarRow | null>(null);
