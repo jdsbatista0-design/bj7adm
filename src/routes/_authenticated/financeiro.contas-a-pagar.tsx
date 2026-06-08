@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { from, asRows } from "@/integrations/supabase/db";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 import { useEmpresas, useCategorias } from "@/hooks/use-refs";
+import { ContaAPagarDialog } from "@/components/financeiro/ContaAPagarDialog";
 
 import { PageShell } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
