@@ -243,7 +243,7 @@ function ContasAPagarPage() {
         </Table>
       </div>
 
-      <ContaDialog
+      <ContaAPagarDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editing={editing}
