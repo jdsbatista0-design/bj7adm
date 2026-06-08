@@ -124,7 +124,7 @@ function ContasAPagarPage() {
 
   // === Despesas históricas (lançamentos) — mesmas fontes do DRE ===
   const qLanc = useQuery({
-    queryKey: ["lancamentos", "despesas", { dataDe, dataAte, empresaId }],
+    queryKey: ["lancamentos", "despesas", { dataDe, dataAte, empresaId, categoriaId }],
     queryFn: async () => {
       let qb = from("lancamentos")
         .select("id, data, descricao, empresa_id, categoria_id, valor, tipo, origem_classificacao")
@@ -134,6 +134,7 @@ function ContasAPagarPage() {
         .order("data", { ascending: true })
         .limit(10000);
       if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
+      if (categoriaId !== "0") qb = qb.eq("categoria_id", Number(categoriaId));
       const r = await qb;
       if (r.error) throw r.error;
       return (r.data ?? []) as Array<{
