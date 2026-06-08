@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { from, asRows } from "@/integrations/supabase/db";
 import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 import { useEmpresas, useCategorias } from "@/hooks/use-refs";
+import { ContaAPagarDialog } from "@/components/financeiro/ContaAPagarDialog";
 
 import { PageShell } from "@/components/bj7/PageShell";
 import { KpiCard } from "@/components/bj7/KpiCard";
@@ -28,7 +29,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, CheckCircle2, Trash2, Pencil, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, CheckCircle2, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -242,7 +243,7 @@ function ContasAPagarPage() {
         </Table>
       </div>
 
-      <ContaDialog
+      <ContaAPagarDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         editing={editing}
@@ -269,165 +270,3 @@ function ContasAPagarPage() {
   );
 }
 
-function ContaDialog({
-  open, onOpenChange, editing, onSaved,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  editing: ContaAPagarRow | null;
-  onSaved: () => void;
-}) {
-  const empresas = useEmpresas();
-  const categorias = useCategorias();
-  const isEdit = !!editing;
-
-  const [descricao, setDescricao] = useState("");
-  const [valor, setValor] = useState("");
-  const [vencimento, setVencimento] = useState("");
-  const [empresaId, setEmpresaId] = useState("0");
-  const [categoriaId, setCategoriaId] = useState("0");
-  const [recorrencia, setRecorrencia] = useState("unica");
-  const [observacao, setObservacao] = useState("");
-
-  useMemo(() => {
-    if (!open) return;
-    if (editing) {
-      setDescricao(editing.descricao);
-      setValor(String(editing.valor));
-      setVencimento(editing.vencimento.slice(0, 10));
-      setEmpresaId(editing.empresa_id ? String(editing.empresa_id) : "0");
-      setCategoriaId(editing.categoria_id ? String(editing.categoria_id) : "0");
-      setRecorrencia(editing.recorrencia ?? "unica");
-      setObservacao(editing.observacao ?? "");
-    } else {
-      setDescricao("");
-      setValor("");
-      setVencimento(new Date().toISOString().slice(0, 10));
-      setEmpresaId("0");
-      setCategoriaId("0");
-      setRecorrencia("unica");
-      setObservacao("");
-    }
-  }, [open, editing]);
-
-  const save = useMutation({
-    mutationFn: async () => {
-      const valorNum = Number(valor.replace(",", "."));
-      if (!descricao.trim() || !valorNum || !vencimento) throw new Error("Preencha descrição, valor e vencimento");
-
-      const base = {
-        descricao: descricao.trim(),
-        valor: valorNum,
-        vencimento,
-        empresa_id: empresaId !== "0" ? Number(empresaId) : null,
-        categoria_id: categoriaId !== "0" ? Number(categoriaId) : null,
-        observacao: observacao.trim() || null,
-      };
-
-      if (isEdit && editing) {
-        const r = await supabase.from("contas_a_pagar").update({ ...base, recorrencia }).eq("id", editing.id);
-        if (r.error) throw r.error;
-        return;
-      }
-
-      // Criação — gera N parcelas se recorrente
-      const grupoId = recorrencia === "unica" ? null : crypto.randomUUID();
-      const count = recorrencia === "mensal" ? 12 : recorrencia === "anual" ? 3 : 1;
-      const baseDate = new Date(vencimento + "T00:00:00");
-      const rows = Array.from({ length: count }, (_, i) => {
-        const d = new Date(baseDate);
-        if (recorrencia === "mensal") d.setMonth(d.getMonth() + i);
-        if (recorrencia === "anual") d.setFullYear(d.getFullYear() + i);
-        return {
-          ...base,
-          vencimento: d.toISOString().slice(0, 10),
-          recorrencia,
-          pago: false,
-          grupo_id: grupoId,
-          criado_por: null,
-        };
-      });
-      const r = await supabase.from("contas_a_pagar").insert(rows);
-      if (r.error) throw r.error;
-    },
-    onSuccess: () => {
-      toast.success(isEdit ? "Atualizada" : "Conta(s) criada(s)");
-      onSaved();
-      onOpenChange(false);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar conta" : "Nova conta a pagar"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label className="text-xs">Descrição</Label>
-            <Input value={descricao} onChange={e => setDescricao(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Valor (R$)</Label>
-              <Input value={valor} onChange={e => setValor(e.target.value)} placeholder="0,00" />
-            </div>
-            <div>
-              <Label className="text-xs">Vencimento</Label>
-              <Input type="date" value={vencimento} onChange={e => setVencimento(e.target.value)} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Empresa</Label>
-              <Select value={empresaId} onValueChange={setEmpresaId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">—</SelectItem>
-                  {empresas.data?.map(e => (
-                    <SelectItem key={e.id} value={String(e.id)}>{e.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Categoria</Label>
-              <Select value={categoriaId} onValueChange={setCategoriaId}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">—</SelectItem>
-                  {categorias.data?.map(c => (
-                    <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs">Recorrência</Label>
-            <Select value={recorrencia} onValueChange={setRecorrencia} disabled={isEdit}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {RECORRENCIAS.map(r => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs">Observação</Label>
-            <Textarea value={observacao} onChange={e => setObservacao(e.target.value)} rows={2} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? "Salvando..." : "Salvar"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
