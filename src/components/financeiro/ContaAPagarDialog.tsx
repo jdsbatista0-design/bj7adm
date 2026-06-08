@@ -546,9 +546,13 @@ export function ContaAPagarDialog({
               <div className="flex items-center gap-2">
                 <CheckCircle2 className={cn("h-4 w-4", jaPago ? "text-emerald-400" : "text-muted-foreground")} />
                 <div>
-                  <p className="text-sm font-medium">Já está paga</p>
+                  <p className="text-sm font-medium">{tipo === "Receita" ? "Já foi recebido" : "Já está pago"}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {isEdit ? "Marque ou desmarque o status de pagamento" : "Marca a 1ª parcela como já paga"}
+                    {isEdit
+                      ? "Marque ou desmarque o status"
+                      : tipo === "Receita"
+                      ? "Marca a 1ª parcela como já recebida"
+                      : "Marca a 1ª parcela como já paga"}
                   </p>
                 </div>
               </div>
@@ -556,7 +560,7 @@ export function ContaAPagarDialog({
             </div>
             {jaPago && (
               <div>
-                <Label className="text-xs">Data do pagamento</Label>
+                <Label className="text-xs">{tipo === "Receita" ? "Data do recebimento" : "Data do pagamento"}</Label>
                 <Input type="date" value={dataPgto} onChange={e => setDataPgto(e.target.value)} />
               </div>
             )}
