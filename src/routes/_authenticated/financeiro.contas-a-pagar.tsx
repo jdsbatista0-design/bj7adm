@@ -342,10 +342,10 @@ function ContasAPagarPage() {
     >
       {/* === KPIs === */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label={`A vencer · ${titulo}`} value={q.isLoading ? "..." : brl(kpis.aVencer)} />
-        <KpiCard label={`Atrasadas · ${titulo}`} value={q.isLoading ? "..." : brl(kpis.atrasadas)} status={kpis.atrasadas > 0 ? "critico" : "neutral"} />
-        <KpiCard label={`Pagas · ${titulo}`} value={q.isLoading ? "..." : brl(kpis.pagas)} status="ok" />
-        <KpiCard label="Saldo previsto" value={q.isLoading ? "..." : brl(kpis.saldo)} hint="A vencer + atrasadas" />
+        <KpiCard label={`A vencer · ${titulo}`} value={isLoading ? "..." : brl(kpis.aVencer)} />
+        <KpiCard label={`Atrasadas · ${titulo}`} value={isLoading ? "..." : brl(kpis.atrasadas)} status={kpis.atrasadas > 0 ? "critico" : "neutral"} />
+        <KpiCard label={`Pagas · ${titulo}`} value={isLoading ? "..." : brl(kpis.pagas)} status="ok" />
+        <KpiCard label="Saldo previsto" value={isLoading ? "..." : brl(kpis.saldo)} hint="A vencer + atrasadas" />
       </div>
 
       {/* === Timeline === */}
