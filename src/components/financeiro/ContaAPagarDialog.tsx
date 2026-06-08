@@ -113,10 +113,11 @@ export function ContaAPagarDialog({
   useEffect(() => {
     if (!open) return;
     if (editing) {
-      // tentar extrair fornecedor/forma da observação
+      // tentar extrair fornecedor/forma/tipo da observação
       const obs = editing.observacao ?? "";
       const fMatch = obs.match(/Fornecedor:\s*([^\n|]+)/i);
       const pMatch = obs.match(/Pgto:\s*([^\n|]+)/i);
+      setTipo(parseTipoFromObs(obs));
       setDescricao(editing.descricao);
       setFornecedor(fMatch?.[1].trim() ?? "");
       setFormaPgto(pMatch?.[1].trim() ?? "");
@@ -124,13 +125,20 @@ export function ContaAPagarDialog({
       setVencimento(editing.vencimento.slice(0, 10));
       setEmpresaId(editing.empresa_id ? String(editing.empresa_id) : "0");
       setCategoriaId(editing.categoria_id ? String(editing.categoria_id) : "0");
-      setObservacao(obs.replace(/Fornecedor:[^|\n]*\|?\s*/i, "").replace(/Pgto:[^|\n]*\|?\s*/i, "").trim());
+      setObservacao(
+        obs
+          .replace(/Tipo:[^|\n]*\|?\s*/i, "")
+          .replace(/Fornecedor:[^|\n]*\|?\s*/i, "")
+          .replace(/Pgto:[^|\n]*\|?\s*/i, "")
+          .trim(),
+      );
       setFreq((editing.recorrencia as FrequenciaPreset) ?? "unica");
       setParcelas(1);
       setModo("repetir");
       setJaPago(editing.pago);
       setDataPgto(editing.data_pagamento?.slice(0, 10) ?? todayIso());
     } else {
+      setTipo("Despesa");
       setDescricao("");
       setFornecedor("");
       setValor("");
