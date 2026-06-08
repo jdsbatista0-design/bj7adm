@@ -53,7 +53,9 @@ export async function pagarConta(conta: ContaAPagarRow, input: PagarContaInput) 
   const data = input.dataPagamento;
   const valor = Number(input.valorPago);
   if (!data) throw new Error("Informe a data do pagamento");
-  if (!isFinite(valor) || valor === 0) throw new Error("Informe o valor pago");
+  if (!isFinite(valor) || valor === 0) throw new Error("Informe o valor");
+
+  const tipo: TipoLancContaPagar = input.tipo ?? parseTipoFromObs(conta.observacao);
 
   const [y, m] = data.split("-").map(Number);
 
@@ -66,7 +68,7 @@ export async function pagarConta(conta: ContaAPagarRow, input: PagarContaInput) 
       mes: m,
       empresa_id: empresaId,
       categoria_id: categoriaId ?? null,
-      tipo: "Despesa",
+      tipo,
       descricao: descricaoEnriquecida(conta),
       valor,
       contar_no_total: true,
@@ -77,6 +79,7 @@ export async function pagarConta(conta: ContaAPagarRow, input: PagarContaInput) 
     .single();
   if (insLanc.error) throw insLanc.error;
   const lancId = (insLanc.data as { id: number }).id;
+
 
   // 2) atualiza conta
   const updConta = await supabase
