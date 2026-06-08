@@ -106,7 +106,7 @@ function ContasAPagarPage() {
 
   // === Contas a pagar do período ===
   const qContas = useQuery({
-    queryKey: ["contas_a_pagar", { dataDe, dataAte, empresaId }],
+    queryKey: ["contas_a_pagar", { dataDe, dataAte, empresaId, categoriaId }],
     queryFn: async () => {
       let qb = from("contas_a_pagar")
         .select("*")
@@ -115,6 +115,7 @@ function ContasAPagarPage() {
         .order("vencimento", { ascending: true })
         .limit(5000);
       if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
+      if (categoriaId !== "0") qb = qb.eq("categoria_id", Number(categoriaId));
       const r = await qb;
       if (r.error) throw r.error;
       return asRows("contas_a_pagar", r.data);
