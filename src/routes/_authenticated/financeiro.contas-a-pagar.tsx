@@ -76,6 +76,7 @@ function ContasAPagarPage() {
   const [periodo, setPeriodo] = useState<Periodo>("mes");
   const [status, setStatus] = useState<Status>("todos");
   const [empresaId, setEmpresaId] = useState<string>("0");
+  const [categoriaId, setCategoriaId] = useState<string>("0");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ContaAPagarRow | null>(null);
   const [delTarget, setDelTarget] = useState<ContaAPagarRow | null>(null);
@@ -105,7 +106,7 @@ function ContasAPagarPage() {
 
   // === Contas a pagar do período ===
   const qContas = useQuery({
-    queryKey: ["contas_a_pagar", { dataDe, dataAte, empresaId }],
+    queryKey: ["contas_a_pagar", { dataDe, dataAte, empresaId, categoriaId }],
     queryFn: async () => {
       let qb = from("contas_a_pagar")
         .select("*")
@@ -114,6 +115,7 @@ function ContasAPagarPage() {
         .order("vencimento", { ascending: true })
         .limit(5000);
       if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
+      if (categoriaId !== "0") qb = qb.eq("categoria_id", Number(categoriaId));
       const r = await qb;
       if (r.error) throw r.error;
       return asRows("contas_a_pagar", r.data);
@@ -122,7 +124,7 @@ function ContasAPagarPage() {
 
   // === Despesas históricas (lançamentos) — mesmas fontes do DRE ===
   const qLanc = useQuery({
-    queryKey: ["lancamentos", "despesas", { dataDe, dataAte, empresaId }],
+    queryKey: ["lancamentos", "despesas", { dataDe, dataAte, empresaId, categoriaId }],
     queryFn: async () => {
       let qb = from("lancamentos")
         .select("id, data, descricao, empresa_id, categoria_id, valor, tipo, origem_classificacao")
@@ -132,6 +134,7 @@ function ContasAPagarPage() {
         .order("data", { ascending: true })
         .limit(10000);
       if (empresaId !== "0") qb = qb.eq("empresa_id", Number(empresaId));
+      if (categoriaId !== "0") qb = qb.eq("categoria_id", Number(categoriaId));
       const r = await qb;
       if (r.error) throw r.error;
       return (r.data ?? []) as Array<{
@@ -439,6 +442,16 @@ function ContasAPagarPage() {
             <SelectItem value="0">Todas as empresas</SelectItem>
             {empresas.data?.map(e => (
               <SelectItem key={e.id} value={String(e.id)}>{e.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={categoriaId} onValueChange={setCategoriaId}>
+          <SelectTrigger className="h-9 w-[200px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Todas as categorias</SelectItem>
+            {categorias.data?.map(c => (
+              <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
             ))}
           </SelectContent>
         </Select>
