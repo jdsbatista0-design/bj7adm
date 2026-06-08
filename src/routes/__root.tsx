@@ -83,6 +83,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "BJ7 Central" },
       { name: "twitter:description", content: "BJ7 Central: Cockpit executivo do Grupo BJ7 — financeiro, documentos e gestão consolidada." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/34dc3744-b282-46de-82b9-96c1bc6ed254/id-preview-2412db1a--a0ec7b69-a904-4c74-baac-f108e805a921.lovable.app-1780957627288.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/34dc3744-b282-46de-82b9-96c1bc6ed254/id-preview-2412db1a--a0ec7b69-a904-4c74-baac-f108e805a921.lovable.app-1780957627288.png" },
     ],
     links: [
       {
