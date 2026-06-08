@@ -91,6 +91,7 @@ export function ContaAPagarDialog({
   const isEdit = !!editing;
 
   // Campos
+  const [tipo, setTipo] = useState<TipoLancContaPagar>("Despesa");
   const [descricao, setDescricao] = useState("");
   const [fornecedor, setFornecedor] = useState("");
   const [valor, setValor] = useState("");
