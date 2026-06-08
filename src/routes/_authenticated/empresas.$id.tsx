@@ -286,7 +286,7 @@ function EmpresaDetalhe() {
         </TabsContent>
 
         <TabsContent value="fiscal" className="mt-4">
-          <StubTab title="Fiscal" />
+          <FiscalTab empresaId={empresaId} />
         </TabsContent>
 
         <TabsContent value="financeiro" className="mt-4">
@@ -294,7 +294,7 @@ function EmpresaDetalhe() {
         </TabsContent>
 
         <TabsContent value="historico" className="mt-4">
-          <StubTab title="Histórico" />
+          <HistoricoTab empresaId={empresaId} />
         </TabsContent>
       </Tabs>
     </PageShell>
@@ -598,15 +598,296 @@ function CadastraisTab({
 }
 
 // =========================================================================
-// TAB: Stub (Fiscal / Histórico — Fase 2)
+// TAB: Fiscal — regime atual + obrigações da empresa
 // =========================================================================
-function StubTab({ title }: { title: string }) {
+type ObrigFiscal = {
+  id: number;
+  tipo: string;
+  descricao: string | null;
+  competencia: string;
+  vencimento: string;
+  valor: number | null;
+  valor_pago: number | null;
+  status: string;
+  data_pagamento: string | null;
+  guia_url: string | null;
+};
+
+function FiscalTab({ empresaId }: { empresaId: number }) {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const [tab, setTab] = useState<"proximas" | "vencidas" | "pagas" | "todas">("proximas");
+
+  const regimeAtualQ = useQuery({
+    queryKey: ["empresa", empresaId, "fiscal-regime-atual"],
+    queryFn: async () => {
+      const r = await supabase
+        .schema("fiscal")
+        .from("regimes_empresas")
+        .select("regime,data_inicio,observacoes")
+        .eq("empresa_id", empresaId)
+        .is("data_fim", null)
+        .order("data_inicio", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (r.error) throw r.error;
+      return r.data as { regime: string; data_inicio: string | null; observacoes: string | null } | null;
+    },
+  });
+
+  const obrigsQ = useQuery({
+    queryKey: ["empresa", empresaId, "fiscal-obrigs", tab],
+    queryFn: async () => {
+      let qb = supabase
+        .from("obrigacoes_fiscais")
+        .select("id,tipo,descricao,competencia,vencimento,valor,valor_pago,status,data_pagamento,guia_url")
+        .eq("empresa_id", empresaId)
+        .order("vencimento", { ascending: true })
+        .limit(500);
+      if (tab === "proximas") qb = qb.in("status", ["pendente", "aberta"]).gte("vencimento", todayIso);
+      else if (tab === "vencidas") qb = qb.in("status", ["pendente", "aberta"]).lt("vencimento", todayIso);
+      else if (tab === "pagas") qb = qb.in("status", ["paga", "cumprida"]);
+      const r = await qb;
+      if (r.error) throw r.error;
+      return (r.data ?? []) as ObrigFiscal[];
+    },
+  });
+
+  // KPIs (consulta independente em todo o histórico da empresa)
+  const kpiQ = useQuery({
+    queryKey: ["empresa", empresaId, "fiscal-kpi"],
+    queryFn: async () => {
+      const r = await supabase
+        .from("obrigacoes_fiscais")
+        .select("status,valor,valor_pago,vencimento")
+        .eq("empresa_id", empresaId)
+        .limit(5000);
+      if (r.error) throw r.error;
+      const rows = (r.data ?? []) as { status: string; valor: number | null; valor_pago: number | null; vencimento: string }[];
+      let pendentes = 0, vencidas = 0, pagoAno = 0, devido = 0;
+      const yearStart = `${new Date().getFullYear()}-01-01`;
+      for (const o of rows) {
+        const paga = o.status === "paga" || o.status === "cumprida";
+        if (paga) {
+          if (o.vencimento >= yearStart) pagoAno += Number(o.valor_pago ?? o.valor ?? 0);
+        } else {
+          pendentes += 1;
+          devido += Number(o.valor ?? 0);
+          if (o.vencimento < todayIso) vencidas += 1;
+        }
+      }
+      return { pendentes, vencidas, pagoAno, devido };
+    },
+  });
+
+  const k = kpiQ.data ?? { pendentes: 0, vencidas: 0, pagoAno: 0, devido: 0 };
+
   return (
-    <Card>
-      <CardContent className="py-10 text-center text-sm text-muted-foreground">
-        Aba <strong className="text-foreground">{title}</strong> será implementada na Fase 2.
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <section>
+        <SectionHeader title="Regime tributário" />
+        <Card>
+          <CardContent className="py-4">
+            {regimeAtualQ.isLoading ? (
+              <Skeleton className="h-6 w-48" />
+            ) : regimeAtualQ.data ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge variant="outline" className="text-sm">{regimeAtualQ.data.regime}</Badge>
+                <span className="text-sm text-muted-foreground">
+                  Desde {fmtDateBR(regimeAtualQ.data.data_inicio)}
+                </span>
+                {regimeAtualQ.data.observacoes && (
+                  <span className="text-sm text-muted-foreground italic">"{regimeAtualQ.data.observacoes}"</span>
+                )}
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">Nenhum regime vigente cadastrado.</span>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="Resumo de obrigações" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiCard label="Pendentes" value={String(k.pendentes)} icon={<AlertTriangle className="h-4 w-4" />} status={k.pendentes > 0 ? "atencao" : "ok"} />
+          <KpiCard label="Vencidas" value={String(k.vencidas)} icon={<AlertTriangle className="h-4 w-4" />} status={k.vencidas > 0 ? "critico" : "ok"} />
+          <KpiCard label="Valor devido" value={formatBRL(k.devido)} icon={<Wallet className="h-4 w-4" />} status="neutral" />
+          <KpiCard label={`Pago em ${new Date().getFullYear()}`} value={formatBRL(k.pagoAno)} icon={<CheckCircle2 className="h-4 w-4" />} status="ok" />
+        </div>
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <SectionHeader title="Obrigações" />
+          <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+            <TabsList>
+              <TabsTrigger value="proximas">Próximas</TabsTrigger>
+              <TabsTrigger value="vencidas">Vencidas</TabsTrigger>
+              <TabsTrigger value="pagas">Pagas</TabsTrigger>
+              <TabsTrigger value="todas">Todas</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Competência</TableHead>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {obrigsQ.isLoading && (
+                  <TableRow><TableCell colSpan={5}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+                )}
+                {!obrigsQ.isLoading && (obrigsQ.data ?? []).length === 0 && (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">Nenhuma obrigação.</TableCell></TableRow>
+                )}
+                {(obrigsQ.data ?? []).map((o) => {
+                  const isPaga = o.status === "paga" || o.status === "cumprida";
+                  const atrasada = !isPaga && o.vencimento < todayIso;
+                  return (
+                    <TableRow key={o.id}>
+                      <TableCell className="font-medium">{o.tipo}</TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums">{fmtCompetencia(o.competencia)}</TableCell>
+                      <TableCell className={`tabular-nums ${atrasada ? "text-destructive font-medium" : ""}`}>{fmtDateBR(o.vencimento)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{o.valor != null ? formatBRL(Number(o.valor)) : "—"}</TableCell>
+                      <TableCell>
+                        {isPaga ? (
+                          <Badge className="bg-success/15 text-success border-success/30">Paga</Badge>
+                        ) : atrasada ? (
+                          <Badge className="bg-destructive/15 text-destructive border-destructive/30">Vencida</Badge>
+                        ) : (
+                          <Badge variant="outline">{o.status}</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+// =========================================================================
+// TAB: Histórico — regimes (timeline) + últimos lançamentos
+// =========================================================================
+type RegimeHistRow = {
+  id?: number;
+  regime: string;
+  data_inicio: string | null;
+  data_fim: string | null;
+  observacoes: string | null;
+};
+
+function HistoricoTab({ empresaId }: { empresaId: number }) {
+  const regimesQ = useQuery({
+    queryKey: ["empresa", empresaId, "regimes-hist"],
+    queryFn: async () => {
+      const r = await supabase
+        .schema("fiscal")
+        .from("regimes_empresas")
+        .select("regime,data_inicio,data_fim,observacoes")
+        .eq("empresa_id", empresaId)
+        .order("data_inicio", { ascending: false });
+      if (r.error) throw r.error;
+      return (r.data ?? []) as RegimeHistRow[];
+    },
+  });
+
+  const lancsQ = useQuery({
+    queryKey: ["empresa", empresaId, "lancs-hist"],
+    queryFn: async () => {
+      const r = await supabase
+        .from("lancamentos")
+        .select("id,data,tipo,valor,descricao")
+        .eq("empresa_id", empresaId)
+        .order("data", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(30);
+      if (r.error) throw r.error;
+      return (r.data ?? []) as LancRow[];
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <section>
+        <SectionHeader title="Histórico de regimes" />
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Regime</TableHead>
+                  <TableHead>Início</TableHead>
+                  <TableHead>Fim</TableHead>
+                  <TableHead>Observações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {regimesQ.isLoading && (
+                  <TableRow><TableCell colSpan={4}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+                )}
+                {!regimesQ.isLoading && (regimesQ.data ?? []).length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">Sem histórico de regimes.</TableCell></TableRow>
+                )}
+                {(regimesQ.data ?? []).map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Badge variant="outline">{r.regime}</Badge></TableCell>
+                    <TableCell className="tabular-nums">{fmtDateBR(r.data_inicio)}</TableCell>
+                    <TableCell className="tabular-nums">{r.data_fim ? fmtDateBR(r.data_fim) : <Badge className="bg-success/15 text-success border-success/30">Vigente</Badge>}</TableCell>
+                    <TableCell className="text-muted-foreground max-w-[420px] truncate">{r.observacoes ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="Últimos 30 lançamentos" />
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {lancsQ.isLoading && (
+                  <TableRow><TableCell colSpan={4}><Skeleton className="h-6 w-full" /></TableCell></TableRow>
+                )}
+                {!lancsQ.isLoading && (lancsQ.data ?? []).length === 0 && (
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">Sem lançamentos.</TableCell></TableRow>
+                )}
+                {(lancsQ.data ?? []).map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="tabular-nums">{fmtDateBR(l.data)}</TableCell>
+                    <TableCell><Badge variant="outline">{l.tipo}</Badge></TableCell>
+                    <TableCell className="max-w-[420px] truncate">{l.descricao ?? "—"}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatBRL(Number(l.valor) || 0)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
   );
 }
 
