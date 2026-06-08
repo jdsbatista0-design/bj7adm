@@ -445,6 +445,16 @@ function ContasAPagarPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={categoriaId} onValueChange={setCategoriaId}>
+          <SelectTrigger className="h-9 w-[200px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Todas as categorias</SelectItem>
+            {categorias.data?.map(c => (
+              <SelectItem key={c.id} value={String(c.id)}>{c.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* === Tabela === */}
