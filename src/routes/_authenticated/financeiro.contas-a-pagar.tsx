@@ -404,7 +404,7 @@ function ContasAPagarPage() {
                         {!c.pago ? (
                           <MarcarPagoPopover
                             conta={c}
-                            onConfirm={(input) => pagar.mutateAsync({ conta: c, input })}
+                            onConfirm={async (input) => { await pagar.mutateAsync({ conta: c, input }); }}
                             trigger={
                               <Button size="sm" variant="ghost" title="Marcar como paga e lançar">
                                 <CheckCircle2 className="h-4 w-4" />
