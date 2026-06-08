@@ -259,6 +259,7 @@ export function ContaAPagarDialog({
             valorPago: valorNum,
             empresaId: Number(empresaId),
             categoriaId: categoriaId !== "0" ? Number(categoriaId) : null,
+            tipo,
           });
         } else if (!jaPago && eraPago) {
           // estornou
