@@ -11,7 +11,6 @@ import {
   tiposVisiveis,
   podeEditarLancamento,
   podeMarcarRevisado,
-  podeLancar,
 } from "@/lib/permissions";
 import { formatBRL, formatDate, MESES_PT } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, CheckCircle2, Plus, Tags } from "lucide-react";
+import { CheckCircle2, Tags } from "lucide-react";
 import { CategoriasManagerDialog } from "@/components/categoria/CategoriasManagerDialog";
 import {
   ResponsiveContainer,
@@ -34,7 +33,7 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
-import { LancamentoDialog, useLancamentoDialog } from "@/components/lancamento/LancamentoDialog";
+
 import { toast } from "sonner";
 
 const PAGE_SIZE = 50;
@@ -98,7 +97,7 @@ function LancamentosPage() {
   const empresas = useEmpresas();
   const unidades = useUnidades();
   const categorias = useCategorias();
-  const dlg = useLancamentoDialog();
+  // dialog de novo lançamento removido — usar "Nova conta" em Contas a Pagar/Receber
   const qc = useQueryClient();
   const [catMgrOpen, setCatMgrOpen] = useState(false);
 
@@ -328,11 +327,6 @@ function LancamentosPage() {
           <Button size="sm" variant="outline" onClick={() => setCatMgrOpen(true)}>
             <Tags className="h-4 w-4 mr-1" /> Categorias
           </Button>
-          {podeLancar(user) && (
-            <Button size="sm" onClick={dlg.openNew}>
-              <Plus className="h-4 w-4 mr-1" /> Novo Lançamento
-            </Button>
-          )}
         </div>
       </div>
       <CategoriasManagerDialog open={catMgrOpen} onOpenChange={setCatMgrOpen} />
@@ -585,9 +579,6 @@ function LancamentosPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" disabled={!editavel} onClick={() => dlg.openEdit(l)} title="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </Button>
                         {podeMarcarRevisado(user) && (
                           <Button
                             size="icon"
@@ -623,7 +614,7 @@ function LancamentosPage() {
         </div>
       </div>
 
-      <LancamentoDialog open={dlg.open} onOpenChange={dlg.setOpen} lancamento={dlg.editing} />
+      
     </div>
   );
 }

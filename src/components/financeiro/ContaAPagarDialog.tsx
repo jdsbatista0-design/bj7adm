@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 import { useEmpresas, useCategorias } from "@/hooks/use-refs";
 import { toast } from "sonner";
-import { pagarConta, estornarPagamento, sincronizarLancamentoDeConta } from "@/lib/contas-a-pagar";
+import { pagarConta, estornarPagamento, sincronizarLancamentoDeConta, parseTipoFromObs, type TipoLancContaPagar } from "@/lib/contas-a-pagar";
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
@@ -91,6 +91,7 @@ export function ContaAPagarDialog({
   const isEdit = !!editing;
 
   // Campos
+  const [tipo, setTipo] = useState<TipoLancContaPagar>("Despesa");
   const [descricao, setDescricao] = useState("");
   const [fornecedor, setFornecedor] = useState("");
   const [valor, setValor] = useState("");
@@ -112,10 +113,11 @@ export function ContaAPagarDialog({
   useEffect(() => {
     if (!open) return;
     if (editing) {
-      // tentar extrair fornecedor/forma da observação
+      // tentar extrair fornecedor/forma/tipo da observação
       const obs = editing.observacao ?? "";
       const fMatch = obs.match(/Fornecedor:\s*([^\n|]+)/i);
       const pMatch = obs.match(/Pgto:\s*([^\n|]+)/i);
+      setTipo(parseTipoFromObs(obs));
       setDescricao(editing.descricao);
       setFornecedor(fMatch?.[1].trim() ?? "");
       setFormaPgto(pMatch?.[1].trim() ?? "");
@@ -123,13 +125,20 @@ export function ContaAPagarDialog({
       setVencimento(editing.vencimento.slice(0, 10));
       setEmpresaId(editing.empresa_id ? String(editing.empresa_id) : "0");
       setCategoriaId(editing.categoria_id ? String(editing.categoria_id) : "0");
-      setObservacao(obs.replace(/Fornecedor:[^|\n]*\|?\s*/i, "").replace(/Pgto:[^|\n]*\|?\s*/i, "").trim());
+      setObservacao(
+        obs
+          .replace(/Tipo:[^|\n]*\|?\s*/i, "")
+          .replace(/Fornecedor:[^|\n]*\|?\s*/i, "")
+          .replace(/Pgto:[^|\n]*\|?\s*/i, "")
+          .trim(),
+      );
       setFreq((editing.recorrencia as FrequenciaPreset) ?? "unica");
       setParcelas(1);
       setModo("repetir");
       setJaPago(editing.pago);
       setDataPgto(editing.data_pagamento?.slice(0, 10) ?? todayIso());
     } else {
+      setTipo("Despesa");
       setDescricao("");
       setFornecedor("");
       setValor("");
@@ -146,16 +155,24 @@ export function ContaAPagarDialog({
     }
   }, [open, editing]);
 
-  // Categorias de despesa primeiro
+  // Ordena categorias coerentes com o tipo selecionado primeiro
   const categoriasOrdenadas = useMemo(() => {
     const list = categorias.data ?? [];
+    const match = (tp: string | null) => {
+      const t = (tp ?? "").toLowerCase();
+      if (tipo === "Despesa") return t.includes("desp");
+      if (tipo === "Receita") return t.includes("rec");
+      if (tipo === "Retirada") return t.includes("retir");
+      if (tipo === "Empréstimo") return t.includes("empr");
+      return false;
+    };
     return [...list].sort((a, b) => {
-      const da = (a.tipo_predominante ?? "").toLowerCase().includes("desp") ? 0 : 1;
-      const db = (b.tipo_predominante ?? "").toLowerCase().includes("desp") ? 0 : 1;
+      const da = match(a.tipo_predominante) ? 0 : 1;
+      const db = match(b.tipo_predominante) ? 0 : 1;
       if (da !== db) return da - db;
       return a.nome.localeCompare(b.nome);
     });
-  }, [categorias.data]);
+  }, [categorias.data, tipo]);
 
   // Gera as datas das parcelas (preview)
   const parcelasGeradas = useMemo(() => {
@@ -206,11 +223,12 @@ export function ContaAPagarDialog({
         throw new Error("Preencha descrição, valor e vencimento");
       }
       if (jaPago && empresaId === "0") {
-        throw new Error("Para marcar como paga é preciso informar a empresa (vai virar Lançamento)");
+        throw new Error("Para confirmar é preciso informar a empresa (vai virar Lançamento)");
       }
 
       const obsExtra = [
-        fornecedor.trim() && `Fornecedor: ${fornecedor.trim()}`,
+        `Tipo: ${tipo}`,
+        fornecedor.trim() && `${tipo === "Receita" ? "Pagador" : "Fornecedor"}: ${fornecedor.trim()}`,
         formaPgto && `Pgto: ${formaPgto}`,
         observacao.trim(),
       ].filter(Boolean).join(" | ");
@@ -241,6 +259,7 @@ export function ContaAPagarDialog({
             valorPago: valorNum,
             empresaId: Number(empresaId),
             categoriaId: categoriaId !== "0" ? Number(categoriaId) : null,
+            tipo,
           });
         } else if (!jaPago && eraPago) {
           // estornou
@@ -297,6 +316,7 @@ export function ContaAPagarDialog({
           valorPago: valorPorParcela,
           empresaId: Number(empresaId),
           categoriaId: categoriaId !== "0" ? Number(categoriaId) : null,
+          tipo,
         });
       }
     },
@@ -314,17 +334,43 @@ export function ContaAPagarDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar conta" : "Nova conta a pagar"}</DialogTitle>
+          <DialogTitle>
+            {isEdit
+              ? "Editar lançamento"
+              : tipo === "Receita"
+              ? "Novo lançamento — a receber"
+              : tipo === "Despesa"
+              ? "Novo lançamento — a pagar"
+              : `Novo lançamento — ${tipo}`}
+          </DialogTitle>
           <DialogDescription className="text-xs">
-            Use recorrência personalizada para parcelar ou repetir cobranças automaticamente.
+            Cadastre uma conta a pagar/receber. Ao marcar como concluída, vira um Lançamento no DRE automaticamente.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
+          {/* === Tipo === */}
+          <ToggleGroup
+            type="single"
+            value={tipo}
+            onValueChange={(v) => v && setTipo(v as TipoLancContaPagar)}
+            className="flex flex-wrap justify-start gap-1"
+          >
+            {(["Despesa", "Receita", "Retirada", "Empréstimo"] as TipoLancContaPagar[]).map((t) => (
+              <ToggleGroupItem
+                key={t}
+                value={t}
+                className="h-8 px-3 text-xs data-[state=on]:bg-primary/15 data-[state=on]:text-primary data-[state=on]:border-primary/30"
+              >
+                {t === "Despesa" ? "A pagar" : t === "Receita" ? "A receber" : t}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+
           {/* === Bloco 1: O quê === */}
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              <Wallet className="h-3.5 w-3.5" /> O que pagar
+              <Wallet className="h-3.5 w-3.5" /> {tipo === "Receita" ? "O que receber" : "O que pagar"}
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
@@ -332,16 +378,16 @@ export function ContaAPagarDialog({
                 <Input
                   value={descricao}
                   onChange={e => setDescricao(e.target.value)}
-                  placeholder="Ex.: Aluguel sala comercial"
+                  placeholder={tipo === "Receita" ? "Ex.: Mensalidade cliente X" : "Ex.: Aluguel sala comercial"}
                   autoFocus={!isEdit}
                 />
               </div>
               <div>
-                <Label className="text-xs">Fornecedor / Beneficiário</Label>
+                <Label className="text-xs">{tipo === "Receita" ? "Pagador / Cliente" : "Fornecedor / Beneficiário"}</Label>
                 <Input
                   value={fornecedor}
                   onChange={e => setFornecedor(e.target.value)}
-                  placeholder="Ex.: Imobiliária X"
+                  placeholder={tipo === "Receita" ? "Ex.: Cliente Y" : "Ex.: Imobiliária X"}
                 />
               </div>
               <div>
@@ -500,9 +546,13 @@ export function ContaAPagarDialog({
               <div className="flex items-center gap-2">
                 <CheckCircle2 className={cn("h-4 w-4", jaPago ? "text-emerald-400" : "text-muted-foreground")} />
                 <div>
-                  <p className="text-sm font-medium">Já está paga</p>
+                  <p className="text-sm font-medium">{tipo === "Receita" ? "Já foi recebido" : "Já está pago"}</p>
                   <p className="text-[11px] text-muted-foreground">
-                    {isEdit ? "Marque ou desmarque o status de pagamento" : "Marca a 1ª parcela como já paga"}
+                    {isEdit
+                      ? "Marque ou desmarque o status"
+                      : tipo === "Receita"
+                      ? "Marca a 1ª parcela como já recebida"
+                      : "Marca a 1ª parcela como já paga"}
                   </p>
                 </div>
               </div>
@@ -510,7 +560,7 @@ export function ContaAPagarDialog({
             </div>
             {jaPago && (
               <div>
-                <Label className="text-xs">Data do pagamento</Label>
+                <Label className="text-xs">{tipo === "Receita" ? "Data do recebimento" : "Data do pagamento"}</Label>
                 <Input type="date" value={dataPgto} onChange={e => setDataPgto(e.target.value)} />
               </div>
             )}

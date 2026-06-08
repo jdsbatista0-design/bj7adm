@@ -1,17 +1,32 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ContaAPagarRow } from "@/integrations/supabase/database";
 
+export type TipoLancContaPagar = "Despesa" | "Receita" | "Retirada" | "Empréstimo";
+
 export type PagarContaInput = {
   dataPagamento: string; // yyyy-mm-dd
   valorPago: number;
   empresaId?: number | null;
   categoriaId?: number | null;
+  tipo?: TipoLancContaPagar;
 };
 
 function parseObservacaoForma(obs: string | null): string | null {
   if (!obs) return null;
   const m = obs.match(/Pgto:\s*([^\n|]+)/i);
   return m ? m[1].trim() : null;
+}
+
+/** Lê o tipo do lançamento (Despesa/Receita/...) embutido na observação. */
+export function parseTipoFromObs(obs: string | null): TipoLancContaPagar {
+  if (!obs) return "Despesa";
+  const m = obs.match(/Tipo:\s*(Despesa|Receita|Retirada|Empréstimo|Emprestimo)/i);
+  if (!m) return "Despesa";
+  const raw = m[1].toLowerCase();
+  if (raw === "receita") return "Receita";
+  if (raw === "retirada") return "Retirada";
+  if (raw.startsWith("empr")) return "Empréstimo";
+  return "Despesa";
 }
 
 function descricaoEnriquecida(conta: ContaAPagarRow): string {
@@ -38,7 +53,9 @@ export async function pagarConta(conta: ContaAPagarRow, input: PagarContaInput) 
   const data = input.dataPagamento;
   const valor = Number(input.valorPago);
   if (!data) throw new Error("Informe a data do pagamento");
-  if (!isFinite(valor) || valor === 0) throw new Error("Informe o valor pago");
+  if (!isFinite(valor) || valor === 0) throw new Error("Informe o valor");
+
+  const tipo: TipoLancContaPagar = input.tipo ?? parseTipoFromObs(conta.observacao);
 
   const [y, m] = data.split("-").map(Number);
 
@@ -51,7 +68,7 @@ export async function pagarConta(conta: ContaAPagarRow, input: PagarContaInput) 
       mes: m,
       empresa_id: empresaId,
       categoria_id: categoriaId ?? null,
-      tipo: "Despesa",
+      tipo,
       descricao: descricaoEnriquecida(conta),
       valor,
       contar_no_total: true,
@@ -62,6 +79,7 @@ export async function pagarConta(conta: ContaAPagarRow, input: PagarContaInput) 
     .single();
   if (insLanc.error) throw insLanc.error;
   const lancId = (insLanc.data as { id: number }).id;
+
 
   // 2) atualiza conta
   const updConta = await supabase
@@ -121,6 +139,7 @@ export async function sincronizarLancamentoDeConta(conta: ContaAPagarRow) {
       mes: m,
       empresa_id: empresaId,
       categoria_id: conta.categoria_id,
+      tipo: parseTipoFromObs(conta.observacao),
       descricao: descricaoEnriquecida(conta),
       valor: Number(conta.valor_pago ?? conta.valor),
     })
