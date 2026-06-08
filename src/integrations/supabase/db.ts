@@ -24,6 +24,12 @@ import type {
   VResumoDreRow,
   DreConsolidadaRow,
   DreOperacionalRow,
+  ContaAPagarRow,
+  ObrigacaoFiscalRow,
+  NotaRapidaRow,
+  JuridicoProcessoRow,
+  MktCampanhaRow,
+  TarefaRow,
 } from "./database";
 
 type RowMap = {
@@ -46,6 +52,12 @@ type RowMap = {
   v_resumo_dre: VResumoDreRow;
   dre_consolidada: DreConsolidadaRow;
   dre_operacional: DreOperacionalRow;
+  contas_a_pagar: ContaAPagarRow;
+  obrigacoes_fiscais: ObrigacaoFiscalRow;
+  notas_rapidas: NotaRapidaRow;
+  juridico_processos: JuridicoProcessoRow;
+  mkt_campanhas: MktCampanhaRow;
+  tarefas: TarefaRow;
 };
 
 /** Strongly-typed `from()` — returns the raw query builder, you cast results. */
