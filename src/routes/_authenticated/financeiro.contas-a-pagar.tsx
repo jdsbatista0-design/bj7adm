@@ -29,7 +29,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, CheckCircle2, Trash2, Pencil, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, CheckCircle2, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
