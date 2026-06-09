@@ -242,6 +242,7 @@ function EmpresaDetalhe() {
   const empresa = empresaQ.data;
   const regime = regimeQ.data;
   const ativa = empresa?.ativa !== false;
+  const [activeTab, setActiveTab] = useState<string>("visao");
   const status: "ATIVA_COM_REGIME" | "SEM_REGIME" | "INATIVA" = !ativa
     ? "INATIVA"
     : regime?.regime
