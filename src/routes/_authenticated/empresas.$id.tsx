@@ -266,7 +266,7 @@ function EmpresaDetalhe() {
         <StatusBadge status={status} />
         {regime?.regime && <Badge variant="outline">{regime.regime}</Badge>}
       </div>
-      <Tabs defaultValue="visao" className="w-full">
+      <Tabs defaultValue="visao" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="overflow-x-auto -mx-1 px-1">
           <TabsList className="inline-flex">
             <TabsTrigger value="visao">Visão Geral</TabsTrigger>
@@ -277,24 +277,26 @@ function EmpresaDetalhe() {
           </TabsList>
         </div>
 
-        <TabsContent value="visao" className="mt-4">
-          <VisaoGeralTab empresaId={empresaId} />
+        {/* Lazy mount: só a aba ativa dispara queries.
+            Sem isso, abrir uma empresa fazia 14 round-trips ao banco em Oregon. */}
+        <TabsContent value="visao" className="mt-4" forceMount={activeTab === "visao" ? true : undefined} hidden={activeTab !== "visao"}>
+          {activeTab === "visao" && <VisaoGeralTab empresaId={empresaId} />}
         </TabsContent>
 
-        <TabsContent value="cadastrais" className="mt-4">
-          <CadastraisTab empresaId={empresaId} empresa={empresa} loading={empresaQ.isLoading} />
+        <TabsContent value="cadastrais" className="mt-4" forceMount={activeTab === "cadastrais" ? true : undefined} hidden={activeTab !== "cadastrais"}>
+          {activeTab === "cadastrais" && <CadastraisTab empresaId={empresaId} empresa={empresa} loading={empresaQ.isLoading} />}
         </TabsContent>
 
-        <TabsContent value="fiscal" className="mt-4">
-          <FiscalTab empresaId={empresaId} />
+        <TabsContent value="fiscal" className="mt-4" forceMount={activeTab === "fiscal" ? true : undefined} hidden={activeTab !== "fiscal"}>
+          {activeTab === "fiscal" && <FiscalTab empresaId={empresaId} />}
         </TabsContent>
 
-        <TabsContent value="financeiro" className="mt-4">
-          <FinanceiroTab empresaId={empresaId} />
+        <TabsContent value="financeiro" className="mt-4" forceMount={activeTab === "financeiro" ? true : undefined} hidden={activeTab !== "financeiro"}>
+          {activeTab === "financeiro" && <FinanceiroTab empresaId={empresaId} />}
         </TabsContent>
 
-        <TabsContent value="historico" className="mt-4">
-          <HistoricoTab empresaId={empresaId} />
+        <TabsContent value="historico" className="mt-4" forceMount={activeTab === "historico" ? true : undefined} hidden={activeTab !== "historico"}>
+          {activeTab === "historico" && <HistoricoTab empresaId={empresaId} />}
         </TabsContent>
       </Tabs>
     </PageShell>
