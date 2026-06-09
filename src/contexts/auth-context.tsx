@@ -97,9 +97,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let bootstrapped = false;
     void (async () => {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
+      bootstrapped = true;
       if (!data.session) {
         setState({ status: "anon" });
         return;
@@ -108,7 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (mounted) setState(next);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // Ignora INITIAL_SESSION (já tratado pelo getSession acima) e TOKEN_REFRESHED
+      // (sessão continua válida — não precisa recarregar perfil/papel).
+      // Sem este filtro, todo refresh dobrava a sequência de auth (~4 round-trips até Oregon).
+      if (!bootstrapped) return;
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       if (!session) {
         setState({ status: "anon" });
         return;

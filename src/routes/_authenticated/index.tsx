@@ -65,10 +65,14 @@ function HomeHub() {
     },
   });
 
-  // Alertas abertos — ordenados por severidade no frontend
+  // Alertas abertos — tabela `public.alertas` ainda não existe no banco (PGRST205).
+  // Mantém estrutura pronta pra quando a tabela existir, mas evita 4 round-trips
+  // até Oregon retornando 404 a cada load da home.
+  const ALERTAS_TABLE_EXISTS = false;
   const alertasQ = useQuery({
     queryKey: ["home", "alertas"],
     staleTime: 60_000,
+    enabled: ALERTAS_TABLE_EXISTS,
     queryFn: async () => {
       const r = await supabase
         .from("alertas")
@@ -81,10 +85,13 @@ function HomeHub() {
     },
   });
 
-  // Itens ativos do cockpit
+  // Itens ativos do cockpit — tabela `public.itens` ainda não existe no banco.
+  // Mesma estratégia: gated por flag até a tabela ser criada.
+  const ITENS_TABLE_EXISTS = false;
   const itensQ = useQuery({
     queryKey: ["home", "itens"],
     staleTime: 60_000,
+    enabled: ITENS_TABLE_EXISTS,
     queryFn: async () => {
       const r = await supabase
         .from("itens")
