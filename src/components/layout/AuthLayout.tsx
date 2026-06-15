@@ -70,7 +70,6 @@ type NavItem = LeafItem | GroupItem;
 const isGroup = (i: NavItem): i is GroupItem => "children" in i;
 
 const NAV: NavItem[] = [
-  { title: "Início", url: "/", icon: Home },
   { title: "Cockpit", url: "/itens", icon: ListTodo },
   { title: "Empresas", url: "/empresas", icon: Building2 },
   { title: "Calendário", url: "/calendario", icon: Calendar },
@@ -81,7 +80,6 @@ const NAV: NavItem[] = [
       { title: "Visão Financeira", url: "/financeiro", icon: DollarSign },
       { title: "Contas a Pagar", url: "/financeiro/contas-a-pagar", icon: Banknote },
       { title: "DRE Consolidado", url: "/financeiro/dre-consolidado", icon: FileText },
-      { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
       {
         title: "Open Finance",
         icon: Landmark,
@@ -93,18 +91,8 @@ const NAV: NavItem[] = [
       },
     ],
   },
-  {
-    title: "Fiscal",
-    icon: Receipt,
-    children: [
-      { title: "Dashboard", url: "/fiscal/dashboard", icon: Receipt },
-      { title: "Obrigações", url: "/fiscal/obrigacoes", icon: AlertCircle },
-      { title: "Calendário", url: "/fiscal/calendario", icon: Calendar },
-      { title: "Faturamento (Simples)", url: "/fiscal/faturamento-simples", icon: Percent },
-      { title: "Pendências Contábeis", url: "/fiscal/pendencias", icon: AlertCircle },
-      { title: "Importações Fiscais", url: "/fiscal/importacoes", icon: Upload },
-    ],
-  },
+  { title: "Categorias", url: "/financeiro/categorias", icon: Percent },
+
   {
     title: "Documentos",
     icon: FolderOpen,

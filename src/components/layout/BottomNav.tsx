@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 
 const ITEMS = [
-  { to: "/",          label: "Início",    icon: Home },
-  { to: "/itens",     label: "Cockpit",   icon: ListTodo },
+  { to: "/itens",     label: "Cockpit",   icon: Home },
   { to: "/financeiro",label: "Financeiro",icon: Wallet },
   { to: "/fiscal/dashboard", label: "Fiscal",    icon: Receipt },
+  { to: "/empresas",  label: "Empresas",  icon: ListTodo },
 ] as const;
 
 export function BottomNav() {
@@ -23,7 +23,7 @@ export function BottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t border-border bg-background/95 backdrop-blur grid grid-cols-5">
       {ITEMS.map((i) => {
-        const active = isActive(i.to);
+        const active = i.to === "/itens" ? path === "/" || path.startsWith("/itens") : isActive(i.to);
         return (
           <Link
             key={i.to}

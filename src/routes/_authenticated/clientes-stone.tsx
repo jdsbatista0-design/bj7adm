@@ -197,6 +197,29 @@ type RankingFilters = {
   page: number;
 };
 
+type Segmento = "estrela" | "resgatar" | "desenvolver" | "ignorar";
+
+const SEG_LABEL: Record<Segmento, string> = {
+  estrela: "Estrela",
+  resgatar: "Resgatar",
+  desenvolver: "Desenvolver",
+  ignorar: "Ignorar",
+};
+
+const SEG_CLASS: Record<Segmento, string> = {
+  estrela: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  resgatar: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  desenvolver: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+  ignorar: "bg-muted text-muted-foreground border-border",
+};
+
+function median(nums: number[]): number {
+  if (nums.length === 0) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
+}
+
 function RankingTab({
   onOpenCliente,
 }: {
@@ -208,6 +231,9 @@ function RankingTab({
     ativos: false,
     page: 1,
   });
+  const [busca, setBusca] = useState("");
+  const [ativoJanela, setAtivoJanela] = useState<"3" | "6" | "12" | "all">("all");
+  const [segFiltro, setSegFiltro] = useState<Segmento | "all">("all");
 
   const filtersQ = useQuery({
     queryKey: ["clientes-stone", "filters"],
@@ -258,20 +284,101 @@ function RankingTab({
 
   const totalPages = Math.max(1, Math.ceil((listQ.data?.count ?? 0) / PAGE_SIZE));
 
+  // Enriquecer linhas com lucro_medio_mes + segmento (client-side, sobre dados carregados)
+  const enriched = useMemo(() => {
+    const rows = listQ.data?.rows ?? [];
+    const medios = rows.map((r) =>
+      (r.meses_ativo ?? 0) > 0 ? Number(r.lucro_total ?? 0) / (r.meses_ativo ?? 1) : 0,
+    );
+    const med = median(medios);
+    return rows.map((r, i) => {
+      const lucroMedio = medios[i];
+      const valorAlto = lucroMedio >= med;
+      const ativo = r.provavel_churn === false;
+      let seg: Segmento;
+      if (valorAlto && ativo) seg = "estrela";
+      else if (valorAlto && !ativo) seg = "resgatar";
+      else if (!valorAlto && ativo) seg = "desenvolver";
+      else seg = "ignorar";
+      return { row: r, lucroMedio, seg };
+    });
+  }, [listQ.data]);
+
+  // Filtragem client-side
+  const visiveis = useMemo(() => {
+    const buscaLower = busca.trim().toLowerCase();
+    const hoje = new Date();
+    const limite = (() => {
+      if (ativoJanela === "all") return null;
+      const d = new Date(hoje.getFullYear(), hoje.getMonth() - (Number(ativoJanela) - 1), 1);
+      return d.toISOString().slice(0, 10);
+    })();
+    return enriched.filter((e) => {
+      if (segFiltro !== "all" && e.seg !== segFiltro) return false;
+      if (buscaLower) {
+        const nome = (e.row.nome_fantasia ?? "").toLowerCase();
+        const code = (e.row.stonecode ?? "").toLowerCase();
+        if (!nome.includes(buscaLower) && !code.includes(buscaLower)) return false;
+      }
+      if (limite && (!e.row.ultimo_mes || e.row.ultimo_mes < limite)) return false;
+      return true;
+    });
+  }, [enriched, busca, segFiltro, ativoJanela]);
+
+  const segCounts = useMemo(() => {
+    const c: Record<Segmento, number> = { estrela: 0, resgatar: 0, desenvolver: 0, ignorar: 0 };
+    for (const e of enriched) c[e.seg]++;
+    return c;
+  }, [enriched]);
+
+  const segCards: { key: Segmento; label: string; cls: string }[] = [
+    { key: "estrela", label: "Estrela", cls: "border-emerald-500/30 text-emerald-300" },
+    { key: "resgatar", label: "Resgatar", cls: "border-amber-500/30 text-amber-300" },
+    { key: "desenvolver", label: "Desenvolver", cls: "border-blue-500/30 text-blue-300" },
+    { key: "ignorar", label: "Ignorar", cls: "border-border text-muted-foreground" },
+  ];
+
   return (
     <div className="space-y-3">
+      {/* Cards de segmento clicáveis */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {segCards.map((s) => {
+          const active = segFiltro === s.key;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => setSegFiltro(active ? "all" : s.key)}
+              className={`rounded-lg border p-3 text-left transition hover:bg-muted/40 ${s.cls} ${active ? "ring-2 ring-primary" : ""}`}
+            >
+              <div className="text-[11px] uppercase tracking-wide">{s.label}</div>
+              <div className="text-xl font-semibold tabular-nums mt-0.5">
+                {segCounts[s.key].toLocaleString("pt-BR")}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Filtros</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2 items-center">
+          <Input
+            placeholder="Buscar por nome ou stonecode..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="w-full sm:w-[260px] h-9"
+          />
+
           <Select
             value={f.cidade || "all"}
             onValueChange={(v) =>
               setF((p) => ({ ...p, cidade: v === "all" ? "" : v, page: 1 }))
             }
           >
-            <SelectTrigger className="w-[200px] h-9">
+            <SelectTrigger className="w-[180px] h-9">
               <SelectValue placeholder="Cidade" />
             </SelectTrigger>
             <SelectContent>
@@ -290,7 +397,7 @@ function RankingTab({
               setF((p) => ({ ...p, vendedor: v === "all" ? "" : v, page: 1 }))
             }
           >
-            <SelectTrigger className="w-[220px] h-9">
+            <SelectTrigger className="w-[200px] h-9">
               <SelectValue placeholder="Vendedor" />
             </SelectTrigger>
             <SelectContent>
@@ -300,6 +407,37 @@ function RankingTab({
                   {v}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={ativoJanela}
+            onValueChange={(v) => setAtivoJanela(v as typeof ativoJanela)}
+          >
+            <SelectTrigger className="w-[200px] h-9">
+              <SelectValue placeholder="Último rebate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">Ativo últimos 3 meses</SelectItem>
+              <SelectItem value="6">Ativo últimos 6 meses</SelectItem>
+              <SelectItem value="12">Ativo últimos 12 meses</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={segFiltro}
+            onValueChange={(v) => setSegFiltro(v as typeof segFiltro)}
+          >
+            <SelectTrigger className="w-[170px] h-9">
+              <SelectValue placeholder="Segmento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos segmentos</SelectItem>
+              <SelectItem value="estrela">Estrela</SelectItem>
+              <SelectItem value="resgatar">Resgatar</SelectItem>
+              <SelectItem value="desenvolver">Desenvolver</SelectItem>
+              <SelectItem value="ignorar">Ignorar</SelectItem>
             </SelectContent>
           </Select>
 
@@ -314,30 +452,37 @@ function RankingTab({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() =>
-              setF({ cidade: "", vendedor: "", ativos: false, page: 1 })
-            }
+            onClick={() => {
+              setF({ cidade: "", vendedor: "", ativos: false, page: 1 });
+              setBusca("");
+              setAtivoJanela("all");
+              setSegFiltro("all");
+            }}
           >
             Limpar
           </Button>
 
           <div className="ml-auto text-xs text-muted-foreground">
-            {listQ.data ? `${listQ.data.count.toLocaleString("pt-BR")} clientes` : ""}
+            {listQ.data
+              ? `${visiveis.length} de ${listQ.data.rows.length} nesta página · ${listQ.data.count.toLocaleString("pt-BR")} total`
+              : ""}
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Stonecode</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Cidade</TableHead>
-                <TableHead>Vendedor</TableHead>
+                <TableHead>Segmento</TableHead>
+                <TableHead className="hidden md:table-cell">Cidade</TableHead>
+                <TableHead className="hidden md:table-cell">Vendedor</TableHead>
                 <TableHead className="text-right">Meses</TableHead>
                 <TableHead className="text-right">Lucro total</TableHead>
-                <TableHead>Último mês</TableHead>
+                <TableHead>Último rebate</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -345,29 +490,35 @@ function RankingTab({
               {listQ.isLoading &&
                 Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={9}>
                       <Skeleton className="h-5 w-full" />
                     </TableCell>
                   </TableRow>
                 ))}
-              {!listQ.isLoading && (listQ.data?.rows ?? []).length === 0 && (
+              {!listQ.isLoading && visiveis.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                     Nenhum cliente no filtro.
                   </TableCell>
                 </TableRow>
               )}
-              {(listQ.data?.rows ?? []).map((r) => (
+              {visiveis.map(({ row: r, seg }) => (
                 <TableRow
                   key={r.stonecode}
                   className="cursor-pointer hover:bg-muted/40"
                   onClick={() => onOpenCliente(r.stonecode)}
                 >
+                  <TableCell className="font-mono text-xs">{r.stonecode}</TableCell>
                   <TableCell className="font-medium">
                     {r.nome_fantasia ?? r.stonecode}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{r.cidade ?? "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell>
+                    <Badge variant="outline" className={SEG_CLASS[seg]}>
+                      {SEG_LABEL[seg]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{r.cidade ?? "—"}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
                     {r.vendedor_atual ?? "—"}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
@@ -425,6 +576,7 @@ function RankingTab({
     </div>
   );
 }
+
 
 // ===== Tab Vendedores =====
 function VendedoresTab() {

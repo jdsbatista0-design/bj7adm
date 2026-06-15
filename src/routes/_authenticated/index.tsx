@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, startOfMonth } from "date-fns";
@@ -16,6 +16,9 @@ import { cn } from "@/lib/utils";
 import type { AlertaRow } from "@/integrations/supabase/database";
 
 export const Route = createFileRoute("/_authenticated/")({
+  beforeLoad: () => {
+    throw redirect({ to: "/itens" });
+  },
   component: HomeHub,
 });
 
