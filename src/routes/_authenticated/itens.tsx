@@ -80,6 +80,51 @@ function CockpitPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const mudarStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: TarefaStatus }) => {
+      const r = await from("tarefas").update({ status }).eq("id", id);
+      if (r.error) throw r.error;
+    },
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ["tarefas"] });
+      const prev = qc.getQueriesData<TarefaRow[]>({ queryKey: ["tarefas"] });
+      prev.forEach(([key, data]) => {
+        if (!data) return;
+        qc.setQueryData(key, data.map(t => t.id === id ? { ...t, status } : t));
+      });
+      return { prev };
+    },
+    onError: (e: Error, _vars, ctx) => {
+      ctx?.prev.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast.error(e.message);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["tarefas"] }),
+  });
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const activeTarefa = useMemo(
+    () => (q.data ?? []).find(t => t.id === activeId) ?? null,
+    [q.data, activeId]
+  );
+
+  function onDragStart(e: DragStartEvent) {
+    setActiveId(Number(e.active.id));
+  }
+  function onDragEnd(e: DragEndEvent) {
+    setActiveId(null);
+    const overId = e.over?.id as TarefaStatus | undefined;
+    const id = Number(e.active.id);
+    if (!overId) return;
+    const current = (q.data ?? []).find(t => t.id === id);
+    if (!current || current.status === overId) return;
+    if (overId === "concluida") {
+      concluir.mutate(id);
+    } else {
+      mudarStatus.mutate({ id, status: overId });
+    }
+  }
+
   const filtered = useMemo(() => {
     const list = q.data ?? [];
     const term = busca.trim().toLowerCase();
