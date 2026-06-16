@@ -40,9 +40,6 @@ export function Fab() {
             <DropdownMenuItem onClick={() => navigate({ to: "/financeiro/contas-a-pagar" })}>
               <Banknote className="h-4 w-4 mr-2" /> Conta a pagar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/fiscal/obrigacoes" })}>
-              <Receipt className="h-4 w-4 mr-2" /> Obrigação fiscal
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNotasOpen(true)}>
               <StickyNote className="h-4 w-4 mr-2" /> Nota rápida
             </DropdownMenuItem>
