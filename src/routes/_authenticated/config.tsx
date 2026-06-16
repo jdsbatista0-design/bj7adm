@@ -3,7 +3,7 @@ import { PageShell } from "@/components/bj7/PageShell";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { podeGerirUsuarios, podeImportar } from "@/lib/permissions";
 import {
-  Users, Upload, Sparkles, ArrowRight, Banknote, Receipt, ListTodo, StickyNote, Percent,
+  Users, Upload, Sparkles, ArrowRight, Banknote, ListTodo, StickyNote, Percent,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/config")({
