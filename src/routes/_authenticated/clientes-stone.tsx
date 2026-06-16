@@ -93,7 +93,7 @@ function useKpis() {
         supabase
           .from("v_evolucao_mensal")
           .select("mes_referencia,lucro_bruto,lucro_bj7,lucro_stone_matriz")
-          .gte("mes_referencia", "2020-08-01"),
+          .gte("mes_referencia", "2018-01-01"),
       ]);
 
       const erros = [clientesAtivosQ, lucro12mQ, lucroTotalQ].find((q) => q.error);
