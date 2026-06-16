@@ -215,45 +215,56 @@ function CockpitPage() {
       )}
 
       {/* Kanban */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {COLUMNS.map(col => {
-          const items = grouped.get(col.key) ?? [];
-          return (
-            <div key={col.key} className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wide", col.tone)}>
-                    {col.label}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">{items.length}</span>
-                </div>
-              </div>
-              <div className="space-y-2 min-h-[80px]">
-                {q.isLoading ? (
-                  <>
-                    <Skeleton className="h-20" />
-                    <Skeleton className="h-20" />
-                  </>
-                ) : items.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-white/5 p-4 text-center text-xs text-muted-foreground">
-                    <ListTodo className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                    Nada aqui
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {COLUMNS.map(col => {
+            const items = grouped.get(col.key) ?? [];
+            return (
+              <KanbanColumn key={col.key} id={col.key}>
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wide", col.tone)}>
+                      {col.label}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{items.length}</span>
                   </div>
-                ) : (
-                  items.map(t => (
-                    <div key={t.id} onClick={() => drawer.open({ tarefa: t })} className="cursor-pointer">
-                      <ItemCard
-                        item={{ kind: "tarefa", data: t }}
-                        onConcluir={t.status !== "concluida" ? () => concluir.mutate(t.id) : undefined}
-                      />
+                </div>
+                <div className="space-y-2 min-h-[80px]">
+                  {q.isLoading ? (
+                    <>
+                      <Skeleton className="h-20" />
+                      <Skeleton className="h-20" />
+                    </>
+                  ) : items.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-white/5 p-4 text-center text-xs text-muted-foreground">
+                      <ListTodo className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                      Arraste cards aqui
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    items.map(t => (
+                      <DraggableCard key={t.id} id={t.id} dragging={activeId === t.id}>
+                        <div onClick={() => drawer.open({ tarefa: t })} className="cursor-grab active:cursor-grabbing">
+                          <ItemCard
+                            item={{ kind: "tarefa", data: t }}
+                            onConcluir={t.status !== "concluida" ? () => concluir.mutate(t.id) : undefined}
+                          />
+                        </div>
+                      </DraggableCard>
+                    ))
+                  )}
+                </div>
+              </KanbanColumn>
+            );
+          })}
+        </div>
+        <DragOverlay>
+          {activeTarefa ? (
+            <div className="opacity-90 rotate-1">
+              <ItemCard item={{ kind: "tarefa", data: activeTarefa }} />
             </div>
-          );
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </PageShell>
   );
 }
