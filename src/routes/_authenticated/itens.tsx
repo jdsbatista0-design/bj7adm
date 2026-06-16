@@ -269,7 +269,7 @@ function CockpitPage() {
   );
 }
 
-function KanbanColumn({ id, children }: { id: TarefaStatus; children: React.ReactNode }) {
+function KanbanColumn({ id, children }: { id: TarefaStatus; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div
@@ -284,7 +284,7 @@ function KanbanColumn({ id, children }: { id: TarefaStatus; children: React.Reac
   );
 }
 
-function DraggableCard({ id, dragging, children }: { id: number; dragging: boolean; children: React.ReactNode }) {
+function DraggableCard({ id, dragging, children }: { id: number; dragging: boolean; children: ReactNode }) {
   const { attributes, listeners, setNodeRef } = useDraggable({ id });
   return (
     <div ref={setNodeRef} {...attributes} {...listeners} className={cn(dragging && "opacity-40")}>
