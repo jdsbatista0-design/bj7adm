@@ -169,7 +169,7 @@ function ImportarRebatePage() {
   return (
     <PageShell
       title="Importar Rebate Stone"
-      subtitle="Envie o arquivo de rebate (.xlsx ou .csv). O sistema cria 1 conta a receber e, ao ser marcada como recebida, vira receita no DRE."
+      description="Envie o arquivo de rebate (.xlsx ou .csv). O sistema cria 1 conta a receber e, ao ser marcada como recebida, vira receita no DRE."
     >
       <div className="space-y-4">
         {/* Stepper */}

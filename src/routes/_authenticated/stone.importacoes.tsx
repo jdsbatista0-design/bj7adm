@@ -55,7 +55,7 @@ function ImportacoesPage() {
   return (
     <PageShell
       title="Importações de Rebate Stone"
-      subtitle="Histórico de arquivos importados. Reverter desfaz tudo: dados de clientes, conta a receber e lançamento (se já recebida)."
+      description="Histórico de arquivos importados. Reverter desfaz tudo: dados de clientes, conta a receber e lançamento (se já recebida)."
       actions={
         canManage ? (
           <Button asChild>
