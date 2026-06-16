@@ -268,3 +268,27 @@ function CockpitPage() {
     </PageShell>
   );
 }
+
+function KanbanColumn({ id, children }: { id: TarefaStatus; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "space-y-2 rounded-xl p-1 transition-colors",
+        isOver && "bg-primary/5 ring-1 ring-primary/30"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableCard({ id, dragging, children }: { id: number; dragging: boolean; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id });
+  return (
+    <div ref={setNodeRef} {...attributes} {...listeners} className={cn(dragging && "opacity-40")}>
+      {children}
+    </div>
+  );
+}
