@@ -106,7 +106,15 @@ const NAV: NavItem[] = [
   { title: "Marketing", url: "/marketing/campanhas", icon: Megaphone },
   { title: "Sistema (BJ7)", url: "/sistema", icon: Workflow },
   { title: "Pessoas", url: "/pessoas", icon: Users },
-  { title: "Clientes Stone", url: "/clientes-stone", icon: Banknote },
+  {
+    title: "Stone",
+    icon: Banknote,
+    children: [
+      { title: "Clientes Stone", url: "/clientes-stone", icon: Banknote },
+      { title: "Importar Rebate", url: "/stone/importar-rebate", icon: Upload },
+      { title: "Importações", url: "/stone/importacoes", icon: FileText },
+    ],
+  },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
