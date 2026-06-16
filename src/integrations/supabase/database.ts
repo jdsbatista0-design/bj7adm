@@ -563,6 +563,8 @@ export interface Database {
       notas_rapidas: Tbl<NotaRapidaRow>;
       juridico_processos: Tbl<JuridicoProcessoRow>;
       mkt_campanhas: Tbl<MktCampanhaRow>;
+      stone_rebate_imports: Tbl<StoneRebateImportRow>;
+      stone_rebate_linhas: Tbl<StoneRebateLinhaRow>;
     };
     Views: {
       v_resumo_dre: { Row: VResumoDreRow };
