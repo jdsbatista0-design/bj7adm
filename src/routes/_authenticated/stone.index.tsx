@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { formatBRL, formatDate, MESES_PT } from "@/lib/format";
 
-export const Route = createFileRoute("/_authenticated/stone")({
+export const Route = createFileRoute("/_authenticated/stone/")({
   component: StonePage,
 });
 

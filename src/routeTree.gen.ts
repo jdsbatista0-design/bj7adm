@@ -29,6 +29,7 @@ import { Route as AuthenticatedComercialRouteImport } from './routes/_authentica
 import { Route as AuthenticatedClientesStoneRouteImport } from './routes/_authenticated/clientes-stone'
 import { Route as AuthenticatedCalendarioRouteImport } from './routes/_authenticated/calendario'
 import { Route as AuthenticatedARevisarRouteImport } from './routes/_authenticated/a-revisar'
+import { Route as AuthenticatedStoneIndexRouteImport } from './routes/_authenticated/stone.index'
 import { Route as AuthenticatedSistemaIndexRouteImport } from './routes/_authenticated/sistema.index'
 import { Route as AuthenticatedFinanceiroIndexRouteImport } from './routes/_authenticated/financeiro.index'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
@@ -156,6 +157,11 @@ const AuthenticatedARevisarRoute = AuthenticatedARevisarRouteImport.update({
   id: '/a-revisar',
   path: '/a-revisar',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStoneIndexRoute = AuthenticatedStoneIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedStoneRoute,
 } as any)
 const AuthenticatedSistemaIndexRoute =
   AuthenticatedSistemaIndexRouteImport.update({
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
   '/financeiro/': typeof AuthenticatedFinanceiroIndexRoute
   '/sistema/': typeof AuthenticatedSistemaIndexRoute
+  '/stone/': typeof AuthenticatedStoneIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -361,7 +368,6 @@ export interface FileRoutesByTo {
   '/operacao': typeof AuthenticatedOperacaoRoute
   '/pessoas': typeof AuthenticatedPessoasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
-  '/stone': typeof AuthenticatedStoneRouteWithChildren
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
@@ -388,6 +394,7 @@ export interface FileRoutesByTo {
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
   '/financeiro': typeof AuthenticatedFinanceiroIndexRoute
   '/sistema': typeof AuthenticatedSistemaIndexRoute
+  '/stone': typeof AuthenticatedStoneIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -435,6 +442,7 @@ export interface FileRoutesById {
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
   '/_authenticated/financeiro/': typeof AuthenticatedFinanceiroIndexRoute
   '/_authenticated/sistema/': typeof AuthenticatedSistemaIndexRoute
+  '/_authenticated/stone/': typeof AuthenticatedStoneIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -482,6 +490,7 @@ export interface FileRouteTypes {
     | '/empresas/'
     | '/financeiro/'
     | '/sistema/'
+    | '/stone/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -498,7 +507,6 @@ export interface FileRouteTypes {
     | '/operacao'
     | '/pessoas'
     | '/relatorios'
-    | '/stone'
     | '/usuarios'
     | '/'
     | '/documentos/por-tipo'
@@ -525,6 +533,7 @@ export interface FileRouteTypes {
     | '/empresas'
     | '/financeiro'
     | '/sistema'
+    | '/stone'
   id:
     | '__root__'
     | '/_authenticated'
@@ -571,6 +580,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresas/'
     | '/_authenticated/financeiro/'
     | '/_authenticated/sistema/'
+    | '/_authenticated/stone/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -719,6 +729,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/a-revisar'
       preLoaderRoute: typeof AuthenticatedARevisarRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/stone/': {
+      id: '/_authenticated/stone/'
+      path: '/'
+      fullPath: '/stone/'
+      preLoaderRoute: typeof AuthenticatedStoneIndexRouteImport
+      parentRoute: typeof AuthenticatedStoneRoute
     }
     '/_authenticated/sistema/': {
       id: '/_authenticated/sistema/'
@@ -937,11 +954,13 @@ const AuthenticatedSistemaRouteWithChildren =
 interface AuthenticatedStoneRouteChildren {
   AuthenticatedStoneImportacoesRoute: typeof AuthenticatedStoneImportacoesRoute
   AuthenticatedStoneImportarRebateRoute: typeof AuthenticatedStoneImportarRebateRoute
+  AuthenticatedStoneIndexRoute: typeof AuthenticatedStoneIndexRoute
 }
 
 const AuthenticatedStoneRouteChildren: AuthenticatedStoneRouteChildren = {
   AuthenticatedStoneImportacoesRoute: AuthenticatedStoneImportacoesRoute,
   AuthenticatedStoneImportarRebateRoute: AuthenticatedStoneImportarRebateRoute,
+  AuthenticatedStoneIndexRoute: AuthenticatedStoneIndexRoute,
 }
 
 const AuthenticatedStoneRouteWithChildren =
