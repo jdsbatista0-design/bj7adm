@@ -469,6 +469,63 @@ export interface VEvolucaoMensalRow {
 }
 
 
+// ===== Stone Rebate Import =====
+export type StoneRebateImportStatus =
+  | "pendente"
+  | "prevalidado"
+  | "importado"
+  | "revertido"
+  | "erro";
+
+export interface StoneRebateImportRow {
+  id: number;
+  arquivo_nome: string;
+  arquivo_hash: string;
+  usuario_id: number | null;
+  empresa_id: number | null;
+  periodo_inicio: string | null;
+  periodo_fim: string | null;
+  mes_referencia: string | null;
+  status: StoneRebateImportStatus;
+  total_linhas: number;
+  linhas_ok: number;
+  linhas_erro: number;
+  linhas_duplicadas: number;
+  valor_total_rebate: number;
+  conta_a_pagar_id: number | null;
+  lancamento_id: number | null;
+  observacao: string | null;
+  mapeamento_json: Record<string, string> | null;
+  created_at: string;
+}
+
+export interface StoneRebateLinhaRow {
+  id: number;
+  import_id: number;
+  linha_num: number;
+  stonecode: string | null;
+  documento: string | null;
+  nome_cliente: string | null;
+  data_referencia: string | null;
+  mes_referencia: string | null;
+  tpv: number | null;
+  receita_bruta: number | null;
+  rebate_valor: number | null;
+  mdr: number | null;
+  antecipacao: number | null;
+  aluguel: number | null;
+  produto: string | null;
+  bandeira: string | null;
+  canal: string | null;
+  cidade: string | null;
+  rota: string | null;
+  status_conciliacao: "ok" | "erro" | "duplicada";
+  erro_importacao: string | null;
+  dados_originais_json: Record<string, unknown> | null;
+  created_at: string;
+}
+
+
 type Tbl<Row, Insert = Partial<Row> & { id?: number }, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
