@@ -33,6 +33,8 @@ import { Route as AuthenticatedSistemaIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedFinanceiroIndexRouteImport } from './routes/_authenticated/financeiro.index'
 import { Route as AuthenticatedEmpresasIndexRouteImport } from './routes/_authenticated/empresas.index'
 import { Route as AuthenticatedDocumentosIndexRouteImport } from './routes/_authenticated/documentos.index'
+import { Route as AuthenticatedStoneImportarRebateRouteImport } from './routes/_authenticated/stone.importar-rebate'
+import { Route as AuthenticatedStoneImportacoesRouteImport } from './routes/_authenticated/stone.importacoes'
 import { Route as AuthenticatedSistemaTemplatesRouteImport } from './routes/_authenticated/sistema.templates'
 import { Route as AuthenticatedSistemaProcedimentosRouteImport } from './routes/_authenticated/sistema.procedimentos'
 import { Route as AuthenticatedSistemaPorEixoRouteImport } from './routes/_authenticated/sistema.por-eixo'
@@ -180,6 +182,18 @@ const AuthenticatedDocumentosIndexRoute =
     path: '/documentos/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedStoneImportarRebateRoute =
+  AuthenticatedStoneImportarRebateRouteImport.update({
+    id: '/importar-rebate',
+    path: '/importar-rebate',
+    getParentRoute: () => AuthenticatedStoneRoute,
+  } as any)
+const AuthenticatedStoneImportacoesRoute =
+  AuthenticatedStoneImportacoesRouteImport.update({
+    id: '/importacoes',
+    path: '/importacoes',
+    getParentRoute: () => AuthenticatedStoneRoute,
+  } as any)
 const AuthenticatedSistemaTemplatesRoute =
   AuthenticatedSistemaTemplatesRouteImport.update({
     id: '/templates',
@@ -312,7 +326,7 @@ export interface FileRoutesByFullPath {
   '/pessoas': typeof AuthenticatedPessoasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/sistema': typeof AuthenticatedSistemaRouteWithChildren
-  '/stone': typeof AuthenticatedStoneRoute
+  '/stone': typeof AuthenticatedStoneRouteWithChildren
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
   '/documentos/vencimentos': typeof AuthenticatedDocumentosVencimentosRoute
@@ -333,6 +347,8 @@ export interface FileRoutesByFullPath {
   '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
   '/sistema/templates': typeof AuthenticatedSistemaTemplatesRoute
+  '/stone/importacoes': typeof AuthenticatedStoneImportacoesRoute
+  '/stone/importar-rebate': typeof AuthenticatedStoneImportarRebateRoute
   '/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/empresas/': typeof AuthenticatedEmpresasIndexRoute
   '/financeiro/': typeof AuthenticatedFinanceiroIndexRoute
@@ -353,7 +369,7 @@ export interface FileRoutesByTo {
   '/operacao': typeof AuthenticatedOperacaoRoute
   '/pessoas': typeof AuthenticatedPessoasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
-  '/stone': typeof AuthenticatedStoneRoute
+  '/stone': typeof AuthenticatedStoneRouteWithChildren
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
@@ -375,6 +391,8 @@ export interface FileRoutesByTo {
   '/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
   '/sistema/templates': typeof AuthenticatedSistemaTemplatesRoute
+  '/stone/importacoes': typeof AuthenticatedStoneImportacoesRoute
+  '/stone/importar-rebate': typeof AuthenticatedStoneImportarRebateRoute
   '/documentos': typeof AuthenticatedDocumentosIndexRoute
   '/empresas': typeof AuthenticatedEmpresasIndexRoute
   '/financeiro': typeof AuthenticatedFinanceiroIndexRoute
@@ -399,7 +417,7 @@ export interface FileRoutesById {
   '/_authenticated/pessoas': typeof AuthenticatedPessoasRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/sistema': typeof AuthenticatedSistemaRouteWithChildren
-  '/_authenticated/stone': typeof AuthenticatedStoneRoute
+  '/_authenticated/stone': typeof AuthenticatedStoneRouteWithChildren
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/documentos/por-tipo': typeof AuthenticatedDocumentosPorTipoRoute
@@ -421,6 +439,8 @@ export interface FileRoutesById {
   '/_authenticated/sistema/por-eixo': typeof AuthenticatedSistemaPorEixoRoute
   '/_authenticated/sistema/procedimentos': typeof AuthenticatedSistemaProcedimentosRoute
   '/_authenticated/sistema/templates': typeof AuthenticatedSistemaTemplatesRoute
+  '/_authenticated/stone/importacoes': typeof AuthenticatedStoneImportacoesRoute
+  '/_authenticated/stone/importar-rebate': typeof AuthenticatedStoneImportarRebateRoute
   '/_authenticated/documentos/': typeof AuthenticatedDocumentosIndexRoute
   '/_authenticated/empresas/': typeof AuthenticatedEmpresasIndexRoute
   '/_authenticated/financeiro/': typeof AuthenticatedFinanceiroIndexRoute
@@ -467,6 +487,8 @@ export interface FileRouteTypes {
     | '/sistema/por-eixo'
     | '/sistema/procedimentos'
     | '/sistema/templates'
+    | '/stone/importacoes'
+    | '/stone/importar-rebate'
     | '/documentos/'
     | '/empresas/'
     | '/financeiro/'
@@ -509,6 +531,8 @@ export interface FileRouteTypes {
     | '/sistema/por-eixo'
     | '/sistema/procedimentos'
     | '/sistema/templates'
+    | '/stone/importacoes'
+    | '/stone/importar-rebate'
     | '/documentos'
     | '/empresas'
     | '/financeiro'
@@ -554,6 +578,8 @@ export interface FileRouteTypes {
     | '/_authenticated/sistema/por-eixo'
     | '/_authenticated/sistema/procedimentos'
     | '/_authenticated/sistema/templates'
+    | '/_authenticated/stone/importacoes'
+    | '/_authenticated/stone/importar-rebate'
     | '/_authenticated/documentos/'
     | '/_authenticated/empresas/'
     | '/_authenticated/financeiro/'
@@ -735,6 +761,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDocumentosIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/stone/importar-rebate': {
+      id: '/_authenticated/stone/importar-rebate'
+      path: '/importar-rebate'
+      fullPath: '/stone/importar-rebate'
+      preLoaderRoute: typeof AuthenticatedStoneImportarRebateRouteImport
+      parentRoute: typeof AuthenticatedStoneRoute
+    }
+    '/_authenticated/stone/importacoes': {
+      id: '/_authenticated/stone/importacoes'
+      path: '/importacoes'
+      fullPath: '/stone/importacoes'
+      preLoaderRoute: typeof AuthenticatedStoneImportacoesRouteImport
+      parentRoute: typeof AuthenticatedStoneRoute
+    }
     '/_authenticated/sistema/templates': {
       id: '/_authenticated/sistema/templates'
       path: '/templates'
@@ -914,6 +954,19 @@ const AuthenticatedSistemaRouteChildren: AuthenticatedSistemaRouteChildren = {
 const AuthenticatedSistemaRouteWithChildren =
   AuthenticatedSistemaRoute._addFileChildren(AuthenticatedSistemaRouteChildren)
 
+interface AuthenticatedStoneRouteChildren {
+  AuthenticatedStoneImportacoesRoute: typeof AuthenticatedStoneImportacoesRoute
+  AuthenticatedStoneImportarRebateRoute: typeof AuthenticatedStoneImportarRebateRoute
+}
+
+const AuthenticatedStoneRouteChildren: AuthenticatedStoneRouteChildren = {
+  AuthenticatedStoneImportacoesRoute: AuthenticatedStoneImportacoesRoute,
+  AuthenticatedStoneImportarRebateRoute: AuthenticatedStoneImportarRebateRoute,
+}
+
+const AuthenticatedStoneRouteWithChildren =
+  AuthenticatedStoneRoute._addFileChildren(AuthenticatedStoneRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedARevisarRoute: typeof AuthenticatedARevisarRoute
   AuthenticatedCalendarioRoute: typeof AuthenticatedCalendarioRoute
@@ -930,7 +983,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedPessoasRoute: typeof AuthenticatedPessoasRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedSistemaRoute: typeof AuthenticatedSistemaRouteWithChildren
-  AuthenticatedStoneRoute: typeof AuthenticatedStoneRoute
+  AuthenticatedStoneRoute: typeof AuthenticatedStoneRouteWithChildren
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedDocumentosPorTipoRoute: typeof AuthenticatedDocumentosPorTipoRoute
@@ -965,7 +1018,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPessoasRoute: AuthenticatedPessoasRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedSistemaRoute: AuthenticatedSistemaRouteWithChildren,
-  AuthenticatedStoneRoute: AuthenticatedStoneRoute,
+  AuthenticatedStoneRoute: AuthenticatedStoneRouteWithChildren,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedDocumentosPorTipoRoute: AuthenticatedDocumentosPorTipoRoute,
@@ -997,13 +1050,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

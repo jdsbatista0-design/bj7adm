@@ -1,88 +1,127 @@
 ## Objetivo
 
-Fechar o ciclo financeiro: toda conta paga vira um Lançamento (Despesa) no mesmo banco que alimenta o DRE; e ganhar visão clara de meses futuros (planejamento de caixa) e passados (histórico).
-
-Sem alteração de schema — as colunas `contas_a_pagar.lancamento_id` e `contas_a_pagar.data_pagamento` já existem; só falta usá-las.
+Importar arquivo de rebate Stone (.xlsx/.csv) → tratar, gravar histórico por cliente, e gerar **1 conta a receber** por importação. Quando essa conta for marcada como **recebida**, vira automaticamente **1 lançamento de Receita** no DRE. Adicionar filtro de período em Clientes Stone.
 
 ---
 
-## 1. Pagar conta → criar Lançamento automaticamente
+## 1. Banco (migração única)
 
-**Regra:** ao marcar uma conta como paga, inserir uma linha em `lancamentos` (tipo `Despesa`) e gravar o `id` resultante em `contas_a_pagar.lancamento_id`.
+**Novas tabelas**
 
-Mapeamento:
+`stone_rebate_imports` (header)
+- `id`, `arquivo_nome`, `arquivo_hash` (unique — bloqueia reimport idêntico)
+- `usuario_id`, `empresa_id` (destino do lançamento — escolhida na importação)
+- `periodo_inicio`, `periodo_fim`, `mes_referencia`
+- `status` (`pendente` | `prevalidado` | `importado` | `revertido` | `erro`)
+- `total_linhas`, `linhas_ok`, `linhas_erro`, `linhas_duplicadas`
+- `valor_total_rebate` (soma usada na conta a receber)
+- `conta_a_pagar_id` (FK → `contas_a_pagar`, a "conta a receber" gerada)
+- `lancamento_id` (FK → `lancamentos`, preenchido só quando marcada como recebida)
+- `observacao`, `mapeamento_json`, `created_at`
 
-| `lancamentos` | vem de `contas_a_pagar` |
-|---|---|
-| `data` | `data_pagamento` |
-| `ano` / `mes` | extraídos de `data_pagamento` |
-| `tipo` | `"Despesa"` fixo |
-| `empresa_id` | `empresa_id` da conta (obrigatório) |
-| `categoria_id` | `categoria_id` da conta |
-| `descricao` | `descricao` da conta + `(pago: <forma>)` |
-| `valor` | `valor_pago` |
-| `origem_classificacao` | `"contas_a_pagar"` |
-| `contar_no_total` | `true` |
-| `revisado` | `false` |
+`stone_rebate_linhas` (staging + histórico)
+- `id`, `import_id` (FK cascade), `linha_num`
+- `stonecode`, `documento`, `nome_cliente`
+- `data_referencia`, `mes_referencia`
+- `tpv`, `receita_bruta`, `rebate_valor`, `mdr`, `antecipacao`, `aluguel`
+- `produto`, `bandeira`, `canal`, `cidade`, `rota`
+- `status_conciliacao`, `erro_importacao`, `dados_originais_json`
 
-**Validação inteligente:** se a conta não tiver `empresa_id`, o botão "Marcar como pago" abre um pequeno popover pedindo empresa (e categoria sugerida) antes de prosseguir — sem empresa não existe Lançamento válido.
+**Categoria fixa** (seed): cria `categorias` com nome **"Receita Stone - Rebate"**, tipo `Receita` se não existir. ID guardado em config/constante.
 
-**Reversão:** desmarcar pagamento (ou excluir conta paga) deleta o `lancamento` vinculado pelo `lancamento_id` e zera o campo.
+**GRANTs + RLS**: `authenticated` lê/escreve; `service_role` ALL. Políticas usando `has_role` / `pode_gerir_usuarios`.
 
-**Atualização do dialog "Nova conta":** quando o usuário cria uma conta com a switch "Já está paga" ligada, o mesmo fluxo roda para a 1ª parcela.
-
-**Edição de conta já paga:** se valor / data_pagamento / empresa / categoria mudarem em uma conta com `lancamento_id`, atualizar o lançamento espelhado.
-
-## 2. Indicador visual na tabela
-
-- Nova coluna/badge "DRE" na linha: quando `lancamento_id != null`, mostrar chip verde "Lançada" com link para `/financeiro?ano=…&mes=…&q=<descricao>` (filtra o lançamento na aba de Lançamentos).
-- Tooltip mostra `lancamento_id` e a data lançada.
-
-## 3. Visão temporal (passado e futuro)
-
-Substituir o filtro fixo "tabs A vencer / Atrasadas / Pagas / Todas" por um seletor de período mais rico, mantendo os tabs como filtros secundários de status:
-
-**Barra de período (topo):**
-- Botões: `← mês anterior`  `[Mês AAAA ▼]`  `próximo mês →`  `Hoje`
-- Presets: `Próximos 30d` · `Próximos 90d` · `12 meses` · `Personalizado`
-- Quando o período é maior que 1 mês, agrupa visualmente por mês na tabela.
-
-**Mini-timeline (acima da tabela):**
-- Barras mensais cobrindo 6 meses atrás → 6 meses à frente (configurável).
-- Cada barra mostra total a vencer no mês; barras passadas pintam diferenciado (pagas vs atrasadas).
-- Click numa barra → seta o período para aquele mês.
-- Implementado com `recharts` (já usado no projeto).
-
-**KPIs recalculados sobre o período selecionado:**
-- A vencer · Atrasadas · Pagas · **Saldo previsto** (a vencer + atrasadas) — útil para planejar caixa.
-
-## 4. Ajustes na query e KPIs
-
-Query principal passa a aceitar `dataDe`/`dataAte` em vez de hard-code do dia de hoje. Status (`vencer`/`atrasadas`/`pagas`/`todas`) continua como filtro independente em cima do recorte de período.
-
-## 5. Arquivos afetados
-
-- **edit** `src/routes/_authenticated/financeiro.contas-a-pagar.tsx` — nova barra de período, mini-timeline, coluna DRE, query parametrizada, ações de pagar/estornar via novo helper.
-- **new** `src/lib/contas-a-pagar.ts` — helpers puros:
-  - `pagarConta(row, { dataPagamento, valorPago, empresaId?, categoriaId? })` → cria Lançamento + atualiza conta numa transação lógica (best-effort: insere lançamento, se OK atualiza conta; se a 2ª falha, faz rollback do lançamento).
-  - `estornarPagamento(row)` → apaga lançamento e limpa flags.
-  - `sincronizarLancamentoDeConta(row)` → atualização espelhada.
-- **edit** `src/components/financeiro/ContaAPagarDialog.tsx` — usar `pagarConta` quando "Já paga" estiver ligado; exigir `empresa_id` se "Já paga" estiver marcada.
-- **new** `src/components/financeiro/MarcarPagoPopover.tsx` — pequeno popover para confirmar data/valor/empresa antes de pagar.
-
-## 6. Fora desta rodada
-
-- Conciliação reversa (lançamento → conta a pagar).
-- Recorrência de despesas direto na tabela `lancamentos`.
-- Aprovação multi-etapa antes de lançar.
-- Edição de Lançamento abrindo conta vinculada (ida-e-volta) — só o link de navegação será adicionado.
+**Sem alteração** em `rebate_clientes_stone` nem `lancamentos` nem `contas_a_pagar` (já têm `lancamento_id`).
 
 ---
 
-## Detalhes técnicos
+## 2. Importador `/stone/importar-rebate`
 
-- Todas as inserções em `lancamentos` usam o cliente browser autenticado (RLS aplica). Não precisa de server function.
-- Origem `"contas_a_pagar"` em `origem_classificacao` permite filtrar/desfazer lote.
-- `crypto.randomUUID()` continua para `grupo_id` de parcelas; o lançamento gerado não usa grupo.
-- A timeline é puramente client-side: uma única query do range completo + `group by month` em JS.
-- Sem migration. Sem novas dependências.
+Stepper 4 passos (client-side, parser SheetJS):
+
+1. **Upload** — `.xlsx`/`.csv`, calcula hash, bloqueia se já importado
+2. **Mapeamento automático** — detecta colunas via sinônimos (`Stone Code`/`Stonecode`/`Código`, `Rebate`, `TPV`, `Mês referência`, etc). Usuário ajusta se preciso. Opção "salvar template".
+3. **Pré-visualização + validação** — mostra: total linhas, linhas OK, linhas com erro (campo vazio, valor inválido, mês inválido), duplicadas internas, conflitos com `rebate_clientes_stone` `(stonecode, mes_referencia)`. Mostra **valor total do rebate** + escolha de **empresa de destino** + **data de vencimento** da conta a receber (default: último dia do mês de referência).
+4. **Confirmação** — escreve `stone_rebate_imports` + `stone_rebate_linhas`, faz upsert em `rebate_clientes_stone` por `(stonecode, mes_referencia)`, e cria **1 conta a pagar** (`tipo` receita via marca em observação — segue padrão atual: `parseTipoFromObs` reconhece "Tipo: Receita") com:
+   - `descricao`: "Rebate Stone — {mes}/{ano} ({arquivo})"
+   - `valor`: soma `rebate_valor`
+   - `empresa_id`: a escolhida
+   - `categoria_id`: "Receita Stone - Rebate"
+   - `vencimento`: data informada
+   - `pago`: false
+   - `observacao`: `Tipo: Receita | Origem: stone_rebate | import_id: N`
+
+**Não cria lançamento agora.** O lançamento nasce quando a conta for marcada como recebida via fluxo existente `pagarConta()` (que já lê `Tipo: Receita` da observação e cria `lancamentos.tipo='Receita'`). Zero código novo no DRE/cockpit/calendário — herdam de graça.
+
+---
+
+## 3. Histórico `/stone/importacoes` (aba nova ou rota)
+
+Lista importações com: data, arquivo, mês ref, valor total, status, conta vinculada (badge "A receber"/"Recebido"/"Revertido"), linhas ok/erro/dup.
+
+Ações:
+- **Ver detalhes** — drawer com linhas OK e linhas com erro
+- **Reverter** — confirm dialog. Apaga: `stone_rebate_linhas`, registros de `rebate_clientes_stone` desta importação (`import_id`), `lancamentos` (se foi recebida), `contas_a_pagar` vinculada. Marca import como `revertido`.
+
+---
+
+## 4. Filtro de período em `clientes-stone.tsx`
+
+Barra topo: preset (Este mês / Mês passado / Últimos 3m / 6m / Ano / Personalizado) + range manual. Default: **últimos 3 meses**.
+
+Propaga para: KPIs dos 4 segmentos, ranking, gráfico de evolução, drawer individual do cliente.
+
+Drawer do cliente passa a mostrar:
+- TPV/Receita/Rebate por mês (do range)
+- Melhor/pior mês
+- Último mês ativo
+- Histórico de importações onde apareceu (via `stone_rebate_linhas.import_id`)
+
+Export CSV respeita o filtro.
+
+---
+
+## 5. Permissões
+
+- `podeImportar` (Admin/Sócio — já existe): vê `/stone/importar-rebate` e botão Reverter
+- `podeVerStone`: continua vendo Clientes Stone e histórico em modo leitura
+
+---
+
+## 6. Ordem de execução
+
+```text
+1. Migração SQL (tabelas + categoria seed + GRANTs + RLS)
+2. Tipos: regenerar database.ts (manual após migração)
+3. /stone/importar-rebate (parser + stepper + confirmação)
+4. /stone/importacoes (lista + reverter)
+5. clientes-stone.tsx (filtro período + drawer com histórico)
+6. Menu lateral: links em "Stone"
+```
+
+## 7. Fora desta rodada
+
+- Conciliação cliente-a-cliente
+- Edição de linha individual após import (só reverter + reimportar)
+- Comissão de vendedor automática
+- Email/alerta quando conta a receber vence sem baixa
+
+---
+
+### Diagrama do fluxo de dinheiro
+
+```text
+arquivo.xlsx
+   │
+   ▼
+[Importar] ──► stone_rebate_imports (status: importado)
+              stone_rebate_linhas (N linhas)
+              rebate_clientes_stone (upsert por stonecode+mes)
+              contas_a_pagar (1 linha, Tipo: Receita, pago=false)
+                          │
+                          ▼
+              [Marcar como recebida em Contas a Pagar]
+                          │
+                          ▼
+                  lancamentos (Receita) ──► DRE, Cockpit, Calendário
+```
