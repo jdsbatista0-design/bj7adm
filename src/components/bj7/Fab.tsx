@@ -7,7 +7,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Plus, ListTodo, Banknote, Receipt, StickyNote } from "lucide-react";
+import { Plus, ListTodo, Banknote, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Fab() {

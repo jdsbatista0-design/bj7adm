@@ -43,7 +43,6 @@ import { Route as AuthenticatedOpenFinanceConectarRouteImport } from './routes/_
 import { Route as AuthenticatedMarketingCampanhasRouteImport } from './routes/_authenticated/marketing.campanhas'
 import { Route as AuthenticatedJuridicoProcessosRouteImport } from './routes/_authenticated/juridico.processos'
 import { Route as AuthenticatedFiscalPendenciasRouteImport } from './routes/_authenticated/fiscal.pendencias'
-import { Route as AuthenticatedFiscalObrigacoesRouteImport } from './routes/_authenticated/fiscal.obrigacoes'
 import { Route as AuthenticatedFiscalImportacoesRouteImport } from './routes/_authenticated/fiscal.importacoes'
 import { Route as AuthenticatedFiscalFaturamentoSimplesRouteImport } from './routes/_authenticated/fiscal.faturamento-simples'
 import { Route as AuthenticatedFiscalDashboardRouteImport } from './routes/_authenticated/fiscal.dashboard'
@@ -242,12 +241,6 @@ const AuthenticatedFiscalPendenciasRoute =
     path: '/fiscal/pendencias',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedFiscalObrigacoesRoute =
-  AuthenticatedFiscalObrigacoesRouteImport.update({
-    id: '/fiscal/obrigacoes',
-    path: '/fiscal/obrigacoes',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedFiscalImportacoesRoute =
   AuthenticatedFiscalImportacoesRouteImport.update({
     id: '/fiscal/importacoes',
@@ -338,7 +331,6 @@ export interface FileRoutesByFullPath {
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
   '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
-  '/fiscal/obrigacoes': typeof AuthenticatedFiscalObrigacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/juridico/processos': typeof AuthenticatedJuridicoProcessosRoute
   '/marketing/campanhas': typeof AuthenticatedMarketingCampanhasRoute
@@ -382,7 +374,6 @@ export interface FileRoutesByTo {
   '/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
   '/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
-  '/fiscal/obrigacoes': typeof AuthenticatedFiscalObrigacoesRoute
   '/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/juridico/processos': typeof AuthenticatedJuridicoProcessosRoute
   '/marketing/campanhas': typeof AuthenticatedMarketingCampanhasRoute
@@ -430,7 +421,6 @@ export interface FileRoutesById {
   '/_authenticated/fiscal/dashboard': typeof AuthenticatedFiscalDashboardRoute
   '/_authenticated/fiscal/faturamento-simples': typeof AuthenticatedFiscalFaturamentoSimplesRoute
   '/_authenticated/fiscal/importacoes': typeof AuthenticatedFiscalImportacoesRoute
-  '/_authenticated/fiscal/obrigacoes': typeof AuthenticatedFiscalObrigacoesRoute
   '/_authenticated/fiscal/pendencias': typeof AuthenticatedFiscalPendenciasRoute
   '/_authenticated/juridico/processos': typeof AuthenticatedJuridicoProcessosRoute
   '/_authenticated/marketing/campanhas': typeof AuthenticatedMarketingCampanhasRoute
@@ -478,7 +468,6 @@ export interface FileRouteTypes {
     | '/fiscal/dashboard'
     | '/fiscal/faturamento-simples'
     | '/fiscal/importacoes'
-    | '/fiscal/obrigacoes'
     | '/fiscal/pendencias'
     | '/juridico/processos'
     | '/marketing/campanhas'
@@ -522,7 +511,6 @@ export interface FileRouteTypes {
     | '/fiscal/dashboard'
     | '/fiscal/faturamento-simples'
     | '/fiscal/importacoes'
-    | '/fiscal/obrigacoes'
     | '/fiscal/pendencias'
     | '/juridico/processos'
     | '/marketing/campanhas'
@@ -569,7 +557,6 @@ export interface FileRouteTypes {
     | '/_authenticated/fiscal/dashboard'
     | '/_authenticated/fiscal/faturamento-simples'
     | '/_authenticated/fiscal/importacoes'
-    | '/_authenticated/fiscal/obrigacoes'
     | '/_authenticated/fiscal/pendencias'
     | '/_authenticated/juridico/processos'
     | '/_authenticated/marketing/campanhas'
@@ -831,13 +818,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFiscalPendenciasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/fiscal/obrigacoes': {
-      id: '/_authenticated/fiscal/obrigacoes'
-      path: '/fiscal/obrigacoes'
-      fullPath: '/fiscal/obrigacoes'
-      preLoaderRoute: typeof AuthenticatedFiscalObrigacoesRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/fiscal/importacoes': {
       id: '/_authenticated/fiscal/importacoes'
       path: '/fiscal/importacoes'
@@ -993,7 +973,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFiscalDashboardRoute: typeof AuthenticatedFiscalDashboardRoute
   AuthenticatedFiscalFaturamentoSimplesRoute: typeof AuthenticatedFiscalFaturamentoSimplesRoute
   AuthenticatedFiscalImportacoesRoute: typeof AuthenticatedFiscalImportacoesRoute
-  AuthenticatedFiscalObrigacoesRoute: typeof AuthenticatedFiscalObrigacoesRoute
   AuthenticatedFiscalPendenciasRoute: typeof AuthenticatedFiscalPendenciasRoute
   AuthenticatedJuridicoProcessosRoute: typeof AuthenticatedJuridicoProcessosRoute
   AuthenticatedMarketingCampanhasRoute: typeof AuthenticatedMarketingCampanhasRoute
@@ -1030,7 +1009,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFiscalFaturamentoSimplesRoute:
     AuthenticatedFiscalFaturamentoSimplesRoute,
   AuthenticatedFiscalImportacoesRoute: AuthenticatedFiscalImportacoesRoute,
-  AuthenticatedFiscalObrigacoesRoute: AuthenticatedFiscalObrigacoesRoute,
   AuthenticatedFiscalPendenciasRoute: AuthenticatedFiscalPendenciasRoute,
   AuthenticatedJuridicoProcessosRoute: AuthenticatedJuridicoProcessosRoute,
   AuthenticatedMarketingCampanhasRoute: AuthenticatedMarketingCampanhasRoute,
