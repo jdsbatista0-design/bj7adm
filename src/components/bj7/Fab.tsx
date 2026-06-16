@@ -7,7 +7,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Plus, ListTodo, Banknote, Receipt, StickyNote } from "lucide-react";
+import { Plus, ListTodo, Banknote, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Fab() {
@@ -39,9 +39,6 @@ export function Fab() {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate({ to: "/financeiro/contas-a-pagar" })}>
               <Banknote className="h-4 w-4 mr-2" /> Conta a pagar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate({ to: "/fiscal/obrigacoes" })}>
-              <Receipt className="h-4 w-4 mr-2" /> Obrigação fiscal
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setNotasOpen(true)}>
               <StickyNote className="h-4 w-4 mr-2" /> Nota rápida

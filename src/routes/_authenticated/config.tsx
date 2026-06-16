@@ -3,7 +3,7 @@ import { PageShell } from "@/components/bj7/PageShell";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { podeGerirUsuarios, podeImportar } from "@/lib/permissions";
 import {
-  Users, Upload, Sparkles, ArrowRight, Banknote, Receipt, ListTodo, StickyNote, Percent,
+  Users, Upload, Sparkles, ArrowRight, Banknote, ListTodo, StickyNote, Percent,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/config")({
@@ -16,7 +16,7 @@ function Config() {
     { to: "/itens", icon: <ListTodo className="h-4 w-4" />, title: "Cockpit", desc: "Tarefas, decisões e ações do dia", show: true },
     { to: "/financeiro/contas-a-pagar", icon: <Banknote className="h-4 w-4" />, title: "Contas a Pagar", desc: "Obrigações financeiras e recorrências", show: true },
     { to: "/financeiro/categorias", icon: <Percent className="h-4 w-4" />, title: "Categorias", desc: "Plano de categorias (receita, despesa, retirada)", show: true },
-    { to: "/fiscal/obrigacoes", icon: <Receipt className="h-4 w-4" />, title: "Obrigações Fiscais", desc: "Calendário de tributos e guias", show: true },
+    
     { to: "/usuarios", icon: <Users className="h-4 w-4" />, title: "Usuários", desc: "Gestão de pessoas, papéis e empresas", show: podeGerirUsuarios(user) },
     { to: "/fiscal/importacoes", icon: <Upload className="h-4 w-4" />, title: "Importações", desc: "Histórico de importações de planilhas", show: podeImportar(user) },
     { to: "/inteligencia", icon: <Sparkles className="h-4 w-4" />, title: "Regras automáticas", desc: "Motor de alertas e ações", show: true },

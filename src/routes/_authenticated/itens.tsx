@@ -1,5 +1,5 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,9 +16,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, ListTodo, Filter, Calendar } from "lucide-react";
+import { Plus, Search, ListTodo, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
+  useDraggable, useDroppable, type DragEndEvent, type DragStartEvent,
+} from "@dnd-kit/core";
 
 const searchSchema = z.object({
   hoje: z.string().optional(),
@@ -75,6 +79,51 @@ function CockpitPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const mudarStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: TarefaStatus }) => {
+      const r = await from("tarefas").update({ status }).eq("id", id);
+      if (r.error) throw r.error;
+    },
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ["tarefas"] });
+      const prev = qc.getQueriesData<TarefaRow[]>({ queryKey: ["tarefas"] });
+      prev.forEach(([key, data]) => {
+        if (!data) return;
+        qc.setQueryData(key, data.map(t => t.id === id ? { ...t, status } : t));
+      });
+      return { prev };
+    },
+    onError: (e: Error, _vars, ctx) => {
+      ctx?.prev.forEach(([key, data]) => qc.setQueryData(key, data));
+      toast.error(e.message);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["tarefas"] }),
+  });
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const activeTarefa = useMemo(
+    () => (q.data ?? []).find(t => t.id === activeId) ?? null,
+    [q.data, activeId]
+  );
+
+  function onDragStart(e: DragStartEvent) {
+    setActiveId(Number(e.active.id));
+  }
+  function onDragEnd(e: DragEndEvent) {
+    setActiveId(null);
+    const overId = e.over?.id as TarefaStatus | undefined;
+    const id = Number(e.active.id);
+    if (!overId) return;
+    const current = (q.data ?? []).find(t => t.id === id);
+    if (!current || current.status === overId) return;
+    if (overId === "concluida") {
+      concluir.mutate(id);
+    } else {
+      mudarStatus.mutate({ id, status: overId });
+    }
+  }
 
   const filtered = useMemo(() => {
     const list = q.data ?? [];
@@ -166,45 +215,80 @@ function CockpitPage() {
       )}
 
       {/* Kanban */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {COLUMNS.map(col => {
-          const items = grouped.get(col.key) ?? [];
-          return (
-            <div key={col.key} className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wide", col.tone)}>
-                    {col.label}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">{items.length}</span>
-                </div>
-              </div>
-              <div className="space-y-2 min-h-[80px]">
-                {q.isLoading ? (
-                  <>
-                    <Skeleton className="h-20" />
-                    <Skeleton className="h-20" />
-                  </>
-                ) : items.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-white/5 p-4 text-center text-xs text-muted-foreground">
-                    <ListTodo className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                    Nada aqui
+      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {COLUMNS.map(col => {
+            const items = grouped.get(col.key) ?? [];
+            return (
+              <KanbanColumn key={col.key} id={col.key}>
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={cn("text-[10px] uppercase tracking-wide", col.tone)}>
+                      {col.label}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{items.length}</span>
                   </div>
-                ) : (
-                  items.map(t => (
-                    <div key={t.id} onClick={() => drawer.open({ tarefa: t })} className="cursor-pointer">
-                      <ItemCard
-                        item={{ kind: "tarefa", data: t }}
-                        onConcluir={t.status !== "concluida" ? () => concluir.mutate(t.id) : undefined}
-                      />
+                </div>
+                <div className="space-y-2 min-h-[80px]">
+                  {q.isLoading ? (
+                    <>
+                      <Skeleton className="h-20" />
+                      <Skeleton className="h-20" />
+                    </>
+                  ) : items.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-white/5 p-4 text-center text-xs text-muted-foreground">
+                      <ListTodo className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                      Arraste cards aqui
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    items.map(t => (
+                      <DraggableCard key={t.id} id={t.id} dragging={activeId === t.id}>
+                        <div onClick={() => drawer.open({ tarefa: t })} className="cursor-grab active:cursor-grabbing">
+                          <ItemCard
+                            item={{ kind: "tarefa", data: t }}
+                            onConcluir={t.status !== "concluida" ? () => concluir.mutate(t.id) : undefined}
+                          />
+                        </div>
+                      </DraggableCard>
+                    ))
+                  )}
+                </div>
+              </KanbanColumn>
+            );
+          })}
+        </div>
+        <DragOverlay>
+          {activeTarefa ? (
+            <div className="opacity-90 rotate-1">
+              <ItemCard item={{ kind: "tarefa", data: activeTarefa }} />
             </div>
-          );
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </PageShell>
+  );
+}
+
+function KanbanColumn({ id, children }: { id: TarefaStatus; children: ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "space-y-2 rounded-xl p-1 transition-colors",
+        isOver && "bg-primary/5 ring-1 ring-primary/30"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableCard({ id, dragging, children }: { id: number; dragging: boolean; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id });
+  return (
+    <div ref={setNodeRef} {...attributes} {...listeners} className={cn(dragging && "opacity-40")}>
+      {children}
+    </div>
   );
 }
