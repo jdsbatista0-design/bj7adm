@@ -246,7 +246,7 @@ export function ContaAPagarDialog({
           ...base,
           valor: valorNum,
           vencimento,
-          recorrencia: freq,
+          recorrencia: null,
         }).eq("id", editing.id);
         if (r.error) throw r.error;
 
@@ -296,7 +296,7 @@ export function ContaAPagarDialog({
           descricao: base.descricao + sufixo,
           valor: valorPorParcela,
           vencimento: iso,
-          recorrencia: freq,
+          recorrencia: null,
           grupo_id: grupoId,
           pago: false,
           data_pagamento: null,
