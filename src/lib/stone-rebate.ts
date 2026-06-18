@@ -5,6 +5,12 @@ import type {
   StoneRebateLinhaRow,
 } from "@/integrations/supabase/database";
 
+const RECORRENCIA_DB_FALLBACKS = ["unica", "mensal", "anual", "MENSAL", "UNICA", "ANUAL", "ÚNICA", "unico", "UNICO", "nenhuma", "NENHUMA"];
+function isRecorrenciaDbError(error: unknown) {
+  const message = typeof error === "object" && error && "message" in error ? String(error.message) : String(error ?? "");
+  return message.toLowerCase().includes("recorrencia");
+}
+
 // ---------- Tipos ----------
 export type CanonicalField =
   | "stonecode"
