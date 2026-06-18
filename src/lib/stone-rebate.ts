@@ -428,14 +428,14 @@ export async function confirmImport(input: ConfirmImportInput): Promise<StoneReb
       const contaIns = await supabase
         .from("contas_a_pagar")
         .insert({
-        descricao: `Rebate Stone — ${mesLabel(input.mesReferencia)} (${input.file.name})`,
-        valor: input.totalRebate,
-        vencimento: input.vencimentoContaAReceber,
-        empresa_id: input.empresaId,
-        categoria_id: categoriaId,
-        recorrencia,
-        pago: false,
-        observacao: `Tipo: Receita | Origem: stone_rebate | import_id: ${header.id}`,
+          descricao: `Rebate Stone — ${mesLabel(input.mesReferencia)} (${input.file.name})`,
+          valor: input.totalRebate,
+          vencimento: input.vencimentoContaAReceber,
+          empresa_id: input.empresaId,
+          categoria_id: categoriaId,
+          recorrencia,
+          pago: false,
+          observacao: `Tipo: Receita | Origem: stone_rebate | import_id: ${header.id}`,
         })
         .select("id")
         .single();
