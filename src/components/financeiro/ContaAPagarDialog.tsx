@@ -77,6 +77,40 @@ function formatDateBR(iso: string) {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
 }
+function normalizeFrequencia(value: string | null | undefined): FrequenciaPreset {
+  const normalized = (value ?? "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return FREQ_PRESETS.some(p => p.value === normalized) ? normalized as FrequenciaPreset : "unica";
+}
+const RECORRENCIA_DB_FALLBACKS = [
+  "unica", "mensal", "anual", "MENSAL", "UNICA", "ANUAL", "ÚNICA", "unico", "UNICO", "nenhuma", "NENHUMA",
+];
+function recorrenciaCandidates(preferred: string) {
+  return Array.from(new Set([preferred, ...RECORRENCIA_DB_FALLBACKS].filter(Boolean)));
+}
+function isRecorrenciaDbError(error: unknown) {
+  const message = typeof error === "object" && error && "message" in error ? String(error.message) : String(error ?? "");
+  return message.toLowerCase().includes("recorrencia");
+}
+async function updateContaComRecorrenciaFallback(id: number, payload: Record<string, unknown>, preferred: string) {
+  let lastError: unknown = null;
+  for (const recorrencia of recorrenciaCandidates(preferred)) {
+    const r = await supabase.from("contas_a_pagar").update({ ...payload, recorrencia }).eq("id", id);
+    if (!r.error) return;
+    if (!isRecorrenciaDbError(r.error)) throw r.error;
+    lastError = r.error;
+  }
+  throw lastError instanceof Error ? lastError : new Error("Não foi possível salvar a recorrência da conta.");
+}
+async function insertContasComRecorrenciaFallback(rows: Array<Record<string, unknown>>, preferred: string) {
+  let lastError: unknown = null;
+  for (const recorrencia of recorrenciaCandidates(preferred)) {
+    const ins = await supabase.from("contas_a_pagar").insert(rows.map(row => ({ ...row, recorrencia }))).select("*");
+    if (!ins.error) return ins.data;
+    if (!isRecorrenciaDbError(ins.error)) throw ins.error;
+    lastError = ins.error;
+  }
+  throw lastError instanceof Error ? lastError : new Error("Não foi possível criar a conta com recorrência.");
+}
 
 export function ContaAPagarDialog({
   open, onOpenChange, editing, onSaved,
@@ -132,7 +166,7 @@ export function ContaAPagarDialog({
           .replace(/Pgto:[^|\n]*\|?\s*/i, "")
           .trim(),
       );
-      setFreq((editing.recorrencia as FrequenciaPreset) ?? "unica");
+      setFreq(normalizeFrequencia(editing.recorrencia));
       setParcelas(1);
       setModo("repetir");
       setJaPago(editing.pago);
@@ -242,13 +276,11 @@ export function ContaAPagarDialog({
 
       if (isEdit && editing) {
         // 1) atualiza campos básicos da conta
-        const r = await supabase.from("contas_a_pagar").update({
+        await updateContaComRecorrenciaFallback(editing.id, {
           ...base,
           valor: valorNum,
           vencimento,
-          recorrencia: null,
-        }).eq("id", editing.id);
-        if (r.error) throw r.error;
+        }, normalizeFrequencia(editing.recorrencia));
 
         // 2) sincroniza status de pagamento
         const eraPago = editing.pago;
@@ -296,7 +328,6 @@ export function ContaAPagarDialog({
           descricao: base.descricao + sufixo,
           valor: valorPorParcela,
           vencimento: iso,
-          recorrencia: null,
           grupo_id: grupoId,
           pago: false,
           data_pagamento: null,
@@ -305,12 +336,11 @@ export function ContaAPagarDialog({
         };
       });
 
-      const ins = await supabase.from("contas_a_pagar").insert(rows).select("*");
-      if (ins.error) throw ins.error;
+      const contasCriadas = await insertContasComRecorrenciaFallback(rows, freq);
 
       // Se marcou "já paga" → pagar a 1ª parcela (cria lançamento)
-      if (jaPago && ins.data && ins.data.length > 0) {
-        const primeira = ins.data[0] as ContaAPagarRow;
+      if (jaPago && contasCriadas && contasCriadas.length > 0) {
+        const primeira = contasCriadas[0] as ContaAPagarRow;
         await pagarConta(primeira, {
           dataPagamento: dataPgto,
           valorPago: valorPorParcela,
