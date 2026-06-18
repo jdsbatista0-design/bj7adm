@@ -276,12 +276,11 @@ export function ContaAPagarDialog({
 
       if (isEdit && editing) {
         // 1) atualiza campos básicos da conta
-        const r = await supabase.from("contas_a_pagar").update({
+        await updateContaComRecorrenciaFallback(editing.id, {
           ...base,
           valor: valorNum,
           vencimento,
-        }).eq("id", editing.id);
-        if (r.error) throw r.error;
+        }, normalizeFrequencia(editing.recorrencia));
 
         // 2) sincroniza status de pagamento
         const eraPago = editing.pago;
@@ -337,12 +336,11 @@ export function ContaAPagarDialog({
         };
       });
 
-      const ins = await supabase.from("contas_a_pagar").insert(rows).select("*");
-      if (ins.error) throw ins.error;
+      const contasCriadas = await insertContasComRecorrenciaFallback(rows, freq);
 
       // Se marcou "já paga" → pagar a 1ª parcela (cria lançamento)
-      if (jaPago && ins.data && ins.data.length > 0) {
-        const primeira = ins.data[0] as ContaAPagarRow;
+      if (jaPago && contasCriadas && contasCriadas.length > 0) {
+        const primeira = contasCriadas[0] as ContaAPagarRow;
         await pagarConta(primeira, {
           dataPagamento: dataPgto,
           valorPago: valorPorParcela,
