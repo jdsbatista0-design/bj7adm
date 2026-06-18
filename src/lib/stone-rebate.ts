@@ -422,22 +422,31 @@ export async function confirmImport(input: ConfirmImportInput): Promise<StoneReb
 
     // 4) conta a receber (1 por importação)
     const categoriaId = await getOrCreateCategoriaRebate();
-    const contaIns = await supabase
-      .from("contas_a_pagar")
-      .insert({
+    let contaId: number | null = null;
+    let contaLastError: unknown = null;
+    for (const recorrencia of RECORRENCIA_DB_FALLBACKS) {
+      const contaIns = await supabase
+        .from("contas_a_pagar")
+        .insert({
         descricao: `Rebate Stone — ${mesLabel(input.mesReferencia)} (${input.file.name})`,
         valor: input.totalRebate,
         vencimento: input.vencimentoContaAReceber,
         empresa_id: input.empresaId,
         categoria_id: categoriaId,
-        recorrencia: "unica",
+        recorrencia,
         pago: false,
         observacao: `Tipo: Receita | Origem: stone_rebate | import_id: ${header.id}`,
-      })
-      .select("id")
-      .single();
-    if (contaIns.error) throw contaIns.error;
-    const contaId = (contaIns.data as { id: number }).id;
+        })
+        .select("id")
+        .single();
+      if (!contaIns.error) {
+        contaId = (contaIns.data as { id: number }).id;
+        break;
+      }
+      if (!isRecorrenciaDbError(contaIns.error)) throw contaIns.error;
+      contaLastError = contaIns.error;
+    }
+    if (!contaId) throw contaLastError instanceof Error ? contaLastError : new Error("Não foi possível criar a conta a receber do rebate.");
 
     // 5) link no header
     const upd = await supabase
