@@ -106,8 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let bootstrapped = false;
     void (async () => {
       try {
-        // Timeout defensivo: se o refresh travar (rede / token corrompido),
-        // não deixamos a app presa em "loading" eternamente.
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
           setTimeout(() => resolve({ data: { session: null } }), 8000),
@@ -116,6 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         bootstrapped = true;
         if (!data.session) {
+          // Limpa qualquer token órfão/corrompido que esteja causando refresh loop
+          try {
+            if (typeof window !== "undefined") {
+              Object.keys(window.localStorage)
+                .filter((k) => k.startsWith("sb-") || k.includes("supabase"))
+                .forEach((k) => window.localStorage.removeItem(k));
+            }
+          } catch { /* ignore */ }
           setState({ status: "anon" });
           return;
         }
@@ -126,9 +132,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         bootstrapped = true;
         try { await supabase.auth.signOut(); } catch { /* ignore */ }
+        try {
+          if (typeof window !== "undefined") {
+            Object.keys(window.localStorage)
+              .filter((k) => k.startsWith("sb-") || k.includes("supabase"))
+              .forEach((k) => window.localStorage.removeItem(k));
+          }
+        } catch { /* ignore */ }
         setState({ status: "anon" });
       }
     })();
+
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       // Ignora INITIAL_SESSION (já tratado pelo getSession acima) e TOKEN_REFRESHED
