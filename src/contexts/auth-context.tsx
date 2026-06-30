@@ -87,27 +87,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
   const refresh = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setState({ status: "anon" });
+        return;
+      }
+      setState(await loadCurrentUser(data.session));
+    } catch (err) {
+      console.error("refresh session falhou, limpando:", err);
+      try { await supabase.auth.signOut(); } catch { /* ignore */ }
       setState({ status: "anon" });
-      return;
     }
-    setState(await loadCurrentUser(data.session));
   }, []);
 
   useEffect(() => {
     let mounted = true;
     let bootstrapped = false;
     void (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      bootstrapped = true;
-      if (!data.session) {
+      try {
+        // Timeout defensivo: se o refresh travar (rede / token corrompido),
+        // não deixamos a app presa em "loading" eternamente.
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null } }), 8000),
+        );
+        const { data } = await Promise.race([sessionPromise, timeoutPromise]);
+        if (!mounted) return;
+        bootstrapped = true;
+        if (!data.session) {
+          setState({ status: "anon" });
+          return;
+        }
+        const next = await loadCurrentUser(data.session);
+        if (mounted) setState(next);
+      } catch (err) {
+        console.error("bootstrap auth falhou, caindo para anon:", err);
+        if (!mounted) return;
+        bootstrapped = true;
+        try { await supabase.auth.signOut(); } catch { /* ignore */ }
         setState({ status: "anon" });
-        return;
       }
-      const next = await loadCurrentUser(data.session);
-      if (mounted) setState(next);
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
