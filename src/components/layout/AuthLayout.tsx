@@ -50,6 +50,7 @@ import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import { Fab } from "@/components/bj7/Fab";
 import { BottomNav } from "@/components/layout/BottomNav";
 import type { CurrentUser } from "@/lib/permissions";
+import { podeVerMenu } from "@/lib/permissions";
 
 type LeafItem = {
   title: string;
