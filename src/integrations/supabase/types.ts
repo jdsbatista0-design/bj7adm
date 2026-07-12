@@ -323,6 +323,82 @@ export type Database = {
           },
         ]
       }
+      convites: {
+        Row: {
+          created_at: string
+          created_by: number | null
+          email: string
+          empresas_ids: number[]
+          expires_at: string
+          id: number
+          menus: Json
+          nome: string | null
+          papel_id: number
+          token: string
+          used_at: string | null
+          usuario_id: number | null
+          ve_faturamento: boolean
+          ve_retiradas: boolean
+          ve_todas_empresas: boolean
+        }
+        Insert: {
+          created_at?: string
+          created_by?: number | null
+          email: string
+          empresas_ids?: number[]
+          expires_at?: string
+          id?: number
+          menus?: Json
+          nome?: string | null
+          papel_id: number
+          token?: string
+          used_at?: string | null
+          usuario_id?: number | null
+          ve_faturamento?: boolean
+          ve_retiradas?: boolean
+          ve_todas_empresas?: boolean
+        }
+        Update: {
+          created_at?: string
+          created_by?: number | null
+          email?: string
+          empresas_ids?: number[]
+          expires_at?: string
+          id?: number
+          menus?: Json
+          nome?: string | null
+          papel_id?: number
+          token?: string
+          used_at?: string | null
+          usuario_id?: number | null
+          ve_faturamento?: boolean
+          ve_retiradas?: boolean
+          ve_todas_empresas?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "convites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convites_papel_id_fkey"
+            columns: ["papel_id"]
+            isOneToOne: false
+            referencedRelation: "papeis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "convites_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresas: {
         Row: {
           ativa: boolean | null
@@ -783,6 +859,55 @@ export type Database = {
             columns: ["unidade_id"]
             isOneToOne: false
             referencedRelation: "unidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_permissoes: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          empresa_id: number | null
+          id: number
+          menu_key: string
+          usuario_id: number
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          empresa_id?: number | null
+          id?: number
+          menu_key: string
+          usuario_id: number
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          empresa_id?: number | null
+          id?: number
+          menu_key?: string
+          usuario_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_permissoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_permissoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "v_resumo_dre"
+            referencedColumns: ["empresa_id"]
+          },
+          {
+            foreignKeyName: "menu_permissoes_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]
@@ -1995,6 +2120,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_convite_publico: {
+        Args: { _token: string }
+        Returns: {
+          email: string
+          expirado: boolean
+          nome: string
+          usado: boolean
+        }[]
       }
     }
     Enums: {

@@ -50,6 +50,7 @@ import { ItemDrawerProvider } from "@/components/bj7/ItemDrawer";
 import { Fab } from "@/components/bj7/Fab";
 import { BottomNav } from "@/components/layout/BottomNav";
 import type { CurrentUser } from "@/lib/permissions";
+import { podeVerMenu } from "@/lib/permissions";
 
 type LeafItem = {
   title: string;
@@ -117,6 +118,19 @@ const NAV: NavItem[] = [
   },
   { title: "Configurações", url: "/config", icon: Settings },
 ];
+
+function filterNav(items: NavItem[], user: CurrentUser): NavItem[] {
+  const out: NavItem[] = [];
+  for (const it of items) {
+    if (isGroup(it)) {
+      const kids = filterNav(it.children, user);
+      if (kids.length > 0) out.push({ ...it, children: kids });
+    } else {
+      if (podeVerMenu(user, it.url)) out.push(it);
+    }
+  }
+  return out;
+}
 
 export function AuthLayout() {
   const { state, signOut } = useAuth();
@@ -229,7 +243,7 @@ function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => v
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) =>
+              {filterNav(NAV, user).map((item) =>
                 isGroup(item) ? (
                   <NavGroup key={item.title} item={item} path={path} collapsed={collapsed} />
                 ) : (

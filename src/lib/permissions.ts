@@ -13,6 +13,15 @@ export interface CurrentUser {
   ve_faturamento: boolean;
   ve_todas_empresas: boolean;
   empresas_ids: number[]; // empresas que ele pode ver (vazio se ve_todas_empresas)
+  menu_permissoes: Array<{ menu_key: string; empresa_id: number | null }>; // vazio = sem restrição customizada
+}
+
+export function podeVerMenu(u: CurrentUser, menuKey: string): boolean {
+  // Admin (gere usuários) sempre vê tudo
+  if (u.papel.pode_gerir_usuarios) return true;
+  // Se nenhuma permissão de menu foi configurada, libera tudo (retrocompatível)
+  if (u.menu_permissoes.length === 0) return true;
+  return u.menu_permissoes.some((m) => m.menu_key === menuKey);
 }
 
 /** Tipos de lançamento que este usuário pode ver. */

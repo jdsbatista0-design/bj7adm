@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { from, asRows, asRow } from "@/integrations/supabase/db";
+import { supabase } from "@/integrations/supabase/client";
 import type { UsuarioRow, PapelRow, UsuarioEmpresaRow } from "@/integrations/supabase/database";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { podeGerirUsuarios } from "@/lib/permissions";
@@ -35,8 +36,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, UserPlus } from "lucide-react";
+import { Pencil, UserPlus, Link2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { MENU_CATALOG, type MenuNode } from "@/lib/menu-catalog";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -48,6 +50,7 @@ function UsuariosPage() {
   const empresas = useEmpresas();
   const [editing, setEditing] = useState<UsuarioRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [conviteOpen, setConviteOpen] = useState(false);
 
   // Todos os hooks ficam ANTES de qualquer return condicional (rules of hooks).
   const usuarios = useQuery({
@@ -94,10 +97,17 @@ function UsuariosPage() {
             {usuarios.data?.length ?? 0} usuário(s) cadastrado(s).
           </p>
         </div>
-        <Button onClick={openNew}>
-          <UserPlus className="h-4 w-4 mr-1" /> Novo usuário
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setConviteOpen(true)}>
+            <Link2 className="h-4 w-4 mr-1" /> Gerar convite
+          </Button>
+          <Button onClick={openNew}>
+            <UserPlus className="h-4 w-4 mr-1" /> Novo usuário
+          </Button>
+        </div>
       </div>
+
+
 
       <Card>
         <CardContent className="p-0">
@@ -165,9 +175,8 @@ function UsuariosPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Novos usuários precisam ser criados também em <strong>Auth &rarr; Users</strong> no
-        Supabase. O vínculo do <code>auth_uid</code> é feito automaticamente no primeiro login
-        (função <code>ensure_self_usuario</code>), desde que o e-mail aqui seja idêntico ao do Auth.
+        Use <strong>Gerar convite</strong> para enviar um link a colaboradores e sócios — eles
+        clicam, criam a senha e já entram no sistema com as permissões que você definir.
       </p>
 
       <UsuarioDialog
@@ -177,6 +186,12 @@ function UsuariosPage() {
         papeis={papeis.data ?? []}
         empresas={empresas.data ?? []}
         currentUserId={user.id}
+      />
+      <ConviteDialog
+        open={conviteOpen}
+        onOpenChange={setConviteOpen}
+        papeis={papeis.data ?? []}
+        empresas={empresas.data ?? []}
       />
     </div>
   );
@@ -417,3 +432,208 @@ function UsuarioDialog({
     </Dialog>
   );
 }
+
+// ================= ConviteDialog =================
+
+interface ConviteDialogProps {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  papeis: PapelRow[];
+  empresas: { id: number; nome: string }[];
+}
+
+function ConviteDialog({ open, onOpenChange, papeis, empresas }: ConviteDialogProps) {
+  const qc = useQueryClient();
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [papelId, setPapelId] = useState<number | null>(null);
+  const [veFat, setVeFat] = useState(false);
+  const [veRet, setVeRet] = useState(false);
+  const [veTodas, setVeTodas] = useState(false);
+  const [empresaIds, setEmpresaIds] = useState<number[]>([]);
+  const [menusSel, setMenusSel] = useState<Set<string>>(new Set());
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setNome(""); setEmail(""); setPapelId(papeis[0]?.id ?? null);
+      setVeFat(false); setVeRet(false); setVeTodas(false);
+      setEmpresaIds([]); setMenusSel(new Set()); setLink(null); setCopied(false);
+    }
+  }, [open, papeis]);
+
+  function toggleMenu(k: string) {
+    setMenusSel((prev) => {
+      const n = new Set(prev);
+      if (n.has(k)) n.delete(k); else n.add(k);
+      return n;
+    });
+  }
+  function toggleEmp(id: number) {
+    setEmpresaIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
+  }
+
+  const criar = useMutation({
+    mutationFn: async () => {
+      const emailN = email.trim().toLowerCase();
+      if (!emailN) throw new Error("E-mail obrigatório");
+      if (!papelId) throw new Error("Selecione um papel");
+      const menus = Array.from(menusSel).map((k) => ({ menu_key: k, empresa_id: null }));
+      const r = await supabase.from("convites").insert({
+        email: emailN,
+        nome: nome.trim() || null,
+        papel_id: papelId,
+        ve_faturamento: veFat,
+        ve_retiradas: veRet,
+        ve_todas_empresas: veTodas,
+        empresas_ids: veTodas ? [] : empresaIds,
+        menus,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any).select("token").single();
+      if (r.error) throw r.error;
+      const token = (r.data as { token: string }).token;
+      return `${window.location.origin}/aceitar-convite?token=${token}`;
+    },
+    onSuccess: (url) => {
+      setLink(url);
+      qc.invalidateQueries({ queryKey: ["convites"] });
+      toast.success("Convite criado! Copie o link e envie por WhatsApp/e-mail.");
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Erro"),
+  });
+
+  function copy() {
+    if (!link) return;
+    void navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Gerar convite de acesso</DialogTitle>
+        </DialogHeader>
+
+        {link ? (
+          <div className="space-y-3">
+            <p className="text-sm">Envie este link para a pessoa. Ela clica, cria a senha e já entra no sistema:</p>
+            <div className="flex gap-2">
+              <Input value={link} readOnly onFocus={(e) => e.currentTarget.select()} />
+              <Button onClick={copy} variant="outline">
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">O link é válido por 30 dias e só pode ser usado uma vez.</p>
+            <DialogFooter>
+              <Button onClick={() => onOpenChange(false)}>Fechar</Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Nome</Label>
+                <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+              </div>
+              <div className="space-y-1">
+                <Label>E-mail</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Papel</Label>
+              <Select value={papelId ? String(papelId) : ""} onValueChange={(v) => setPapelId(Number(v))}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {papeis.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <Label className="font-normal">Vê faturamento (receitas)</Label>
+                <Switch checked={veFat} onCheckedChange={setVeFat} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="font-normal">Vê retiradas</Label>
+                <Switch checked={veRet} onCheckedChange={setVeRet} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="font-normal">Vê todas as empresas</Label>
+                <Switch checked={veTodas} onCheckedChange={setVeTodas} />
+              </div>
+            </div>
+
+            {!veTodas && (
+              <div className="space-y-2">
+                <Label>Empresas que este usuário pode acessar</Label>
+                <div className="grid grid-cols-2 gap-2 rounded-md border p-3">
+                  {empresas.length === 0 && <p className="text-xs text-muted-foreground col-span-2">Nenhuma empresa cadastrada.</p>}
+                  {empresas.map((e) => (
+                    <label key={e.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={empresaIds.includes(e.id)} onCheckedChange={() => toggleEmp(e.id)} />
+                      <span>{e.nome}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Menus que este usuário pode acessar</Label>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" type="button" onClick={() => {
+                    const all = new Set<string>();
+                    const walk = (nodes: MenuNode[]) => nodes.forEach((n) => { all.add(n.key); if (n.children) walk(n.children); });
+                    walk(MENU_CATALOG);
+                    setMenusSel(all);
+                  }}>Marcar tudo</Button>
+                  <Button size="sm" variant="ghost" type="button" onClick={() => setMenusSel(new Set())}>Limpar</Button>
+                </div>
+              </div>
+              <div className="rounded-md border p-3 space-y-2 max-h-64 overflow-y-auto">
+                {MENU_CATALOG.map((m) => (
+                  <MenuTree key={m.key} node={m} selected={menusSel} onToggle={toggleMenu} />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Se nenhum menu for marcado, o usuário só verá os básicos. Marque exatamente o que ele deve enxergar.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+              <Button onClick={() => criar.mutate()} disabled={criar.isPending}>
+                {criar.isPending ? "Gerando..." : "Gerar link de convite"}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MenuTree({ node, selected, onToggle, depth = 0 }: {
+  node: MenuNode; selected: Set<string>; onToggle: (k: string) => void; depth?: number;
+}) {
+  return (
+    <div style={{ marginLeft: depth * 16 }}>
+      <label className="flex items-center gap-2 text-sm py-1">
+        <Checkbox checked={selected.has(node.key)} onCheckedChange={() => onToggle(node.key)} />
+        <span className={depth === 0 ? "font-medium" : ""}>{node.label}</span>
+      </label>
+      {node.children?.map((c) => (
+        <MenuTree key={c.key + depth} node={c} selected={selected} onToggle={onToggle} depth={depth + 1} />
+      ))}
+    </div>
+  );
+}
+
