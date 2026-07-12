@@ -174,9 +174,8 @@ function UsuariosPage() {
       </Card>
 
       <p className="text-xs text-muted-foreground">
-        Novos usuários precisam ser criados também em <strong>Auth &rarr; Users</strong> no
-        Supabase. O vínculo do <code>auth_uid</code> é feito automaticamente no primeiro login
-        (função <code>ensure_self_usuario</code>), desde que o e-mail aqui seja idêntico ao do Auth.
+        Use <strong>Gerar convite</strong> para enviar um link a colaboradores e sócios — eles
+        clicam, criam a senha e já entram no sistema com as permissões que você definir.
       </p>
 
       <UsuarioDialog
@@ -186,6 +185,12 @@ function UsuariosPage() {
         papeis={papeis.data ?? []}
         empresas={empresas.data ?? []}
         currentUserId={user.id}
+      />
+      <ConviteDialog
+        open={conviteOpen}
+        onOpenChange={setConviteOpen}
+        papeis={papeis.data ?? []}
+        empresas={empresas.data ?? []}
       />
     </div>
   );
