@@ -480,7 +480,7 @@ function ConviteDialog({ open, onOpenChange, papeis, empresas }: ConviteDialogPr
       if (!emailN) throw new Error("E-mail obrigatório");
       if (!papelId) throw new Error("Selecione um papel");
       const menus = Array.from(menusSel).map((k) => ({ menu_key: k, empresa_id: null }));
-      const r = await from("convites").insert({
+      const r = await supabase.from("convites").insert({
         email: emailN,
         nome: nome.trim() || null,
         papel_id: papelId,
@@ -489,7 +489,8 @@ function ConviteDialog({ open, onOpenChange, papeis, empresas }: ConviteDialogPr
         ve_todas_empresas: veTodas,
         empresas_ids: veTodas ? [] : empresaIds,
         menus,
-      }).select("token").single();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any).select("token").single();
       if (r.error) throw r.error;
       const token = (r.data as { token: string }).token;
       return `${window.location.origin}/aceitar-convite?token=${token}`;
