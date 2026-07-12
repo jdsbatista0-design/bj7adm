@@ -104,6 +104,9 @@ function UsuariosPage() {
             <UserPlus className="h-4 w-4 mr-1" /> Novo usuário
           </Button>
         </div>
+      </div>
+
+
 
       <Card>
         <CardContent className="p-0">
