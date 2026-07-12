@@ -186,6 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password,
           });
           if (signUpError) return { error: signUpError.message };
+
+          const retry = await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password,
+          });
+          if (retry.error) return { error: retry.error.message };
         }
 
         const { data } = await supabase.auth.getSession();
