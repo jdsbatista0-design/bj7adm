@@ -577,7 +577,7 @@ export interface Database {
       ack_alerta: { Args: { alerta_id: number }; Returns: void };
       resolver_alerta: { Args: { alerta_id: number }; Returns: void };
       snooze_alerta: { Args: { alerta_id: number; horas: number }; Returns: void };
-      concluir_tarefa: { Args: { tarefa_id: number }; Returns: void };
+      concluir_tarefa: { Args: { _id: number }; Returns: void };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
