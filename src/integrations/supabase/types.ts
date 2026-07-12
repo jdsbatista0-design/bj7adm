@@ -1960,6 +1960,7 @@ export type Database = {
       }
       current_user_can_see_tipo: { Args: { _tipo: string }; Returns: boolean }
       current_user_empresa_ids: { Args: never; Returns: number[] }
+      current_user_is_active: { Args: never; Returns: boolean }
       current_user_perms: {
         Args: never
         Returns: {
