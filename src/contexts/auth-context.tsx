@@ -69,6 +69,16 @@ async function loadCurrentUser(session: Session): Promise<AuthState> {
     empresasIds = rows.map((r) => r.empresa_id);
   }
 
+  // 5. Permissões de menu customizadas
+  const mps = await supabase
+    .from("menu_permissoes")
+    .select("menu_key, empresa_id, allowed")
+    .eq("usuario_id", usuarioRow.id)
+    .eq("allowed", true);
+  const menuPerms = ((mps.data ?? []) as Array<{ menu_key: string; empresa_id: number | null }>).map(
+    (r) => ({ menu_key: r.menu_key, empresa_id: r.empresa_id }),
+  );
+
   const user: CurrentUser = {
     id: usuarioRow.id,
     nome: usuarioRow.nome,
@@ -79,6 +89,7 @@ async function loadCurrentUser(session: Session): Promise<AuthState> {
     ve_faturamento: !!usuarioRow.ve_faturamento,
     ve_todas_empresas: veTodas,
     empresas_ids: empresasIds,
+    menu_permissoes: menuPerms,
   };
 
   return { status: "ok", user, session };
