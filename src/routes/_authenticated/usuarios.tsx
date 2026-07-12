@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { from, asRows, asRow } from "@/integrations/supabase/db";
+import { supabase } from "@/integrations/supabase/client";
 import type { UsuarioRow, PapelRow, UsuarioEmpresaRow } from "@/integrations/supabase/database";
 import { useCurrentUser } from "@/contexts/auth-context";
 import { podeGerirUsuarios } from "@/lib/permissions";
