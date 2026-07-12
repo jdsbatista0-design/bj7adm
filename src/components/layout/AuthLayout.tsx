@@ -119,6 +119,19 @@ const NAV: NavItem[] = [
   { title: "Configurações", url: "/config", icon: Settings },
 ];
 
+function filterNav(items: NavItem[], user: CurrentUser): NavItem[] {
+  const out: NavItem[] = [];
+  for (const it of items) {
+    if (isGroup(it)) {
+      const kids = filterNav(it.children, user);
+      if (kids.length > 0) out.push({ ...it, children: kids });
+    } else {
+      if (podeVerMenu(user, it.url)) out.push(it);
+    }
+  }
+  return out;
+}
+
 export function AuthLayout() {
   const { state, signOut } = useAuth();
   const navigate = useNavigate();
