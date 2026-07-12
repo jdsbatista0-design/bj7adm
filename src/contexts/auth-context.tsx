@@ -30,6 +30,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const INITIAL_ALLOWED_EMAILS = new Set(["jdsbatista0@gmail.com"]);
 
 async function loadCurrentUser(session: Session): Promise<AuthState> {
   const email = session.user.email ?? "";
@@ -171,8 +172,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       state,
       refresh,
       signIn: async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return { error: error.message };
+        const normalizedEmail = email.trim().toLowerCase();
+        const signInResult = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+        if (signInResult.error) {
+          const canCreateInitialAccount =
+            INITIAL_ALLOWED_EMAILS.has(normalizedEmail) &&
+            /invalid login credentials/i.test(signInResult.error.message);
+
+          if (!canCreateInitialAccount) return { error: signInResult.error.message };
+
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+          });
+          if (signUpError) return { error: signUpError.message };
+        }
 
         const { data } = await supabase.auth.getSession();
         if (!data.session) {
