@@ -96,10 +96,14 @@ function UsuariosPage() {
             {usuarios.data?.length ?? 0} usuário(s) cadastrado(s).
           </p>
         </div>
-        <Button onClick={openNew}>
-          <UserPlus className="h-4 w-4 mr-1" /> Novo usuário
-        </Button>
-      </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setConviteOpen(true)}>
+            <Link2 className="h-4 w-4 mr-1" /> Gerar convite
+          </Button>
+          <Button onClick={openNew}>
+            <UserPlus className="h-4 w-4 mr-1" /> Novo usuário
+          </Button>
+        </div>
 
       <Card>
         <CardContent className="p-0">
