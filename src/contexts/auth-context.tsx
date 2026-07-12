@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   PapelRow,
@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       // Ignora INITIAL_SESSION (já tratado pelo getSession acima) e TOKEN_REFRESHED
       // (sessão continua válida — não precisa recarregar perfil/papel).
       // Sem este filtro, todo refresh dobrava a sequência de auth (~4 round-trips até Oregon).

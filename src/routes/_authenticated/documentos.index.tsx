@@ -126,10 +126,11 @@ export default function DocumentosIndex() {
           .select("documento_id")
           .eq("empresa_id", empId);
         if (idsRes.error) throw idsRes.error;
-        allowedIds = (idsRes.data ?? []).map(
+        const selectedIds = (idsRes.data ?? []).map(
           (r: { documento_id: number }) => r.documento_id,
         );
-        if (allowedIds.length === 0) return { rows: [], count: 0 };
+        if (selectedIds.length === 0) return { rows: [], count: 0 };
+        allowedIds = selectedIds;
       }
 
       let q = supabase.schema("documentos" as never)
@@ -522,9 +523,9 @@ function DocumentoFormModal({
         .from("documento_empresas")
         .select("empresa_id, papel")
         .eq("documento_id", editing.id)
-        .then((r) => {
+        .then((r: { error: unknown; data: unknown[] | null }) => {
           if (!r.error && r.data) {
-            setEmpresasSel(r.data.map((x) => ({ empresa_id: (x as { empresa_id: number }).empresa_id, papel: (x as { papel: string | null }).papel ?? "PRINCIPAL" })));
+            setEmpresasSel(r.data.map((x: unknown) => ({ empresa_id: (x as { empresa_id: number }).empresa_id, papel: (x as { papel: string | null }).papel ?? "PRINCIPAL" })));
           }
         });
     } else if (open && !editing) {
