@@ -35,8 +35,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, UserPlus } from "lucide-react";
+import { Pencil, UserPlus, Link2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { MENU_CATALOG, type MenuNode } from "@/lib/menu-catalog";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
