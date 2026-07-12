@@ -19,7 +19,7 @@ export const aceitarConvite = createServerFn({ method: "POST" })
       .maybeSingle();
     if (cv.error) throw new Error(cv.error.message);
     if (!cv.data) throw new Error("Convite inválido");
-    const c = cv.data as {
+    const c = cv.data as unknown as {
       id: number;
       email: string;
       nome: string | null;

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AceitarConviteRouteImport } from './routes/aceitar-convite'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
@@ -58,6 +59,11 @@ import { Route as AuthenticatedDocumentosPorTipoRouteImport } from './routes/_au
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AceitarConviteRoute = AceitarConviteRouteImport.update({
+  id: '/aceitar-convite',
+  path: '/aceitar-convite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -309,6 +315,7 @@ const AuthenticatedDocumentosPorTipoRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
   '/calendario': typeof AuthenticatedCalendarioRoute
@@ -354,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/stone/': typeof AuthenticatedStoneIndexRoute
 }
 export interface FileRoutesByTo {
+  '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/a-revisar': typeof AuthenticatedARevisarRoute
   '/calendario': typeof AuthenticatedCalendarioRoute
@@ -399,6 +407,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/aceitar-convite': typeof AceitarConviteRoute
   '/login': typeof LoginRoute
   '/_authenticated/a-revisar': typeof AuthenticatedARevisarRoute
   '/_authenticated/calendario': typeof AuthenticatedCalendarioRoute
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/aceitar-convite'
     | '/login'
     | '/a-revisar'
     | '/calendario'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/stone/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/aceitar-convite'
     | '/login'
     | '/a-revisar'
     | '/calendario'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/aceitar-convite'
     | '/login'
     | '/_authenticated/a-revisar'
     | '/_authenticated/calendario'
@@ -585,6 +597,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AceitarConviteRoute: typeof AceitarConviteRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -595,6 +608,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aceitar-convite': {
+      id: '/aceitar-convite'
+      path: '/aceitar-convite'
+      fullPath: '/aceitar-convite'
+      preLoaderRoute: typeof AceitarConviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1042,6 +1062,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AceitarConviteRoute: AceitarConviteRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
