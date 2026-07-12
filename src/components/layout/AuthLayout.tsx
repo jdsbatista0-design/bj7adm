@@ -230,7 +230,7 @@ function AppSidebar({ user, onSignOut }: { user: CurrentUser; onSignOut: () => v
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map((item) =>
+              {filterNav(NAV, user).map((item) =>
                 isGroup(item) ? (
                   <NavGroup key={item.title} item={item} path={path} collapsed={collapsed} />
                 ) : (
