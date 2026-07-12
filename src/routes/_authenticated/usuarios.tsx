@@ -49,6 +49,7 @@ function UsuariosPage() {
   const empresas = useEmpresas();
   const [editing, setEditing] = useState<UsuarioRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [conviteOpen, setConviteOpen] = useState(false);
 
   // Todos os hooks ficam ANTES de qualquer return condicional (rules of hooks).
   const usuarios = useQuery({
