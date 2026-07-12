@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   PapelRow,
@@ -30,6 +30,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const INITIAL_ALLOWED_EMAILS = new Set(["jdsbatista0@gmail.com"]);
 
 async function loadCurrentUser(session: Session): Promise<AuthState> {
   const email = session.user.email ?? "";
@@ -144,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       // Ignora INITIAL_SESSION (já tratado pelo getSession acima) e TOKEN_REFRESHED
       // (sessão continua válida — não precisa recarregar perfil/papel).
       // Sem este filtro, todo refresh dobrava a sequência de auth (~4 round-trips até Oregon).
@@ -171,8 +172,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       state,
       refresh,
       signIn: async (email, password) => {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return { error: error.message };
+        const normalizedEmail = email.trim().toLowerCase();
+        const signInResult = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+        if (signInResult.error) {
+          const canCreateInitialAccount =
+            INITIAL_ALLOWED_EMAILS.has(normalizedEmail) &&
+            /invalid login credentials/i.test(signInResult.error.message);
+
+          if (!canCreateInitialAccount) return { error: signInResult.error.message };
+
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: normalizedEmail,
+            password,
+          });
+          if (signUpError) return { error: signUpError.message };
+
+          const retry = await supabase.auth.signInWithPassword({
+            email: normalizedEmail,
+            password,
+          });
+          if (retry.error) return { error: retry.error.message };
+        }
 
         const { data } = await supabase.auth.getSession();
         if (!data.session) {
